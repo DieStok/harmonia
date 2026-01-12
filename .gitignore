@@ -1,3 +1,6 @@
 *.pyc
 /.env
 /dou_harmonized.csv
+.env
+!.env.template
+*.sif
