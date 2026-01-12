@@ -1,0 +1,53 @@
+Bootstrap: docker
+From: python:3.10
+
+%post
+    # CRITICAL: Use /tmp which is bind-mounted to scratch during build
+    export TMPDIR=/tmp
+    export UV_CACHE_DIR=/tmp/uv_cache
+    export PIP_CACHE_DIR=/tmp/pip_cache
+    mkdir -p /tmp/uv_cache /tmp/pip_cache
+    
+    # Debug: show initial space
+    echo "=== Initial /tmp space ==="
+    df -h /tmp
+    
+    useradd -m jupyter
+    apt update && apt install -y lsof
+    
+    # Install uv
+    pip install --no-cache-dir uv
+    
+    # Use uv with explicit temp directory
+    uv pip install --system --no-cache hatch
+    
+    echo "=== Space after hatch install ==="
+    df -h /tmp
+
+%files
+    . /jupyter
+
+%post
+    # CRITICAL: Use /tmp which is bind-mounted to scratch during build
+    export TMPDIR=/tmp
+    export UV_CACHE_DIR=/tmp/uv_cache
+    export PIP_CACHE_DIR=/tmp/pip_cache
+    mkdir -p /tmp/uv_cache /tmp/pip_cache
+    
+    chown -R 1000:1000 /jupyter
+    
+    echo "=== Space before main install ==="
+    df -h /tmp
+    
+    # Install main package
+    uv pip install --system --no-cache -e /jupyter
+    
+    echo "=== Space after main install ==="
+    df -h /tmp
+
+%environment
+    export PYTHONPATH=/jupyter
+
+%runscript
+    cd /jupyter
+    exec beaker dev watch --ip 0.0.0.0
