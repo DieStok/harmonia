@@ -1,0 +1,70 @@
+# =============================================================================
+# Harmonia Configuration (YAML format)
+# =============================================================================
+# This is an alternative to environment variables for more complex setups.
+# Copy to config.yaml and set HARMONIA_CONFIG=/path/to/config.yaml
+#
+# Note: Environment variables always override YAML values for API keys.
+
+# LLM Provider Settings
+llm:
+  # Provider: openai, ollama, openrouter, anthropic, azure, bedrock, gemini, groq
+  provider: openai
+
+  # Model name (provider-specific)
+  model: gpt-4o
+
+  # API key (prefer using environment variables for security)
+  # api_key: sk-...
+
+  # Custom base URL (for proxies or self-hosted models)
+  # base_url: http://localhost:11434
+
+  # Temperature (0.0 = deterministic, 1.0 = creative)
+  temperature: 0.0
+
+  # Max tokens for response
+  max_tokens: 4096
+
+  # Provider-specific extra settings
+  extra: {}
+
+# Paths
+prompts_dir: prompts
+
+# Debug mode
+debug: true
+
+# =============================================================================
+# Example Configurations for Different Providers
+# =============================================================================
+
+# --- OpenAI ---
+# llm:
+#   provider: openai
+#   model: gpt-4o
+#   temperature: 0.0
+
+# --- Ollama (local) ---
+# llm:
+#   provider: ollama
+#   model: llama3.1:70b
+#   base_url: http://localhost:11434
+
+# --- OpenRouter ---
+# llm:
+#   provider: openrouter
+#   model: anthropic/claude-3.5-sonnet
+#   temperature: 0.0
+
+# --- Anthropic ---
+# llm:
+#   provider: anthropic
+#   model: claude-3-5-sonnet-20241022
+#   temperature: 0.0
+
+# --- Groq (fast inference) ---
+# llm:
+#   provider: groq
+#   model: llama-3.1-70b-versatile
+#   temperature: 0.0

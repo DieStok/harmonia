@@ -1,58 +1,9 @@
 #!/bin/bash
-# # Configuration
-# HOSTNAME=$(hostname)
-# PORT=8100
-# TOKEN=89f73481102c46c0bc13b2998f9a4fce
+# =============================================================================
+# Harmonia Execution Script (Apptainer)
+# =============================================================================
 
-# echo ""
-# echo "=============================================="
-# echo "Starting Harmonia (Beaker Dev Mode)"
-# echo "=============================================="
-# echo ""
-# echo "📡 STEP 1: Set up SSH tunnel on your Mac"
-# echo "   Open Terminal and run:"
-# echo "   ssh -l dstoker hpcs05.op.umcutrecht.nl -D ${PORT}"
-# echo ""
-# echo "🦊 STEP 2: Configure FoxyProxy in Firefox"
-# echo "   1. Open a NEW Firefox window"
-# echo "   2. Click FoxyProxy icon in toolbar"
-# echo "   3. Ensure proxy is configured:"
-# echo "      - Type: SOCKS5 (or SOCKS4)"
-# echo "      - Hostname: localhost"
-# echo "      - Port: ${PORT}"
-# echo "   4. Enable/activate the proxy"
-# echo ""
-# echo "🌐 STEP 3: Access Harmonia"
-# echo "   In the Firefox window with FoxyProxy active:"
-# echo "   http://${HOSTNAME}:${PORT}/?token=${TOKEN}"
-# echo ""
-# echo "=============================================="
-# echo ""
-# echo "📚 Example Usage:"
-# echo "   See harmonization of dou.csv (as shown in paper):"
-# echo "   Paper: https://arxiv.org/pdf/2502.07132"
-# echo "   Demo:  https://www.youtube.com/watch?v=D25x0B_xs3c"
-# echo ""
-
-# # Run with beaker dev watch (keeps auto-reload)
-# # Note: We use apptainer exec to pass port argument
-# apptainer exec \
-# --bind .:/jupyter \
-# --pwd /jupyter \
-# --env DEBUG=1 \
-# --env JUPYTER_SERVER="http://localhost:${PORT}" \
-# --env JUPYTER_TOKEN=$TOKEN \
-# --env ENABLE_USER_PROMPT=true \
-# --env OPENAI_API_KEY="$OPENAI_API_KEY" \
-# --env ENABLE_CHECKPOINTS=true \
-# --env PYTHONPATH=/jupyter \
-# --env SSL_CERT_FILE= \
-# jupyter.sif \
-# beaker dev watch --ip 0.0.0.0 --port $PORT
-
-
-
-#!/bin/bash
+set -e
 
 # Configuration
 HOSTNAME=$(hostname)
@@ -75,10 +26,35 @@ if [ -z "$TOKEN" ]; then
     TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 fi
 
+# Read SSL_CERT_FILE from .env
+HOST_SSL_CERT=$(grep "^SSL_CERT_FILE=" .env | cut -d '=' -f2)
+
+# Read LLM configuration from .env for display
+LLM_PROVIDER=$(grep "^LLM_SERVICE_PROVIDER=" .env | cut -d '=' -f2)
+LLM_MODEL=$(grep "^LLM_SERVICE_MODEL=" .env | cut -d '=' -f2)
+
+# Set defaults if not specified
+LLM_PROVIDER=${LLM_PROVIDER:-openai}
+LLM_MODEL=${LLM_MODEL:-gpt-4o}
+
+# Validate SSL certificate path
+if [ -n "$HOST_SSL_CERT" ] && [ ! -f "$HOST_SSL_CERT" ]; then
+    echo "WARNING: SSL certificate not found at ${HOST_SSL_CERT}"
+    echo "         (specified in .env file)"
+    echo "         API calls may fail with SSL errors"
+    echo ""
+    # Clear the variable so we don't try to bind a non-existent file
+    HOST_SSL_CERT=""
+fi
+
 echo ""
 echo "=============================================="
 echo "Starting Harmonia (Beaker Dev Mode)"
 echo "=============================================="
+echo ""
+echo "🤖 LLM Configuration:"
+echo "   Provider: ${LLM_PROVIDER}"
+echo "   Model:    ${LLM_MODEL}"
 echo ""
 echo "📡 STEP 1: Set up SSH tunnel on your Mac"
 echo "   Open Terminal and run:"
@@ -108,14 +84,28 @@ echo "Features:"
 echo "  ✓ Auto-reload on code changes"
 echo "  ✓ Full Beaker AI agent capabilities"
 echo "  ✓ Harmonia data harmonization tools"
+echo "  ✓ Multi-provider LLM support (OpenAI, OpenRouter, Anthropic, Ollama, etc.)"
 echo ""
 
+if [ -n "$HOST_SSL_CERT" ]; then
+    echo "🔐 SSL Certificates: ${HOST_SSL_CERT}"
+    echo ""
+fi
+
+# Build apptainer command
+APPTAINER_CMD="apptainer exec"
+APPTAINER_CMD="$APPTAINER_CMD --bind .:/jupyter"
+APPTAINER_CMD="$APPTAINER_CMD --pwd /jupyter"
+
+# Add SSL cert binding if available
+if [ -n "$HOST_SSL_CERT" ]; then
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${HOST_SSL_CERT}:${HOST_SSL_CERT}:ro"
+fi
+
+APPTAINER_CMD="$APPTAINER_CMD --env-file .env"
+APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_SERVER=http://localhost:${PORT}"
+APPTAINER_CMD="$APPTAINER_CMD jupyter.sif"
+APPTAINER_CMD="$APPTAINER_CMD beaker dev watch --ip 0.0.0.0 --port $PORT"
+
 # Run with beaker dev watch (keeps auto-reload)
-# Use --env-file to load API keys from .env
-apptainer exec \
---bind .:/jupyter \
---pwd /jupyter \
---env-file .env \
---env JUPYTER_SERVER="http://localhost:${PORT}" \
-jupyter.sif \
-beaker dev watch --ip 0.0.0.0 --port $PORT
+eval $APPTAINER_CMD

@@ -1,0 +1,15 @@
+{# Tool description for match_values #}
+Returns the top 10 value matches between the values of the source and target columns.
+
+This is useful for evaluating value matches between a pair of columns (column mappings) returned by the match_schema function.
+
+Args:
+    dataset (str): The name of the dataset variable.
+    column_mapping (tuple): The column and target names for which to find value matches. Format: "source_column,target_column"
+    target (str): The target table or standard data vocabulary. Defaults to "gdc".
+    method (str): The method used for mapping. Defaults to "{{ default_method | default('tfidf') }}".
+
+Returns:
+    str: returns the value matches for the given column mapping
+
+Upon user's request, the output of match_values() can be fed to materialize_mapping() which materializes the final target using both schema and value mappings.

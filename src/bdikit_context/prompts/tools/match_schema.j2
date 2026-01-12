@@ -1,0 +1,14 @@
+{# Tool description for match_schema #}
+This function performs schema mapping between the source table and the given target schema.
+
+The target is either a DataFrame or a string representing a standard data vocabulary supported by the library. Currently, only the GDC (Genomic Data Commons) standard vocabulary is supported.
+
+Args:
+    dataset (str): The name of the dataset variable.
+    target (str): The target table or standard data vocabulary. Defaults to "gdc".
+    method (str): The method used for mapping. Defaults to "{{ default_method | default('ct_learning') }}".
+
+Returns:
+    str: returns the matched columns
+
+You should show the user the result after this function runs.

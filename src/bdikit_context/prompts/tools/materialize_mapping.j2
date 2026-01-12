@@ -1,0 +1,45 @@
+{# Tool description for materialize_mapping #}
+Materializes the final (harmonized) table after applying data transformations specified by the schema mapping and value mappings specifications.
+
+This function takes as input the source dataset and the mapping specifications (schema and value mappings) formatted as a MappingSpecLike dictionary object.
+
+The mapping specification can be:
+1. A DataFrame
+2. A list of dictionaries or DataFrames
+
+If it is a list of dictionaries, they must have:
+- `source`: The name of the source column
+- `target`: The name of the target column
+- `mapper` (optional): A ValueMapper instance or a Python function/lambda
+- `matches` (optional): List of tuples containing (source_value, target_value) pairs
+
+Example:
+```python
+mapping_spec = [
+    {
+        "source": "source_column1",
+        "target": "target_column1",
+    },
+    {
+        "source": "source_column2",
+        "target": "target_column2",
+        "mapper": lambda age: -age * 365.25,
+    },
+    {
+        "source": "source_column3",
+        "target": "target_column3",
+        "matches": [
+            ("source_value1", "target_value1"),
+            ("source_value2", "target_value2"),
+        ]
+    }
+]
+```
+
+Args:
+    dataset (str): The name of the dataset variable.
+    mapping_spec (MappingSpecLike): The column and value mapping specification.
+    output_file (str): The name of the output file. Defaults to "harmonized_table.csv".
+
+Returns:
+    str: returns the materialized target using both schema and value mappings
