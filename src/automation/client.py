@@ -276,6 +276,46 @@ class BeakerClient:
                 if msg.get("content", {}).get("execution_state") == "idle":
                     break
 
+    async def save_notebook(self, cells: list[dict], name: str = "experiment") -> dict:
+        """
+        Save/update notebook content on Beaker server.
+
+        Args:
+            cells: List of notebook cells
+            name: Notebook name
+
+        Returns:
+            Notebook info from server
+        """
+        notebook_content = {
+            "metadata": {
+                "kernelspec": {"name": "beaker_kernel", "display_name": "Beaker"},
+                "beaker": {"session_id": self.session_id},
+            },
+            "nbformat": 4,
+            "nbformat_minor": 5,
+            "cells": cells,
+        }
+
+        async with self.session.post(
+            f"{self.server_url}/notebook",
+            json={"content": notebook_content, "session": self.session_id, "name": name},
+        ) as resp:
+            if resp.status not in (200, 201):
+                text = await resp.text()
+                raise RuntimeError(f"Failed to save notebook: {resp.status} - {text}")
+            return await resp.json()
+
+    async def get_notebook(self, session_id: str = None) -> Optional[dict]:
+        """Retrieve notebook by session ID."""
+        session_id = session_id or self.session_id
+        async with self.session.get(
+            f"{self.server_url}/notebook?session={session_id}"
+        ) as resp:
+            if resp.status == 200:
+                return await resp.json()
+            return None
+
     async def send_message_stream(
         self, message: str, timeout: Optional[float] = None
     ) -> AsyncIterator[dict]:

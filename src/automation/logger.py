@@ -141,6 +141,52 @@ class TraceLogger:
 
         return output_path
 
+    def build_notebook_cells(self) -> list[dict]:
+        """Convert conversation trace to notebook cell format for Beaker UI."""
+        if self.trace is None:
+            return []
+
+        cells = []
+
+        # Header cell with experiment info
+        trace_dict = self.trace.to_dict()
+        cells.append({
+            "cell_type": "markdown",
+            "metadata": {},
+            "source": (
+                f"# {trace_dict['experiment'].get('name', 'Experiment')}\n\n"
+                f"**Description**: {trace_dict['experiment'].get('description', '')}\n"
+                f"**LLM**: {trace_dict['llm'].get('provider', '')}/{trace_dict['llm'].get('model', '')}\n"
+                f"**Started**: {trace_dict['timing'].get('start_time', '')}"
+            )
+        })
+
+        for turn in self.trace.turns:
+            # User message cell
+            cells.append({
+                "cell_type": "markdown",
+                "metadata": {"beaker_cell_type": "user_message"},
+                "source": f"**User (Turn {turn.turn}):**\n\n{turn.user_message}"
+            })
+
+            # Agent response cell
+            if turn.response_type == "code_cell":
+                cells.append({
+                    "cell_type": "code",
+                    "metadata": {"beaker_cell_type": "agent_code"},
+                    "source": turn.agent_response,
+                    "outputs": [],
+                    "execution_count": None,
+                })
+            else:
+                cells.append({
+                    "cell_type": "markdown",
+                    "metadata": {"beaker_cell_type": "agent_response"},
+                    "source": f"**Agent ({turn.response_type}):**\n\n{turn.agent_response}"
+                })
+
+        return cells
+
 
 class ConversationLogger:
     """Logger for simplified conversation output in Markdown format."""

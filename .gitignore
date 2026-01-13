@@ -4,3 +4,6 @@
 .env
 !.env.template
 *.sif
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/plans/improve_harmonia_code.md
+./plans/improve_harmonia_code.md
+plans/improve_harmonia_code.md

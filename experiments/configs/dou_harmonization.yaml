@@ -20,24 +20,24 @@ messages:
   - content: |
       Load the file dou.csv as a dataframe.
       Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
-    wait_seconds: 60
+    wait_seconds: 120  # Increased from 60 - allows time for initial model loading
 
   - content: |
       Please match this dataframe to the GDC schema using the embeddings method.
       Show me the top 3 matching columns for each source column.
-    wait_seconds: 120
+    wait_seconds: 180  # Increased from 120 - embeddings matching takes time
     decision_mode: auto_accept
 
   - content: |
       Now please also match the values for each column.
       For any values that don't have a direct match, suggest the closest alternative.
-    wait_seconds: 180
+    wait_seconds: 240  # Increased from 180 - value matching is complex
     decision_mode: auto_accept
 
   - content: |
       Materialize the mapping and show me the harmonized dataframe.
       Also show the mapping summary.
-    wait_seconds: 60
+    wait_seconds: 120  # Increased from 60 - final output generation
 
 output:
   base_dir: "./results"

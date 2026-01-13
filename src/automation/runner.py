@@ -49,6 +49,7 @@ class ExperimentRunner:
         # State
         self.current_turn = 0
         self.is_running = False
+        self.notebook_id: Optional[str] = None
 
     async def run(self, interactive: bool = False) -> Path:
         """
@@ -75,6 +76,14 @@ class ExperimentRunner:
             llm_provider=self.config.llm.provider,
             llm_model=self.config.llm.model,
         )
+
+        # Create initial notebook on server for UI visibility
+        try:
+            cells = self.trace_logger.build_notebook_cells()
+            notebook_info = await self.client.save_notebook(cells, name=self.config.name)
+            self.notebook_id = notebook_info.get("id")
+        except Exception as e:
+            print(f"  Warning: Could not create initial notebook: {e}")
 
         status = "completed"
         error_message = None
@@ -114,6 +123,19 @@ class ExperimentRunner:
         self.trace_logger.save()
         self.conversation_logger.save()
 
+        # Final notebook save with completion status
+        try:
+            cells = self.trace_logger.build_notebook_cells()
+            # Add completion cell
+            cells.append({
+                "cell_type": "markdown",
+                "metadata": {},
+                "source": f"---\n\n**Experiment {status}** in {self.trace_logger.trace.total_duration_seconds:.1f}s"
+            })
+            await self.client.save_notebook(cells, name=self.config.name)
+        except Exception as e:
+            print(f"  Warning: Could not save final notebook: {e}")
+
         self.is_running = False
         return self.output_dir
 
@@ -151,6 +173,13 @@ class ExperimentRunner:
         # Call callback if provided
         if self.on_turn_complete:
             self.on_turn_complete(self.current_turn, msg_config.content, response)
+
+        # Save updated notebook to server for real-time UI visibility
+        try:
+            cells = self.trace_logger.build_notebook_cells()
+            await self.client.save_notebook(cells, name=self.config.name)
+        except Exception:
+            pass  # Don't fail experiment if notebook save fails
 
         # Wait between turns
         if msg_config.wait_seconds > 0:
