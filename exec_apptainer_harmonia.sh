@@ -2,12 +2,38 @@
 # =============================================================================
 # Harmonia Execution Script (Apptainer)
 # =============================================================================
+#
+# Usage:
+#   ./exec_apptainer_harmonia.sh           # Default port 8100
+#   ./exec_apptainer_harmonia.sh 8101      # Custom port
+#   ./exec_apptainer_harmonia.sh --port 8101
+#
+# =============================================================================
 
 set -e
 
 # Configuration
 HOSTNAME=$(hostname)
+
+# Parse port argument (supports both positional and --port flag)
 PORT=8100
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --port|-p)
+            PORT="$2"
+            shift 2
+            ;;
+        [0-9]*)
+            PORT="$1"
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            echo "Usage: $0 [--port PORT] [PORT]"
+            exit 1
+            ;;
+    esac
+done
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then

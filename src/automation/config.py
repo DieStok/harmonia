@@ -1,0 +1,124 @@
+"""
+Configuration loading and validation for experiments.
+"""
+
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Optional
+import yaml
+
+
+@dataclass
+class LLMConfig:
+    """LLM configuration for an experiment."""
+    provider: str
+    model: str
+    temperature: float = 0.0
+
+
+@dataclass
+class MessageConfig:
+    """Configuration for a single message in the conversation."""
+    content: str
+    wait_seconds: int = 30
+    decision_mode: Optional[str] = None  # auto_accept, predefined, llm_decides
+
+
+@dataclass
+class OutputConfig:
+    """Output configuration for an experiment."""
+    base_dir: str = "./results"
+    save_artifacts: list[str] = field(default_factory=list)
+
+
+@dataclass
+class DecisionConfig:
+    """Configuration for handling agent decision points."""
+    default_mode: str = "auto_accept"
+    predefined_responses: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass
+class ExperimentConfig:
+    """Complete experiment configuration."""
+    name: str
+    description: str
+    llm: LLMConfig
+    messages: list[MessageConfig]
+    output: OutputConfig = field(default_factory=OutputConfig)
+    decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig":
+        """Create ExperimentConfig from dictionary."""
+        exp = data.get("experiment", {})
+        llm_data = data.get("llm", {})
+        messages_data = data.get("messages", [])
+        output_data = data.get("output", {})
+        decision_data = data.get("decision_handling", {})
+
+        llm = LLMConfig(
+            provider=llm_data.get("provider", "openai"),
+            model=llm_data.get("model", "gpt-4o"),
+            temperature=llm_data.get("temperature", 0.0),
+        )
+
+        messages = [
+            MessageConfig(
+                content=m.get("content", ""),
+                wait_seconds=m.get("wait_seconds", 30),
+                decision_mode=m.get("decision_mode"),
+            )
+            for m in messages_data
+        ]
+
+        output = OutputConfig(
+            base_dir=output_data.get("base_dir", "./results"),
+            save_artifacts=output_data.get("save_artifacts", []),
+        )
+
+        decision = DecisionConfig(
+            default_mode=decision_data.get("default_mode", "auto_accept"),
+            predefined_responses=decision_data.get("predefined_responses", {}),
+        )
+
+        return cls(
+            name=exp.get("name", "unnamed_experiment"),
+            description=exp.get("description", ""),
+            llm=llm,
+            messages=messages,
+            output=output,
+            decision_handling=decision,
+        )
+
+
+def load_config(config_path: str | Path) -> ExperimentConfig:
+    """Load experiment configuration from YAML file."""
+    path = Path(config_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Config file not found: {path}")
+
+    with open(path) as f:
+        data = yaml.safe_load(f)
+
+    return ExperimentConfig.from_dict(data)
+
+
+def load_conversation(conversation_path: str | Path) -> list[MessageConfig]:
+    """Load a reusable conversation script from YAML."""
+    path = Path(conversation_path)
+    if not path.exists():
+        raise FileNotFoundError(f"Conversation file not found: {path}")
+
+    with open(path) as f:
+        data = yaml.safe_load(f)
+
+    messages = data.get("messages", [])
+    return [
+        MessageConfig(
+            content=m.get("content", ""),
+            wait_seconds=m.get("wait_seconds", 30),
+            decision_mode=m.get("decision_mode"),
+        )
+        for m in messages
+    ]
