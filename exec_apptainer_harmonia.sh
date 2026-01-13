@@ -78,9 +78,30 @@ echo "=============================================="
 echo "Starting Harmonia (Beaker Dev Mode)"
 echo "=============================================="
 echo ""
-echo "🤖 LLM Configuration:"
-echo "   Provider: ${LLM_PROVIDER}"
-echo "   Model:    ${LLM_MODEL}"
+echo "🤖 LLM Configuration (from .env):"
+echo "   LLM_SERVICE_PROVIDER:     ${LLM_PROVIDER}"
+echo "   LLM_SERVICE_MODEL:        ${LLM_MODEL}"
+# Read additional LLM config from .env
+LLM_IMPORT_PATH=$(grep "^LLM_PROVIDER_IMPORT_PATH=" .env 2>/dev/null | cut -d '=' -f2)
+LLM_TEMPERATURE=$(grep "^LLM_TEMPERATURE=" .env 2>/dev/null | cut -d '=' -f2)
+LLM_MAX_TOKENS=$(grep "^LLM_MAX_TOKENS=" .env 2>/dev/null | cut -d '=' -f2)
+OPENROUTER_KEY=$(grep "^OPENROUTER_API_KEY=" .env 2>/dev/null | cut -d '=' -f2)
+OPENAI_KEY=$(grep "^OPENAI_API_KEY=" .env 2>/dev/null | cut -d '=' -f2)
+ANTHROPIC_KEY=$(grep "^ANTHROPIC_API_KEY=" .env 2>/dev/null | cut -d '=' -f2)
+echo "   LLM_PROVIDER_IMPORT_PATH: ${LLM_IMPORT_PATH:-auto-detected}"
+echo "   LLM_TEMPERATURE:          ${LLM_TEMPERATURE:-0.0}"
+echo "   LLM_MAX_TOKENS:           ${LLM_MAX_TOKENS:-4096}"
+echo ""
+echo "   API Keys configured:"
+if [ -n "$OPENROUTER_KEY" ] && [ "$OPENROUTER_KEY" != "your_openrouter_api_key_here" ]; then
+    echo "     OPENROUTER_API_KEY:     ${OPENROUTER_KEY:0:20}..."
+fi
+if [ -n "$OPENAI_KEY" ] && [ "$OPENAI_KEY" != "your_openai_api_key_here" ]; then
+    echo "     OPENAI_API_KEY:         ${OPENAI_KEY:0:20}..."
+fi
+if [ -n "$ANTHROPIC_KEY" ] && [ "$ANTHROPIC_KEY" != "your_anthropic_api_key_here" ]; then
+    echo "     ANTHROPIC_API_KEY:      ${ANTHROPIC_KEY:0:20}..."
+fi
 echo ""
 echo "📡 STEP 1: Set up SSH tunnel on your Mac"
 echo "   Open Terminal and run:"

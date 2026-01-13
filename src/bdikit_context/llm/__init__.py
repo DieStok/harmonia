@@ -44,22 +44,22 @@ def configure_llm_environment():
     config = get_config()
     llm = config.llm
 
-    # Set provider import path
+    # Set provider import path - use direct assignment to override beaker defaults
     import_path = PROVIDER_IMPORT_MAP.get(llm.provider.lower())
     if import_path:
-        os.environ.setdefault("LLM_PROVIDER_IMPORT_PATH", import_path)
+        os.environ["LLM_PROVIDER_IMPORT_PATH"] = import_path
 
-    # Set model name
-    os.environ.setdefault("LLM_SERVICE_MODEL", llm.model)
+    # Set model name - use direct assignment to override beaker defaults
+    os.environ["LLM_SERVICE_MODEL"] = llm.model
 
-    # Set API key if provided
+    # Set API key if provided - use direct assignment to override beaker defaults
     if llm.api_key:
-        os.environ.setdefault("LLM_SERVICE_TOKEN", llm.api_key)
+        os.environ["LLM_SERVICE_TOKEN"] = llm.api_key
 
         # Also set provider-specific env var for compatibility
         env_var = PROVIDER_API_KEY_ENV.get(llm.provider.lower())
         if env_var:
-            os.environ.setdefault(env_var, llm.api_key)
+            os.environ[env_var] = llm.api_key
 
     # Set base URL for custom endpoints (Ollama, proxies, etc.)
     if llm.base_url:

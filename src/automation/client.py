@@ -89,7 +89,8 @@ class BeakerClient:
 
         # No existing session, create one
         # First, get available contexts
-        async with self.session.get(f"{self.server_url}/api/contexts") as resp:
+        # Note: Beaker registers this at /contexts, not /api/contexts
+        async with self.session.get(f"{self.server_url}/contexts") as resp:
             if resp.status != 200:
                 raise ConnectionError(f"Failed to get contexts: {resp.status}")
             contexts = await resp.json()
