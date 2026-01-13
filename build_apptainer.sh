@@ -1,5 +1,6 @@
-# #!/bin/bash
+#!/bin/bash
 
+# OLD VERSION - commented out
 # echo "========== ENVIRONMENT DIAGNOSTICS =========="
 # echo "TMPDIR: $TMPDIR"
 # echo "SLURM_JOB_ID: $SLURM_JOB_ID"
@@ -48,7 +49,6 @@
 # # Clean up sandbox
 # rm -rf $SANDBOX_DIR
 
-#!/bin/bash
 # build_apptainer_diagnostic.sh
 # Comprehensive diagnostic build script with ACTUAL package size checking
 

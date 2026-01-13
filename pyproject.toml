@@ -7,14 +7,12 @@ name = "bdikit_context"
 dynamic = ["version"]
 description = ''
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = "MIT"
 keywords = []
 classifiers = [
   "Development Status :: 4 - Beta",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -22,7 +20,8 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "beaker_kernel~=1.6.2",
+  # Updated to 1.14+ for multi-provider LLM support (get_model, providers config)
+  "beaker_kernel>=1.14.0",
   "bdi-kit @ git+https://github.com/VIDA-NYU/bdi-kit.git@41f6c26e66064dd2aa6b436c023c98e4a96d1b5e",
   "jinja2>=3.0",
 ]
