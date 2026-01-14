@@ -1,0 +1,102 @@
+==============================================
+Harmonia Experiment (GPU): dou_harmonization_nemotron-3-nano
+==============================================
+
+Job ID: 45323916
+Node: n0108.manage.hpc
+Date: Wed Jan 14 10:30:30 CET 2026
+
+Using Beaker port: 8116
+
+Starting Ollama server...
+Waiting for Ollama to start...
+=========================================
+Starting Ollama Server
+=========================================
+Models dir:     /hpc/compgen/projects/ollama/ollama_run/analysis/dstoker/./ollama_models
+Data dir:       /home/cog/dstoker/.ollama
+Host:           0.0.0.0:11434
+HPC Node:       n0108.manage.hpc
+Idle timeout:   40 minutes
+=========================================
+✓ Server started (PID: 1325079)
+✓ Auto-shutdown after 40 minutes idle
+
+=========================================
+OLLAMA ENDPOINT (use this in your config)
+=========================================
+http://n0108:11434/v1
+=========================================
+
+You can now use ollama commands:
+  ollama help
+  ollama pull help
+  ollama pull gemma3
+  ollama list
+  ollama run gemma3
+
+To connect from your Python code:
+  export OLLAMA_URL='http://n0108:11434/v1'
+
+To stop: stop_ollama.sh
+
+Installed models:
+
+NAME                       ID              SIZE      MODIFIED       
+devstral-small-2:latest    24277f07f62d    15 GB     4 minutes ago     
+olmo-3:latest              b8d4c92ac9c1    4.5 GB    8 minutes ago     
+devstral:latest            9bd74193e939    14 GB     14 minutes ago    
+qwen3-coder:30b            06c1097efce0    18 GB     9 hours ago       
+nemotron-3-nano:30b        b725f1117407    24 GB     10 hours ago      
+gpt-oss:20b                17052f91a42e    13 GB     7 days ago        
+gemma3:latest              a2af6cc3eb7f    3.3 GB    7 days ago        
+
+Ollama endpoint: http://n0108.manage.hpc:11434
+
+Starting Beaker server on port 8116...
+LLM Provider: ollama
+LLM Model: nemotron-3-nano:30b
+Beaker Server PID: 1325172
+Waiting for Beaker server to start...
+  Waiting... (2/90 seconds)
+  Waiting... (4/90 seconds)
+  Waiting... (6/90 seconds)
+  Waiting... (8/90 seconds)
+  Waiting... (10/90 seconds)
+  Waiting... (12/90 seconds)
+  Waiting... (14/90 seconds)
+Beaker server is ready!
+
+Running experiment...
+Config: experiments/configs/dou_harmonization_nemotron-3-nano.yaml
+
+Loading config: experiments/configs/dou_harmonization_nemotron-3-nano.yaml
+  Experiment: dou_harmonization_nemotron-3-nano
+  LLM: ollama/nemotron-3-nano:30b
+  Messages: 4
+
+Connecting to Beaker server: http://localhost:8116
+  Warning: Could not set context 'bdikit_context': 404
+  Connected to kernel: efc87719-17dc-4efe-9e29-bb16c569550d
+
+Running experiment...
+  Warning: Could not create initial notebook: Failed to save notebook: 403 - <html><title>403: Forbidden</title><body>403: Forbidden</body></html>
+  ✓ Turn 1: llm_response (160.5s)
+  ✓ Turn 2: llm_response (111.4s)
+  ⚠ Turn 3: timeout (360.0s)
+  ⚠ Turn 4: timeout (600.0s)
+  Warning: Could not save final notebook: Failed to save notebook: 403 - <html><title>403: Forbidden</title><body>403: Forbidden</body></html>
+
+✓ Experiment complete!
+  Output directory: results/dou_harmonization_nemotron-3-nano_20260114_093147
+  - trace.json: Full execution trace
+  - conversation.md: Simplified conversation log
+
+==============================================
+Experiment completed successfully!
+==============================================
+
+Cleaning up...
+Stopping Ollama server...
+No running server found
+Done.

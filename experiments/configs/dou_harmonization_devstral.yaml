@@ -1,0 +1,53 @@
+# =============================================================================
+# Dou Dataset Harmonization Experiment - Devstral (Ollama)
+# =============================================================================
+# This experiment harmonizes the dou.csv dataset to the GDC schema,
+# demonstrating Harmonia's data harmonization capabilities.
+#
+# Based on the example from the Harmonia paper: https://arxiv.org/pdf/2502.07132
+# =============================================================================
+
+experiment:
+  name: "dou_harmonization_devstral"
+  description: "Harmonize dou.csv to GDC schema using embeddings method (Devstral 123B via Ollama)"
+
+llm:
+  provider: ollama
+  model: devstral:latest
+  base_url: http://localhost:11434
+  temperature: 0.0
+
+messages:
+  - content: |
+      Load the file dou.csv as a dataframe.
+      Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
+    wait_seconds: 180
+
+  - content: |
+      Please match this dataframe to the GDC schema using the embeddings method.
+      Show me the top 3 matching columns for each source column.
+    wait_seconds: 300
+    decision_mode: auto_accept
+
+  - content: |
+      Now please also match the values for each column.
+      For any values that don't have a direct match, suggest the closest alternative.
+    wait_seconds: 360
+    decision_mode: auto_accept
+
+  - content: |
+      Materialize the mapping and show me the harmonized dataframe.
+      Also show the mapping summary.
+    wait_seconds: 600
+
+output:
+  base_dir: "./results"
+  save_artifacts:
+    - "dou_harmonized.csv"
+    - "mapping_summary.json"
+
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    "choose.*alternative": "Please proceed with the recommended option"
+    "multiple.*options": "Pick the first option"

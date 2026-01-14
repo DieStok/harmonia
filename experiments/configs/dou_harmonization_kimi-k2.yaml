@@ -1,0 +1,53 @@
+# =============================================================================
+# Dou Dataset Harmonization Experiment - Kimi-K2
+# =============================================================================
+# This experiment harmonizes the dou.csv dataset to the GDC schema,
+# demonstrating Harmonia's data harmonization capabilities.
+#
+# Based on the example from the Harmonia paper: https://arxiv.org/pdf/2502.07132
+# =============================================================================
+
+experiment:
+  name: "dou_harmonization_kimi-k2"
+  description: "Harmonize dou.csv to GDC schema using embeddings method (Kimi-K2)"
+
+llm:
+  # Note: kimi-k2:free doesn't support tools. Using qwen instead.
+  provider: openrouter
+  model: qwen/qwen-2.5-72b-instruct:free
+  temperature: 0.0
+
+messages:
+  - content: |
+      Load the file dou.csv as a dataframe.
+      Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
+    wait_seconds: 120
+
+  - content: |
+      Please match this dataframe to the GDC schema using the embeddings method.
+      Show me the top 3 matching columns for each source column.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Now please also match the values for each column.
+      For any values that don't have a direct match, suggest the closest alternative.
+    wait_seconds: 240
+    decision_mode: auto_accept
+
+  - content: |
+      Materialize the mapping and show me the harmonized dataframe.
+      Also show the mapping summary.
+    wait_seconds: 600
+
+output:
+  base_dir: "./results"
+  save_artifacts:
+    - "dou_harmonized.csv"
+    - "mapping_summary.json"
+
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    "choose.*alternative": "Please proceed with the recommended option"
+    "multiple.*options": "Pick the first option"

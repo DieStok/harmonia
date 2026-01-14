@@ -12,13 +12,13 @@
 #   python generate_jobs.py --config experiments/configs/dou_harmonization.yaml
 # =============================================================================
 
-#SBATCH --job-name=harmonia_{{experiment_name}}
-#SBATCH --output=logs/{{experiment_name}}_%j.out
-#SBATCH --error=logs/{{experiment_name}}_%j.err
-#SBATCH --time={{time_limit}}
-#SBATCH --mem={{memory}}
-#SBATCH --cpus-per-task={{cpus}}
-#SBATCH --gres=tmpspace:{{tmpspace}}G
+#SBATCH --job-name=harmonia_dou_harmonization
+#SBATCH --output=logs/dou_harmonization_%j.out
+#SBATCH --error=logs/dou_harmonization_%j.err
+#SBATCH --time=02:00:00
+#SBATCH --mem=20G
+#SBATCH --cpus-per-task=2
+#SBATCH --gres=tmpspace:1G
 
 # =============================================================================
 # Environment Setup
@@ -27,7 +27,7 @@
 set -e
 
 echo "=============================================="
-echo "Harmonia Experiment: {{experiment_name}}"
+echo "Harmonia Experiment: dou_harmonization"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
@@ -36,7 +36,7 @@ echo "Date: $(date)"
 echo ""
 
 # Change to project directory
-cd {{project_dir}}
+cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia
 
 # Dynamic port based on job ID to avoid conflicts
 PORT=$((8100 + (SLURM_JOB_ID % 100)))
@@ -51,22 +51,21 @@ mkdir -p logs
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: {{llm_provider}}"
-echo "LLM Model: {{llm_model}}"
+echo "LLM Provider: openrouter"
+echo "LLM Model: xiaomi/mimo-v2-flash:free"
 
-# Install bdikit_context package and start server
+# Start server in background
 # Note: --env flags override values from --env-file
-# The pip install registers the bdikit_context with Beaker's context system
 apptainer exec \
     --bind .:/jupyter \
     --pwd /jupyter \
-    {{ssl_bind}} \
-    --env-file {{env_file}} \
+    --bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro \
+    --env-file .env \
     --env JUPYTER_SERVER=http://localhost:$PORT \
-    --env LLM_SERVICE_PROVIDER={{llm_provider}} \
-    --env LLM_SERVICE_MODEL={{llm_model}} \
+    --env LLM_SERVICE_PROVIDER=openrouter \
+    --env LLM_SERVICE_MODEL=xiaomi/mimo-v2-flash:free \
     jupyter.sif \
-    bash -c "pip install -q -e /jupyter 2>/dev/null; beaker dev watch --ip 0.0.0.0 --port $PORT" &
+    beaker dev watch --ip 0.0.0.0 --port $PORT &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
@@ -108,18 +107,18 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: {{config_path}}"
+echo "Config: experiments/configs/dou_harmonization_mimo-v2-flash.yaml"
 echo ""
 
 # Get token from env file
-TOKEN=$(grep "^JUPYTER_TOKEN=" {{env_file}} | cut -d '=' -f2)
+TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config {{config_path}} \
+    --config experiments/configs/dou_harmonization_mimo-v2-flash.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
-    --timeout {{timeout}}
+    --timeout 300
 
 EXIT_CODE=$?
 

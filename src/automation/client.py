@@ -64,7 +64,7 @@ class BeakerClient:
             )
 
         # Get or create a session with kernel
-        await self._get_or_create_session()
+        selected_context = await self._get_or_create_session()
 
         # Connect WebSocket to kernel
         ws_url = self._get_websocket_url()
@@ -74,8 +74,15 @@ class BeakerClient:
         )
         self._connected = True
 
-    async def _get_or_create_session(self) -> None:
-        """Get existing session or create new one."""
+        # Set context via execute_request with magic command after WebSocket connection
+        if selected_context:
+            await self._set_context_magic(selected_context)
+
+    async def _get_or_create_session(self, context_name: str = None) -> Optional[str]:
+        """Get existing session or create new one.
+
+        Returns the context slug to set after WebSocket connection.
+        """
         # List existing sessions
         async with self.session.get(f"{self.server_url}/api/sessions") as resp:
             if resp.status == 200:
@@ -85,27 +92,14 @@ class BeakerClient:
                     session = sessions[0]
                     self.session_id = session["id"]
                     self.kernel_id = session["kernel"]["id"]
-                    return
+                    # Still return context to set it via WebSocket
+                    return await self._find_context(context_name)
 
         # No existing session, create one
-        # First, get available contexts
-        # Note: Beaker registers this at /contexts, not /api/contexts
-        async with self.session.get(f"{self.server_url}/contexts") as resp:
-            if resp.status != 200:
-                raise ConnectionError(f"Failed to get contexts: {resp.status}")
-            contexts = await resp.json()
+        selected_context = await self._find_context(context_name)
 
-        # Find the bdikit context
-        context_name = None
-        for ctx in contexts:
-            if "bdikit" in ctx.lower():
-                context_name = ctx
-                break
-
-        if not context_name and contexts:
-            context_name = contexts[0]
-
-        # Create session with context
+        # Create session - use standard Jupyter API with kernel name
+        # The beaker_kernel will load context via set_context message
         session_data = {
             "name": "automation_session",
             "path": "automation",
@@ -113,35 +107,141 @@ class BeakerClient:
             "kernel": {"name": "beaker_kernel"},
         }
 
-        if context_name:
-            # Use the context-aware session creation endpoint
-            session_data["context"] = {"slug": context_name}
-            async with self.session.post(
-                f"{self.server_url}/api/sessions/create-with-context",
-                json=session_data,
-            ) as resp:
-                if resp.status not in (200, 201):
-                    # Fall back to regular session creation
-                    async with self.session.post(
-                        f"{self.server_url}/api/sessions",
-                        json=session_data,
-                    ) as resp2:
-                        if resp2.status not in (200, 201):
-                            raise ConnectionError(f"Failed to create session: {resp2.status}")
-                        session = await resp2.json()
-                else:
-                    session = await resp.json()
-        else:
-            async with self.session.post(
-                f"{self.server_url}/api/sessions",
-                json=session_data,
-            ) as resp:
-                if resp.status not in (200, 201):
-                    raise ConnectionError(f"Failed to create session: {resp.status}")
-                session = await resp.json()
+        # Create session via standard Jupyter API
+        async with self.session.post(
+            f"{self.server_url}/api/sessions",
+            json=session_data,
+        ) as resp:
+            if resp.status not in (200, 201):
+                raise ConnectionError(f"Failed to create session: {resp.status}")
+            session = await resp.json()
 
         self.session_id = session["id"]
         self.kernel_id = session["kernel"]["id"]
+
+        return selected_context
+
+    async def _find_context(self, context_name: str = None) -> Optional[str]:
+        """Find the best context to use (prefer bdikit_context)."""
+        # Get available contexts from Beaker
+        async with self.session.get(f"{self.server_url}/contexts") as resp:
+            if resp.status != 200:
+                print(f"  Warning: Failed to get contexts: {resp.status}")
+                return None
+            contexts = await resp.json()
+
+        # Find the bdikit context (required for harmonization tools)
+        selected_context = context_name
+        if not selected_context:
+            for ctx in contexts:
+                if "bdikit" in ctx.lower():
+                    selected_context = ctx
+                    break
+            # Fall back to first context if bdikit not found
+            if not selected_context and contexts:
+                selected_context = contexts[0]
+
+        return selected_context
+
+    async def _set_context_magic(self, context_slug: str) -> None:
+        """Set the Beaker context via execute_request with magic command.
+
+        This enables bdi-kit tools and harmonization functions.
+        Uses the %set_context magic command format.
+        """
+        if not self.ws or self.ws.closed:
+            print(f"  Warning: WebSocket not connected, cannot set context '{context_slug}'")
+            return
+
+        # Format: %set_context {context_slug} {language} {context_config (json)}
+        magic_code = f"%set_context {context_slug} python3 {{}}"
+
+        # Send execute_request message
+        msg = self._make_message("execute_request", {
+            "code": magic_code,
+            "silent": False,
+            "store_history": False,
+            "user_expressions": {},
+            "allow_stdin": False,
+            "stop_on_error": True,
+        })
+        msg_id = msg["header"]["msg_id"]
+
+        try:
+            await self.ws.send_json(msg)
+
+            # Wait for execution to complete
+            end_time = asyncio.get_event_loop().time() + 30  # 30s timeout
+            while asyncio.get_event_loop().time() < end_time:
+                try:
+                    response = await asyncio.wait_for(self.ws.receive_json(), timeout=5.0)
+                    parent = response.get("parent_header", {})
+                    if parent.get("msg_id") == msg_id:
+                        msg_type = response.get("msg_type", "")
+                        if msg_type == "status":
+                            state = response.get("content", {}).get("execution_state")
+                            if state == "idle":
+                                print(f"  Context '{context_slug}' set successfully")
+                                return
+                        elif msg_type == "error":
+                            error = response.get("content", {}).get("evalue", "Unknown error")
+                            print(f"  Warning: Error setting context '{context_slug}': {error}")
+                            return
+                        elif msg_type == "stream":
+                            # Log stdout/stderr from context setting
+                            text = response.get("content", {}).get("text", "")
+                            if text:
+                                print(f"  {text.strip()}")
+                except asyncio.TimeoutError:
+                    continue
+
+            print(f"  Warning: Timeout setting context '{context_slug}'")
+        except Exception as e:
+            print(f"  Warning: Failed to set context '{context_slug}': {e}")
+
+    async def _set_context_ws(self, context_slug: str) -> None:
+        """Set the Beaker context via WebSocket message.
+
+        This enables bdi-kit tools and harmonization functions.
+        Must be called after WebSocket is connected.
+        """
+        if not self.ws or self.ws.closed:
+            print(f"  Warning: WebSocket not connected, cannot set context '{context_slug}'")
+            return
+
+        # Send set_context message via Jupyter protocol
+        msg = self._make_message("set_context", {
+            "context": context_slug,
+            "payload": {}
+        })
+        msg_id = msg["header"]["msg_id"]
+
+        try:
+            await self.ws.send_json(msg)
+
+            # Wait for context to be set (look for status=idle or context_set confirmation)
+            end_time = asyncio.get_event_loop().time() + 30  # 30s timeout
+            while asyncio.get_event_loop().time() < end_time:
+                try:
+                    response = await asyncio.wait_for(self.ws.receive_json(), timeout=5.0)
+                    parent = response.get("parent_header", {})
+                    if parent.get("msg_id") == msg_id:
+                        msg_type = response.get("msg_type", "")
+                        if msg_type == "status":
+                            state = response.get("content", {}).get("execution_state")
+                            if state == "idle":
+                                print(f"  Context '{context_slug}' set successfully")
+                                return
+                        elif msg_type == "error":
+                            error = response.get("content", {}).get("evalue", "Unknown error")
+                            print(f"  Warning: Error setting context '{context_slug}': {error}")
+                            return
+                except asyncio.TimeoutError:
+                    continue
+
+            print(f"  Warning: Timeout setting context '{context_slug}'")
+        except Exception as e:
+            print(f"  Warning: Failed to set context '{context_slug}': {e}")
 
     def _get_websocket_url(self) -> str:
         """Get WebSocket URL for kernel connection."""
@@ -276,6 +376,16 @@ class BeakerClient:
                 if msg.get("content", {}).get("execution_state") == "idle":
                     break
 
+    async def _get_xsrf_cookie(self) -> Optional[str]:
+        """Fetch XSRF cookie from server for POST requests."""
+        try:
+            async with self.session.get(f"{self.server_url}/") as resp:
+                if "_xsrf" in resp.cookies:
+                    return resp.cookies["_xsrf"].value
+        except Exception:
+            pass
+        return None
+
     async def save_notebook(self, cells: list[dict], name: str = "experiment") -> dict:
         """
         Save/update notebook content on Beaker server.
@@ -297,9 +407,18 @@ class BeakerClient:
             "cells": cells,
         }
 
+        # Get XSRF cookie and include in headers
+        xsrf = await self._get_xsrf_cookie()
+        headers = {}
+        if xsrf:
+            headers["X-XSRFToken"] = xsrf
+
+        # Include token in URL and XSRF token in header
+        url = f"{self.server_url}/notebook?token={self.token}"
         async with self.session.post(
-            f"{self.server_url}/notebook",
+            url,
             json={"content": notebook_content, "session": self.session_id, "name": name},
+            headers=headers,
         ) as resp:
             if resp.status not in (200, 201):
                 text = await resp.text()
@@ -309,9 +428,8 @@ class BeakerClient:
     async def get_notebook(self, session_id: str = None) -> Optional[dict]:
         """Retrieve notebook by session ID."""
         session_id = session_id or self.session_id
-        async with self.session.get(
-            f"{self.server_url}/notebook?session={session_id}"
-        ) as resp:
+        url = f"{self.server_url}/notebook?session={session_id}&token={self.token}"
+        async with self.session.get(url) as resp:
             if resp.status == 200:
                 return await resp.json()
             return None

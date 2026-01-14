@@ -1,0 +1,97 @@
+WARNING: Ignored environment file variable LLM_SERVICE_MODEL: override from --env
+WARNING: Ignored environment file variable LLM_SERVICE_PROVIDER: override from --env
+[I 2026-01-14 10:30:56.943 BeakerServerApp] Extension package panel.io.jupyter_server_extension took 3.5518s to import
+[I 2026-01-14 10:30:56.952 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully linked.
+[I 2026-01-14 10:30:56.952 BeakerServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-01-14 10:30:56.959 BeakerServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-01-14 10:30:56.967 BeakerServerApp] jupyterlab | extension was successfully linked.
+[I 2026-01-14 10:30:58.088 BeakerServerApp] notebook_shim | extension was successfully linked.
+[I 2026-01-14 10:30:58.088 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-01-14 10:30:58.144 BeakerServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-01-14 10:30:58.153 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully loaded.
+[I 2026-01-14 10:30:58.157 BeakerServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-01-14 10:30:58.159 BeakerServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-01-14 10:30:58.164 LabApp] JupyterLab extension loaded from /usr/local/lib/python3.10/site-packages/jupyterlab
+[I 2026-01-14 10:30:58.164 LabApp] JupyterLab application directory is /usr/local/share/jupyter/lab
+[I 2026-01-14 10:30:58.165 LabApp] Extension Manager is 'pypi'.
+[I 2026-01-14 10:30:58.296 BeakerServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-01-14 10:30:58.297 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-01-14 10:30:58.301 BeakerServerApp] Serving notebooks from local directory: /jupyter
+[I 2026-01-14 10:30:58.301 BeakerServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-01-14 10:30:58.301 BeakerServerApp]     http://0.0.0.0:8114/
+[I 2026-01-14 10:30:58.301 BeakerServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-01-14 10:30:58.363 BeakerServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[I 2026-01-14 10:31:01.275 BeakerServerApp] Kernel started: 144a0b21-fcd3-40d3-b579-2b92a6ff5f15
+[W 2026-01-14 10:31:01.352 BeakerServerApp] 404 POST /contexts/bdikit_context/sessions/ca33eee1-27dc-4e73-bb00-39a5a2a9c810?token=[secret] (9651c122b4744b4eac2b06c9e1ceae33@127.0.0.1) 69.15ms referer=None
+[W 2026-01-14 10:31:01.360 BeakerServerApp] No session ID specified
+[I 2026-01-14 10:31:05.799 BeakerServerApp] Kernel started: bb6a91dd-d464-401e-8ea5-7a826192dd81
+Context has no workflows: disabling tools.
+[I 2026-01-14 10:31:08.517 BeakerServerApp] Adapting from protocol version 5.3 (kernel 144a0b21-fcd3-40d3-b579-2b92a6ff5f15) to 5.4 (client).
+[I 2026-01-14 10:31:08.520 BeakerServerApp] Connecting to kernel 144a0b21-fcd3-40d3-b579-2b92a6ff5f15.
+[W 2026-01-14 10:31:08.522 BeakerServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[W 2026-01-14 10:31:08.529 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:31:08.530 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.13ms referer=None
+Error: KeyError "None of [Index(['sample_type', 'gender', 'sample_site', 'diagnosis'], dtype='object')] are in the [columns]"
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mKeyError[0m                                  Traceback (most recent call last)
+Cell [0;32mIn[1], line 7[0m
+[1;32m      4[0m df [38;5;241m=[39m pd[38;5;241m.[39mread_csv([38;5;124m'[39m[38;5;124mdou.csv[39m[38;5;124m'[39m)
+[1;32m      6[0m [38;5;66;03m# Subset to only the specified columns[39;00m
+[0;32m----> 7[0m subset_df [38;5;241m=[39m [43mdf[49m[43m[[49m[43m[[49m[38;5;124;43m'[39;49m[38;5;124;43msample_type[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43mgender[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43msample_site[39;49m[38;5;124;43m'[39;49m[43m,[49m[43m [49m[38;5;124;43m'[39;49m[38;5;124;43mdiagnosis[39;49m[38;5;124;43m'[39;49m[43m][49m[43m][49m
+[1;32m      9[0m [38;5;66;03m# Display the first few rows to verify[39;00m
+[1;32m     10[0m [38;5;28mprint[39m([38;5;124m"[39m[38;5;124mOriginal dataframe shape:[39m[38;5;124m"[39m, df[38;5;241m.[39mshape)
+
+File [0;32m/usr/local/lib/python3.10/site-packages/pandas/core/frame.py:3899[0m, in [0;36mDataFrame.__getitem__[0;34m(self, key)[0m
+[1;32m   3897[0m     [38;5;28;01mif[39;00m is_iterator(key):
+[1;32m   3898[0m         key [38;5;241m=[39m [38;5;28mlist[39m(key)
+[0;32m-> 3899[0m     indexer [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mcolumns[49m[38;5;241;43m.[39;49m[43m_get_indexer_strict[49m[43m([49m[43mkey[49m[43m,[49m[43m [49m[38;5;124;43m"[39;49m[38;5;124;43mcolumns[39;49m[38;5;124;43m"[39;49m[43m)[49m[[38;5;241m1[39m]
+[1;32m   3901[0m [38;5;66;03m# take() does not accept boolean indexers[39;00m
+[1;32m   3902[0m [38;5;28;01mif[39;00m [38;5;28mgetattr[39m(indexer, [38;5;124m"[39m[38;5;124mdtype[39m[38;5;124m"[39m, [38;5;28;01mNone[39;00m) [38;5;241m==[39m [38;5;28mbool[39m:
+
+File [0;32m/usr/local/lib/python3.10/site-packages/pandas/core/indexes/base.py:6115[0m, in [0;36mIndex._get_indexer_strict[0;34m(self, key, axis_name)[0m
+[1;32m   6112[0m [38;5;28;01melse[39;00m:
+[1;32m   6113[0m     keyarr, indexer, new_indexer [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39m_reindex_non_unique(keyarr)
+[0;32m-> 6115[0m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43m_raise_if_missing[49m[43m([49m[43mkeyarr[49m[43m,[49m[43m [49m[43mindexer[49m[43m,[49m[43m [49m[43maxis_name[49m[43m)[49m
+[1;32m   6117[0m keyarr [38;5;241m=[39m [38;5;28mself[39m[38;5;241m.[39mtake(indexer)
+[1;32m   6118[0m [38;5;28;01mif[39;00m [38;5;28misinstance[39m(key, Index):
+[1;32m   6119[0m     [38;5;66;03m# GH 42790 - Preserve name from an Index[39;00m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/pandas/core/indexes/base.py:6176[0m, in [0;36mIndex._raise_if_missing[0;34m(self, key, indexer, axis_name)[0m
+[1;32m   6174[0m     [38;5;28;01mif[39;00m use_interval_msg:
+[1;32m   6175[0m         key [38;5;241m=[39m [38;5;28mlist[39m(key)
+[0;32m-> 6176[0m     [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m([38;5;124mf[39m[38;5;124m"[39m[38;5;124mNone of [[39m[38;5;132;01m{[39;00mkey[38;5;132;01m}[39;00m[38;5;124m] are in the [[39m[38;5;132;01m{[39;00maxis_name[38;5;132;01m}[39;00m[38;5;124m][39m[38;5;124m"[39m)
+[1;32m   6178[0m not_found [38;5;241m=[39m [38;5;28mlist[39m(ensure_index(key)[missing_mask[38;5;241m.[39mnonzero()[[38;5;241m0[39m]][38;5;241m.[39munique())
+[1;32m   6179[0m [38;5;28;01mraise[39;00m [38;5;167;01mKeyError[39;00m([38;5;124mf[39m[38;5;124m"[39m[38;5;132;01m{[39;00mnot_found[38;5;132;01m}[39;00m[38;5;124m not in index[39m[38;5;124m"[39m)
+
+[0;31mKeyError[0m: "None of [Index(['sample_type', 'gender', 'sample_site', 'diagnosis'], dtype='object')] are in the [columns]"
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('KeyError', '"None of [Index([\'sample_type\', \'gender\', \'sample_site\', \'diagnosis\'], dtype=\'object\')] are in the [columns]"', ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mKeyError\x1b[0m                                  Traceback (most recent call last)', 'Cell \x1b[0;32mIn[1], line 7\x1b[0m\n\x1b[1;32m      4\x1b[0m df \x1b[38;5;241m=\x1b[39m pd\x1b[38;5;241m.\x1b[39mread_csv(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mdou.csv\x1b[39m\x1b[38;5;124m\'\x1b[39m)\n\x1b[1;32m      6\x1b[0m \x1b[38;5;66;03m# Subset to only the specified columns\x1b[39;00m\n\x1b[0;32m----> 7\x1b[0m subset_df \x1b[38;5;241m=\x1b[39m \x1b[43mdf\x1b[49m\x1b[43m[\x1b[49m\x1b[43m[\x1b[49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[38;5;124;43msample_type\x1b[39;49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[38;5;124;43mgender\x1b[39;49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[38;5;124;43msample_site\x1b[39;49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[38;5;124;43mdiagnosis\x1b[39;49m\x1b[38;5;124;43m\'\x1b[39;49m\x1b[43m]\x1b[49m\x1b[43m]\x1b[49m\n\x1b[1;32m      9\x1b[0m \x1b[38;5;66;03m# Display the first few rows to verify\x1b[39;00m\n\x1b[1;32m     10\x1b[0m \x1b[38;5;28mprint\x1b[39m(\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mOriginal dataframe shape:\x1b[39m\x1b[38;5;124m"\x1b[39m, df\x1b[38;5;241m.\x1b[39mshape)\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/pandas/core/frame.py:3899\x1b[0m, in \x1b[0;36mDataFrame.__getitem__\x1b[0;34m(self, key)\x1b[0m\n\x1b[1;32m   3897\x1b[0m     \x1b[38;5;28;01mif\x1b[39;00m is_iterator(key):\n\x1b[1;32m   3898\x1b[0m         key \x1b[38;5;241m=\x1b[39m \x1b[38;5;28mlist\x1b[39m(key)\n\x1b[0;32m-> 3899\x1b[0m     indexer \x1b[38;5;241m=\x1b[39m \x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mcolumns\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43m_get_indexer_strict\x1b[49m\x1b[43m(\x1b[49m\x1b[43mkey\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mcolumns\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m[\x1b[38;5;241m1\x1b[39m]\n\x1b[1;32m   3901\x1b[0m \x1b[38;5;66;03m# take() does not accept boolean indexers\x1b[39;00m\n\x1b[1;32m   3902\x1b[0m \x1b[38;5;28;01mif\x1b[39;00m \x1b[38;5;28mgetattr\x1b[39m(indexer, \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mdtype\x1b[39m\x1b[38;5;124m"\x1b[39m, \x1b[38;5;28;01mNone\x1b[39;00m) \x1b[38;5;241m==\x1b[39m \x1b[38;5;28mbool\x1b[39m:\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/pandas/core/indexes/base.py:6115\x1b[0m, in \x1b[0;36mIndex._get_indexer_strict\x1b[0;34m(self, key, axis_name)\x1b[0m\n\x1b[1;32m   6112\x1b[0m \x1b[38;5;28;01melse\x1b[39;00m:\n\x1b[1;32m   6113\x1b[0m     keyarr, indexer, new_indexer \x1b[38;5;241m=\x1b[39m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39m_reindex_non_unique(keyarr)\n\x1b[0;32m-> 6115\x1b[0m \x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43m_raise_if_missing\x1b[49m\x1b[43m(\x1b[49m\x1b[43mkeyarr\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mindexer\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43maxis_name\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m   6117\x1b[0m keyarr \x1b[38;5;241m=\x1b[39m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mtake(indexer)\n\x1b[1;32m   6118\x1b[0m \x1b[38;5;28;01mif\x1b[39;00m \x1b[38;5;28misinstance\x1b[39m(key, Index):\n\x1b[1;32m   6119\x1b[0m     \x1b[38;5;66;03m# GH 42790 - Preserve name from an Index\x1b[39;00m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/pandas/core/indexes/base.py:6176\x1b[0m, in \x1b[0;36mIndex._raise_if_missing\x1b[0;34m(self, key, indexer, axis_name)\x1b[0m\n\x1b[1;32m   6174\x1b[0m     \x1b[38;5;28;01mif\x1b[39;00m use_interval_msg:\n\x1b[1;32m   6175\x1b[0m         key \x1b[38;5;241m=\x1b[39m \x1b[38;5;28mlist\x1b[39m(key)\n\x1b[0;32m-> 6176\x1b[0m     \x1b[38;5;28;01mraise\x1b[39;00m \x1b[38;5;167;01mKeyError\x1b[39;00m(\x1b[38;5;124mf\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mNone of [\x1b[39m\x1b[38;5;132;01m{\x1b[39;00mkey\x1b[38;5;132;01m}\x1b[39;00m\x1b[38;5;124m] are in the [\x1b[39m\x1b[38;5;132;01m{\x1b[39;00maxis_name\x1b[38;5;132;01m}\x1b[39;00m\x1b[38;5;124m]\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m   6178\x1b[0m not_found \x1b[38;5;241m=\x1b[39m \x1b[38;5;28mlist\x1b[39m(ensure_index(key)[missing_mask\x1b[38;5;241m.\x1b[39mnonzero()[\x1b[38;5;241m0\x1b[39m]]\x1b[38;5;241m.\x1b[39munique())\n\x1b[1;32m   6179\x1b[0m \x1b[38;5;28;01mraise\x1b[39;00m \x1b[38;5;167;01mKeyError\x1b[39;00m(\x1b[38;5;124mf\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;132;01m{\x1b[39;00mnot_found\x1b[38;5;132;01m}\x1b[39;00m\x1b[38;5;124m not in index\x1b[39m\x1b[38;5;124m"\x1b[39m)\n', '\x1b[0;31mKeyError\x1b[0m: "None of [Index([\'sample_type\', \'gender\', \'sample_site\', \'diagnosis\'], dtype=\'object\')] are in the [columns]"'])
+/usr/local/lib/python3.10/asyncio/events.py:80: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  self._context.run(self._callback, *self._args)
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:283: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  records=[{
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:617: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  await self.send_chat_history(message.header)
+OpenRouter context size unknown for model 'z-ai/glm-4.5-air:free' (this implies model is not officially listed in archytas/models/openrouter_models.py, i.e. consider regenerating the file with `create_models_types_file()`). Using default context size: 200000.
+[W 2026-01-14 10:32:24.293 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:32:24.294 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.26ms referer=None
+[W 2026-01-14 10:32:36.837 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:32:36.838 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.58ms referer=None
+[W 2026-01-14 10:32:52.642 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:32:52.643 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.24ms referer=None
+[W 2026-01-14 10:33:09.374 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:33:09.375 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.22ms referer=None
+[W 2026-01-14 10:33:10.404 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:33:10.404 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.33ms referer=None
+[I 2026-01-14 10:33:10.406 BeakerServerApp] Starting buffering for 144a0b21-fcd3-40d3-b579-2b92a6ff5f15:07642c60-91bd5546bf3dec855b7034de
+INFO:    Terminating squashfuse_ll after timeout
+INFO:    Timeouts can be caused by a running background process

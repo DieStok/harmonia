@@ -1,5 +1,5 @@
 # =============================================================================
-# Dou Dataset Harmonization Experiment
+# Dou Dataset Harmonization Experiment - GLM-4.5-Air
 # =============================================================================
 # This experiment harmonizes the dou.csv dataset to the GDC schema,
 # demonstrating Harmonia's data harmonization capabilities.
@@ -8,36 +8,36 @@
 # =============================================================================
 
 experiment:
-  name: "dou_harmonization"
-  description: "Harmonize dou.csv to GDC schema using embeddings method"
+  name: "dou_harmonization_glm-4.5-air"
+  description: "Harmonize dou.csv to GDC schema using embeddings method (GLM-4.5-Air)"
 
 llm:
   provider: openrouter
-  model: xiaomi/mimo-v2-flash:free
+  model: z-ai/glm-4.5-air:free
   temperature: 0.0
 
 messages:
   - content: |
       Load the file dou.csv as a dataframe.
       Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
-    wait_seconds: 120  # Increased from 60 - allows time for initial model loading
+    wait_seconds: 120
 
   - content: |
       Please match this dataframe to the GDC schema using the embeddings method.
       Show me the top 3 matching columns for each source column.
-    wait_seconds: 180  # Increased from 120 - embeddings matching takes time
+    wait_seconds: 180
     decision_mode: auto_accept
 
   - content: |
       Now please also match the values for each column.
       For any values that don't have a direct match, suggest the closest alternative.
-    wait_seconds: 240  # Increased from 180 - value matching is complex
+    wait_seconds: 240
     decision_mode: auto_accept
 
   - content: |
       Materialize the mapping and show me the harmonized dataframe.
       Also show the mapping summary.
-    wait_seconds: 120  # Increased from 60 - final output generation
+    wait_seconds: 600
 
 output:
   base_dir: "./results"

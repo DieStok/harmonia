@@ -1,0 +1,329 @@
+WARNING: Ignored environment file variable LLM_SERVICE_MODEL: override from --env
+WARNING: Ignored environment file variable LLM_SERVICE_PROVIDER: override from --env
+[I 2026-01-14 10:31:12.536 BeakerServerApp] Extension package panel.io.jupyter_server_extension took 1.7543s to import
+[I 2026-01-14 10:31:12.541 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully linked.
+[I 2026-01-14 10:31:12.541 BeakerServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-01-14 10:31:12.544 BeakerServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-01-14 10:31:12.548 BeakerServerApp] jupyterlab | extension was successfully linked.
+[I 2026-01-14 10:31:13.193 BeakerServerApp] notebook_shim | extension was successfully linked.
+[I 2026-01-14 10:31:13.194 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-01-14 10:31:13.227 BeakerServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-01-14 10:31:13.233 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully loaded.
+[I 2026-01-14 10:31:13.234 BeakerServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-01-14 10:31:13.236 BeakerServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-01-14 10:31:13.238 LabApp] JupyterLab extension loaded from /usr/local/lib/python3.10/site-packages/jupyterlab
+[I 2026-01-14 10:31:13.238 LabApp] JupyterLab application directory is /usr/local/share/jupyter/lab
+[I 2026-01-14 10:31:13.238 LabApp] Extension Manager is 'pypi'.
+[I 2026-01-14 10:31:13.311 BeakerServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-01-14 10:31:13.312 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-01-14 10:31:13.314 BeakerServerApp] Serving notebooks from local directory: /jupyter
+[I 2026-01-14 10:31:13.314 BeakerServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-01-14 10:31:13.314 BeakerServerApp]     http://0.0.0.0:8112/
+[I 2026-01-14 10:31:13.314 BeakerServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-01-14 10:31:13.349 BeakerServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[I 2026-01-14 10:31:15.559 BeakerServerApp] Kernel started: a91c1a41-8c39-40b8-a726-925335cb33d6
+[W 2026-01-14 10:31:15.587 BeakerServerApp] 404 POST /contexts/bdikit_context/sessions/0fb16a0e-6563-413b-8a9c-0d8a493c2970?token=[secret] (2105885549d94b32a44d840c1e31b7aa@127.0.0.1) 25.09ms referer=None
+[W 2026-01-14 10:31:15.590 BeakerServerApp] No session ID specified
+[I 2026-01-14 10:31:18.001 BeakerServerApp] Kernel started: e8ec6404-2743-41c3-9f36-a85146cb43b9
+Context has no workflows: disabling tools.
+[I 2026-01-14 10:31:47.340 BeakerServerApp] Adapting from protocol version 5.3 (kernel a91c1a41-8c39-40b8-a726-925335cb33d6) to 5.4 (client).
+[I 2026-01-14 10:31:47.341 BeakerServerApp] Connecting to kernel a91c1a41-8c39-40b8-a726-925335cb33d6.
+[W 2026-01-14 10:31:47.342 BeakerServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[W 2026-01-14 10:31:47.372 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:31:47.372 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.10ms referer=None
+/usr/local/lib/python3.10/site-packages/langchain_core/language_models/base.py:328: UserWarning: Using fallback GPT-2 tokenizer for token counting. Token counts may be inaccurate for non-GPT-2 models. For accurate counts, use a model-specific method if available.
+  return len(self.get_token_ids(text))
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:283: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  records=[{
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:617: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  await self.send_chat_history(message.header)
+[W 2026-01-14 10:32:17.657 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:32:17.657 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 0.77ms referer=None
+[W 2026-01-14 10:37:14.217 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:37:14.218 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.60ms referer=None
+[W 2026-01-14 10:43:15.254 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:43:15.256 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.72ms referer=None
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 327, in react_async
+    action = await self.handle_message(HumanMessage(content=query))
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 239, in handle_message
+    return await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 286, in execute
+    raw_result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 281, in ainvoke
+    return self.handle_invoke_error(error)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 317, in handle_invoke_error
+    raise error
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 272, in ainvoke
+    result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5570, in ainvoke
+    return await self.bound.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 425, in ainvoke
+    llm_result = await self.agenerate_prompt(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1132, in agenerate_prompt
+    return await self.agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1090, in agenerate
+    raise exceptions[0]
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1359, in _agenerate_with_cache
+    result = await self._agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1208, in _agenerate
+    final_chunk = await self._achat_stream_with_aggregation(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 991, in _achat_stream_with_aggregation
+    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1131, in _aiterate_over_stream
+    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 937, in _acreate_chat_stream
+    async for part in await self._async_client.chat(**chat_params):
+  File "/usr/local/lib/python3.10/site-packages/ollama/_client.py", line 752, in inner
+    async with self._client.stream(*args, **kwargs) as r:
+  File "/usr/local/lib/python3.10/contextlib.py", line 199, in __aenter__
+    return await anext(self.gen)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1583, in stream
+    response = await self.send(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 327, in react_async
+    action = await self.handle_message(HumanMessage(content=query))
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 239, in handle_message
+    return await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 286, in execute
+    raw_result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 281, in ainvoke
+    return self.handle_invoke_error(error)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 317, in handle_invoke_error
+    raise error
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 272, in ainvoke
+    result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5570, in ainvoke
+    return await self.bound.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 425, in ainvoke
+    llm_result = await self.agenerate_prompt(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1132, in agenerate_prompt
+    return await self.agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1090, in agenerate
+    raise exceptions[0]
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1359, in _agenerate_with_cache
+    result = await self._agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1208, in _agenerate
+    final_chunk = await self._achat_stream_with_aggregation(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 991, in _achat_stream_with_aggregation
+    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1131, in _aiterate_over_stream
+    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 937, in _acreate_chat_stream
+    async for part in await self._async_client.chat(**chat_params):
+  File "/usr/local/lib/python3.10/site-packages/ollama/_client.py", line 752, in inner
+    async with self._client.stream(*args, **kwargs) as r:
+  File "/usr/local/lib/python3.10/contextlib.py", line 199, in __aenter__
+    return await anext(self.gen)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1583, in stream
+    response = await self.send(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 231, in _receive_event
+    raise RemoteProtocolError(msg)
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 327, in react_async
+    action = await self.handle_message(HumanMessage(content=query))
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 239, in handle_message
+    return await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 286, in execute
+    raw_result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 281, in ainvoke
+    return self.handle_invoke_error(error)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 317, in handle_invoke_error
+    raise error
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 272, in ainvoke
+    result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5570, in ainvoke
+    return await self.bound.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 425, in ainvoke
+    llm_result = await self.agenerate_prompt(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1132, in agenerate_prompt
+    return await self.agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1090, in agenerate
+    raise exceptions[0]
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1359, in _agenerate_with_cache
+    result = await self._agenerate(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1208, in _agenerate
+    final_chunk = await self._achat_stream_with_aggregation(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 991, in _achat_stream_with_aggregation
+    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1131, in _aiterate_over_stream
+    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 937, in _acreate_chat_stream
+    async for part in await self._async_client.chat(**chat_params):
+  File "/usr/local/lib/python3.10/site-packages/ollama/_client.py", line 752, in inner
+    async with self._client.stream(*args, **kwargs) as r:
+  File "/usr/local/lib/python3.10/contextlib.py", line 199, in __aenter__
+    return await anext(self.gen)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1583, in stream
+    response = await self.send(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+[W 2026-01-14 10:52:25.355 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:52:25.355 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 1.07ms referer=None
+[W 2026-01-14 10:52:26.371 BeakerServerApp] 403 POST /notebook?token=89f73481102c46c0bc13b2998f9a4fce (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 10:52:26.372 BeakerServerApp] 403 POST /notebook?token=[secret] (@127.0.0.1) 0.98ms referer=None
+[I 2026-01-14 10:52:26.373 BeakerServerApp] Starting buffering for a91c1a41-8c39-40b8-a726-925335cb33d6:3028624d-cad360a66d2151237f69a47e
+INFO:    Terminating squashfuse_ll after timeout
+INFO:    Timeouts can be caused by a running background process

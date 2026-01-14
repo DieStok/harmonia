@@ -1,0 +1,96 @@
+==============================================
+Harmonia Experiment (GPU): dou_harmonization_devstral
+==============================================
+
+Job ID: 45320322
+Node: n0098.manage.hpc
+Date: Wed Jan 14 01:04:01 CET 2026
+
+Using Beaker port: 8122
+
+Starting Ollama server...
+Waiting for Ollama to start...
+=========================================
+Starting Ollama Server
+=========================================
+Models dir:     /hpc/compgen/projects/ollama/ollama_run/analysis/dstoker/./ollama_models
+Data dir:       /home/cog/dstoker/.ollama
+Host:           0.0.0.0:11434
+HPC Node:       n0098.manage.hpc
+Idle timeout:   40 minutes
+=========================================
+✓ Server started (PID: 529735)
+✓ Auto-shutdown after 40 minutes idle
+
+=========================================
+OLLAMA ENDPOINT (use this in your config)
+=========================================
+http://n0098:11434/v1
+=========================================
+
+You can now use ollama commands:
+  ollama help
+  ollama pull help
+  ollama pull gemma3
+  ollama list
+  ollama run gemma3
+
+To connect from your Python code:
+  export OLLAMA_URL='http://n0098:11434/v1'
+
+To stop: stop_ollama.sh
+
+Installed models:
+
+NAME                   ID              SIZE      MODIFIED      
+qwen3-coder:30b        06c1097efce0    18 GB     3 minutes ago    
+nemotron-3-nano:30b    b725f1117407    24 GB     5 minutes ago    
+gpt-oss:20b            17052f91a42e    13 GB     7 days ago       
+gemma3:latest          a2af6cc3eb7f    3.3 GB    7 days ago       
+
+Ollama endpoint: http://n0098.manage.hpc:11434
+
+Starting Beaker server on port 8122...
+Beaker Server PID: 529800
+Waiting for Beaker server to start...
+  Waiting... (2/90 seconds)
+  Waiting... (4/90 seconds)
+  Waiting... (6/90 seconds)
+  Waiting... (8/90 seconds)
+  Waiting... (10/90 seconds)
+  Waiting... (12/90 seconds)
+  Waiting... (14/90 seconds)
+Beaker server is ready!
+
+Running experiment...
+Config: experiments/configs/dou_harmonization_devstral.yaml
+
+Loading config: experiments/configs/dou_harmonization_devstral.yaml
+  Experiment: dou_harmonization_devstral
+  LLM: ollama/devstral:123b
+  Messages: 4
+
+Connecting to Beaker server: http://localhost:8122
+  Connected to kernel: e2104d76-d4be-4e5e-b347-88d6ee3f37fb
+
+Running experiment...
+  Warning: Could not create initial notebook: Failed to save notebook: 403 - <html><title>403: Forbidden</title><body>403: Forbidden</body></html>
+  ✓ Turn 2: llm_response (3.3s)
+  ✓ Turn 3: llm_response (15.8s)
+  ✓ Turn 5: llm_response (5.6s)
+  ✓ Turn 6: llm_response (85.5s)
+  Warning: Could not save final notebook: Failed to save notebook: 403 - <html><title>403: Forbidden</title><body>403: Forbidden</body></html>
+
+✓ Experiment complete!
+  Output directory: results/dou_harmonization_devstral_20260114_000450
+  - trace.json: Full execution trace
+  - conversation.md: Simplified conversation log
+
+==============================================
+Experiment completed successfully!
+==============================================
+
+Cleaning up...
+Stopping Ollama server...
+No running server found
+Done.

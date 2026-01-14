@@ -1,0 +1,66 @@
+[I 2026-01-14 01:04:23.565 BeakerServerApp] Extension package panel.io.jupyter_server_extension took 3.6850s to import
+[I 2026-01-14 01:04:23.572 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully linked.
+[I 2026-01-14 01:04:23.572 BeakerServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-01-14 01:04:23.576 BeakerServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-01-14 01:04:23.581 BeakerServerApp] jupyterlab | extension was successfully linked.
+[I 2026-01-14 01:04:24.269 BeakerServerApp] notebook_shim | extension was successfully linked.
+[I 2026-01-14 01:04:24.269 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-01-14 01:04:24.358 BeakerServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-01-14 01:04:24.363 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully loaded.
+[I 2026-01-14 01:04:24.366 BeakerServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-01-14 01:04:24.367 BeakerServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-01-14 01:04:24.370 LabApp] JupyterLab extension loaded from /usr/local/lib/python3.10/site-packages/jupyterlab
+[I 2026-01-14 01:04:24.370 LabApp] JupyterLab application directory is /usr/local/share/jupyter/lab
+[I 2026-01-14 01:04:24.371 LabApp] Extension Manager is 'pypi'.
+[I 2026-01-14 01:04:24.505 BeakerServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-01-14 01:04:24.506 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-01-14 01:04:24.508 BeakerServerApp] Serving notebooks from local directory: /jupyter
+[I 2026-01-14 01:04:24.508 BeakerServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-01-14 01:04:24.508 BeakerServerApp]     http://0.0.0.0:8125/
+[I 2026-01-14 01:04:24.508 BeakerServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-01-14 01:04:24.546 BeakerServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[W 2026-01-14 01:04:29.295 BeakerServerApp] 404 POST /api/sessions/create-with-context (d78ac28b7d0d444998f762000ab4e60a@127.0.0.1) 13.12ms referer=None
+[I 2026-01-14 01:04:29.328 BeakerServerApp] Kernel started: 6dcc1913-200f-4ef6-be65-421853239387
+[W 2026-01-14 01:04:29.334 BeakerServerApp] No session ID specified
+[I 2026-01-14 01:04:31.958 BeakerServerApp] Kernel started: 07c1ce65-e6d5-46e6-82e8-29039d76476b
+Unrecognized OpenRouter model: 'xiaomi/mimo-v2-flash:free' (this implies model is not officially listed in toki.openrouter_models). To get most up-to-date models list, consider cutting a new toki release (after regenerating models list with `toki-fetch-models` command). Attempting to continue with the following Attributes: Attr(context_size=200000, supports_tools=True)
+Context has no workflows: disabling tools.
+[I 2026-01-14 01:04:38.564 BeakerServerApp] Adapting from protocol version 5.3 (kernel 6dcc1913-200f-4ef6-be65-421853239387) to 5.4 (client).
+[I 2026-01-14 01:04:38.565 BeakerServerApp] Connecting to kernel 6dcc1913-200f-4ef6-be65-421853239387.
+[W 2026-01-14 01:04:38.567 BeakerServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[W 2026-01-14 01:04:38.604 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:04:38.604 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 0.59ms referer=None
+/usr/local/lib/python3.10/asyncio/events.py:80: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  self._context.run(self._callback, *self._args)
+OpenRouter context size unknown for model 'xiaomi/mimo-v2-flash:free' (this implies model is not officially listed in archytas/models/openrouter_models.py, i.e. consider regenerating the file with `create_models_types_file()`). Using default context size: 200000.
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:283: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  records=[{
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:617: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  await self.send_chat_history(message.header)
+OpenRouter context size unknown for model 'xiaomi/mimo-v2-flash:free' (this implies model is not officially listed in archytas/models/openrouter_models.py, i.e. consider regenerating the file with `create_models_types_file()`). Using default context size: 200000.
+[W 2026-01-14 01:05:31.448 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:05:31.448 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 0.49ms referer=None
+[W 2026-01-14 01:06:11.844 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:06:11.845 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 0.90ms referer=None
+[W 2026-01-14 01:08:06.949 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:08:06.950 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 1.08ms referer=None
+Unable to parse result.
+Unable to parse result.
+Successfully ran code, but failed to fetch kernel state: 'str' object has no attribute 'get'
+Unable to parse result.
+Unable to parse result.
+Unable to parse result.
+Successfully ran code, but failed to fetch kernel state: 'str' object has no attribute 'get'
+Unable to parse result.
+Unable to parse result.
+Unable to parse result.
+Successfully ran code, but failed to fetch kernel state: 'str' object has no attribute 'get'
+Unable to parse result.
+[W 2026-01-14 01:10:07.977 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:10:07.977 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 0.59ms referer=None
+[W 2026-01-14 01:10:09.038 BeakerServerApp] 403 POST /notebook (127.0.0.1): '_xsrf' argument missing from POST
+[W 2026-01-14 01:10:09.038 BeakerServerApp] 403 POST /notebook (@127.0.0.1) 0.59ms referer=None
+[I 2026-01-14 01:10:09.039 BeakerServerApp] Starting buffering for 6dcc1913-200f-4ef6-be65-421853239387:03995cd7-275c1060058db91c5f543c08
+INFO:    Terminating squashfuse_ll after timeout
+INFO:    Timeouts can be caused by a running background process

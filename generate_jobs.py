@@ -31,6 +31,7 @@ DEFAULTS = {
     "memory": "8G",
     "cpus": "2",
     "timeout": "300",
+    "tmpspace": "1",
 }
 
 
@@ -112,6 +113,12 @@ def parse_args() -> argparse.Namespace:
         help=f"Experiment timeout in seconds (default: {DEFAULTS['timeout']})",
     )
 
+    parser.add_argument(
+        "--gpu",
+        action="store_true",
+        help="Use GPU template (sbatch_template_gpu.sh) for Ollama jobs",
+    )
+
     return parser.parse_args()
 
 
@@ -128,7 +135,7 @@ def generate_job_script(
     timeout: int,
 ) -> Path:
     """Generate a single job script from config and template."""
-    # Load config to get experiment name
+    # Load config to get experiment name and LLM settings
     config = load_config(config_path)
 
     # Read template
@@ -145,6 +152,17 @@ def generate_job_script(
                     ssl_bind = f"--bind {ssl_path}:{ssl_path}:ro"
                 break
 
+    # Extract LLM provider and model from config
+    # Format: provider/model (e.g., "ollama" + "qwen3-coder:30b" -> "ollama/qwen3-coder:30b")
+    llm_provider = config.llm.provider
+    llm_model = config.llm.model
+
+    # Format model string for Beaker/Archytas
+    # Beaker expects LLM_SERVICE_PROVIDER and LLM_SERVICE_MODEL separately
+    # Provider mapping: ollama -> ollama, openrouter -> openrouter, openai -> openai
+    llm_service_provider = llm_provider
+    llm_service_model = llm_model
+
     # Replace template variables
     replacements = {
         "{{experiment_name}}": config.name,
@@ -157,6 +175,8 @@ def generate_job_script(
         "{{tmpspace}}": str(tmpspace),
         "{{timeout}}": str(timeout),
         "{{ssl_bind}}": ssl_bind,
+        "{{llm_provider}}": llm_service_provider,
+        "{{llm_model}}": llm_service_model,
     }
 
     script = template
@@ -176,9 +196,15 @@ def main() -> int:
     """Main entry point."""
     args = parse_args()
 
+    # Select template based on --gpu flag
+    if args.gpu:
+        template_path = Path("sbatch_template_gpu.sh")
+    else:
+        template_path = args.template
+
     # Validate template exists
-    if not args.template.exists():
-        print(f"Error: Template not found: {args.template}")
+    if not template_path.exists():
+        print(f"Error: Template not found: {template_path}")
         return 1
 
     # Validate env file exists
@@ -205,7 +231,7 @@ def main() -> int:
 
     # Generate job scripts
     print(f"Generating job scripts...")
-    print(f"  Template: {args.template}")
+    print(f"  Template: {template_path}" + (" (GPU)" if args.gpu else ""))
     print(f"  Output dir: {args.output_dir}")
     print(f"  SLURM: time={args.time}, mem={args.memory}, cpus={args.cpus}, tmpspace={args.tmpspace}G")
     print()
@@ -215,7 +241,7 @@ def main() -> int:
         try:
             output_path = generate_job_script(
                 config_path=config_path,
-                template_path=args.template,
+                template_path=template_path,
                 output_dir=args.output_dir,
                 env_file=args.env_file,
                 project_dir=project_dir,
