@@ -6,3 +6,4 @@ So:
 - output this clear and complete plan for testing these issues and implementing fixesin plans/15_01_2026_1240_fixing_bdikit_tools_agent.md
 - make your todo list
 - execute all steps, including first giving me an interactive server with an ollama tool-enabled LLM so I can see what happens myself (running on an srun command for 4 hours), and then continuing with your own fixes and tests.
+- In the end summarize what was done, and make any changes needed to /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/codebase_descriptions/how_this_codebase_works_15_01_2026.md 

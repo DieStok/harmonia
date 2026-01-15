@@ -273,10 +273,71 @@ squeue -u $USER
 - olmo-3:latest
 - Some free-tier OpenRouter models
 
+## Tool Registration Architecture
+
+### How Beaker Discovers Contexts
+
+Beaker-kernel uses Python entry points for autodiscovery:
+
+```python
+# In beaker_kernel/lib/autodiscovery.py
+def autodiscover(mapping_type: ResourceType) -> dict[str, type]:
+    group = f"beaker.{mapping_type}"  # e.g., "beaker.contexts"
+    eps = entry_points(group=group)
+    # ...
+```
+
+### Entry Point Configuration
+
+The `bdikit_context` package must register itself with beaker via entry points in `pyproject.toml`:
+
+```toml
+[project.entry-points."beaker.contexts"]
+bdikit_context = "bdikit_context.context:BDIKitContext"
+```
+
+### Tool Registration Flow
+
+1. **BDIKitContext** passes **BDIKitAgent** class to `BeakerContext.__init__`
+2. **BeakerContext** instantiates the agent with subkernel tools
+3. **BeakerAgent** passes tools to **ReActAgent** (archytas)
+4. **ReActAgent.make_tool_dict()** scans for `@tool()` decorated methods
+
+### Verifying Tool Registration
+
+```bash
+# Check entry points in container
+apptainer exec jupyter.sif python -c "
+from importlib.metadata import entry_points
+eps = entry_points(group='beaker.contexts')
+print('beaker.contexts:', list(eps.names))
+"
+
+# Check tools are discovered
+apptainer exec jupyter.sif python -c "
+from bdikit_context.agent import BDIKitAgent
+from archytas.tool_utils import is_tool
+import inspect
+tools = [n for n, m in inspect.getmembers(BDIKitAgent) if is_tool(m)]
+print('Tools:', tools)
+"
+```
+
 ## Troubleshooting
 
+### "Agent says it doesn't have tools"
+**Root Cause:** The `bdikit_context` package entry point is not registered.
+
+**Fix:** Ensure `pyproject.toml` has:
+```toml
+[project.entry-points."beaker.contexts"]
+bdikit_context = "bdikit_context.context:BDIKitContext"
+```
+
+Then rebuild the Apptainer image.
+
 ### "Context has no workflows: disabling tools"
-This message appears in Beaker logs but doesn't necessarily indicate a problem with the BDI-Kit context. The tools are registered via the agent, not workflows.
+This message appears in Beaker logs but doesn't affect BDI-Kit tools. The tools are registered via the agent, not workflows. This warning only disables workflow-specific tools (`attach_workflow`, `update_workflow_stage`, etc.).
 
 ### "Model does not support tools"
 Ensure the model supports function calling. For Ollama, test with:
