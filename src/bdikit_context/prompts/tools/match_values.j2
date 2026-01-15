@@ -6,8 +6,8 @@ This is useful for evaluating value matches between a pair of columns (column ma
 Args:
     dataset (str): The name of the dataset variable.
     column_mapping (tuple): The column and target names for which to find value matches. Format: "source_column,target_column"
-    target (str): The target table or standard data vocabulary. Defaults to "gdc".
-    method (str): The method used for mapping. Defaults to "{{ default_method | default('tfidf') }}".
+    target (str, optional): The target table or standard data vocabulary.
+    method (str, optional): The method used for mapping.
 
 Returns:
     str: returns the value matches for the given column mapping

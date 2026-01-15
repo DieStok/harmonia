@@ -5,8 +5,8 @@ The target is either a DataFrame or a string representing a standard data vocabu
 
 Args:
     dataset (str): The name of the dataset variable.
-    target (str): The target table or standard data vocabulary. Defaults to "gdc".
-    method (str): The method used for mapping. Defaults to "{{ default_method | default('ct_learning') }}".
+    target (str, optional): The target table or standard data vocabulary.
+    method (str, optional): The method used for mapping.
 
 Returns:
     str: returns the matched columns

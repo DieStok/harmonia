@@ -2,56 +2,63 @@ Bootstrap: docker
 From: python:3.10
 
 %post
-    # CRITICAL: Use /tmp which is bind-mounted to scratch during build
-    export TMPDIR=/tmp
-    export UV_CACHE_DIR=/tmp/uv_cache
-    export PIP_CACHE_DIR=/tmp/pip_cache
-    mkdir -p /tmp/uv_cache /tmp/pip_cache
-    
+    # Use /var/tmp for builds - it has more space than /tmp in container
+    export TMPDIR=/var/tmp
+    export UV_CACHE_DIR=/var/tmp/uv_cache
+    export PIP_CACHE_DIR=/var/tmp/pip_cache
+    mkdir -p /var/tmp/uv_cache /var/tmp/pip_cache
+
     # Debug: show initial space
-    echo "=== Initial /tmp space ==="
-    df -h /tmp
-    
+    echo "=== Initial space ==="
+    df -h /var/tmp /tmp
+
     useradd -m jupyter
     apt update && apt install -y lsof
-    
+
     # Install uv
     pip install --no-cache-dir uv
-    
+
     # Use uv with explicit temp directory
-    uv pip install --system --no-cache hatch
-    
+    TMPDIR=/var/tmp uv pip install --system --no-cache hatch
+
     echo "=== Space after hatch install ==="
-    df -h /tmp
+    df -h /var/tmp
 
 %files
-    . /jupyter
+    # Copy only essential files, NOT .sif containers
+    src /jupyter/src
+    pyproject.toml /jupyter/pyproject.toml
+    dou.csv /jupyter/dou.csv
 
 %post
-    # CRITICAL: Use /tmp which is bind-mounted to scratch during build
-    export TMPDIR=/tmp
-    export UV_CACHE_DIR=/tmp/uv_cache
-    export PIP_CACHE_DIR=/tmp/pip_cache
-    mkdir -p /tmp/uv_cache /tmp/pip_cache
+    # Use /var/tmp for builds - it has more space than /tmp in container
+    export TMPDIR=/var/tmp
+    export UV_CACHE_DIR=/var/tmp/uv_cache
+    export PIP_CACHE_DIR=/var/tmp/pip_cache
+    mkdir -p /var/tmp/uv_cache /var/tmp/pip_cache
 
     chown -R 1000:1000 /jupyter
 
+    # Safety: Remove any accidentally copied .sif files
+    echo "=== Cleaning up any .sif files ==="
+    find /jupyter -name "*.sif*" -type f -delete 2>/dev/null || true
+
     echo "=== Space before main install ==="
-    df -h /tmp
+    df -h /var/tmp
 
     # First install beaker_kernel to make the hatch build hook available in the system
     echo "Installing beaker_kernel (provides hatch build hook)..."
-    uv pip install --system --no-cache "beaker_kernel>=1.14.0"
+    TMPDIR=/var/tmp uv pip install --system --no-cache "beaker_kernel>=1.14.0"
 
     # Also install hatchling build backend requirements
     echo "Installing hatchling..."
-    uv pip install --system --no-cache hatchling
+    TMPDIR=/var/tmp uv pip install --system --no-cache hatchling
 
     # Build and install the package using pip with --no-build-isolation
     # This uses the system-installed beaker_kernel for the build hook
     cd /jupyter
     echo "Building and installing bdikit_context (with --no-build-isolation to use system packages)..."
-    pip install --no-cache-dir --no-build-isolation .
+    TMPDIR=/var/tmp pip install --no-cache-dir --no-build-isolation .
 
     # Verify entry points are registered
     echo "=== Verifying entry points ==="
@@ -70,8 +77,15 @@ EOF
     echo "Created /usr/local/share/beaker/contexts/bdikit_context.json"
     cat /usr/local/share/beaker/contexts/bdikit_context.json
 
+    # Clean up temp files
+    echo "=== Cleaning up temp files ==="
+    rm -rf /var/tmp/uv_cache /var/tmp/pip_cache
+
     echo "=== Space after main install ==="
-    df -h /tmp
+    df -h /var/tmp
+
+    echo "=== Final /jupyter contents ==="
+    ls -la /jupyter/
 
 %environment
     export PYTHONPATH=/jupyter

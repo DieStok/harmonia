@@ -1,6 +1,24 @@
 from archytas.tool_utils import AgentRef, LoopControllerRef, is_tool, tool, toolset
 from beaker_kernel.lib.agent import BeakerAgent
 from beaker_kernel.lib.context import BeakerContext
+from typing import Optional
+
+
+# Valid methods for BDI-Kit operations
+VALID_SCHEMA_METHODS = [
+    "similarity_flooding", "coma", "cupid", "distribution_based", "jaccard_distance",
+    "two_phase", "max_val_sim", "magneto_zs_bp", "magneto_ft_bp", "magneto_zs_llm",
+    "magneto_ft_llm", "llm"
+]
+DEFAULT_SCHEMA_METHOD = "magneto_ft_bp"
+
+VALID_VALUE_METHODS = ["edit_distance", "llm", "llm_numeric", "tfidf", "embedding"]
+DEFAULT_VALUE_METHOD = "tfidf"
+
+VALID_TARGETS = ["gdc"]
+DEFAULT_TARGET = "gdc"
+
+DEFAULT_OUTPUT_FILE = "harmonized_table.csv"
 
 
 class BDIKitAgent(BeakerAgent):
@@ -9,22 +27,41 @@ class BDIKitAgent(BeakerAgent):
     """
 
     @tool()
-    async def match_schema(self, dataset: str, target: str, method: str, agent: AgentRef) -> str:
+    async def match_schema(
+        self,
+        dataset: str,
+        agent: AgentRef,
+        target: Optional[str] = None,
+        method: Optional[str] = None,
+    ) -> str:
         """
-        This function performs schema mapping between the source table and the given target schema. 
-        The target is either a DataFrame or a string representing a standard data vocabulary supported by the library. 
+        This function performs schema mapping between the source table and the given target schema.
+        The target is either a DataFrame or a string representing a standard data vocabulary supported by the library.
         Currently, only the GDC (Genomic Data Commons) standard vocabulary is supported.
 
         Args:
             dataset (str): The name of the dataset variable.
-            target (str): The target table or standard data vocabulary. Defaults to "gdc".
-            method (str): The method used for mapping. Defaults to "ct_learning".
+            target (str, optional): The target table or standard data vocabulary.
+            method (str, optional): The method used for mapping.
 
         Returns:
             str: returns the matched columns
 
         You should show the user the result after this function runs.
         """
+        # Apply defaults
+        if target is None or target == "":
+            target = DEFAULT_TARGET
+        if method is None or method == "":
+            method = DEFAULT_SCHEMA_METHOD
+
+        # Validate target
+        if target not in VALID_TARGETS:
+            return f"Error: Invalid target '{target}'. Valid targets are: {', '.join(VALID_TARGETS)}. Please try again with a valid target."
+
+        # Validate method
+        if method not in VALID_SCHEMA_METHODS:
+            return f"Error: Invalid method '{method}'. Valid methods are: {', '.join(VALID_SCHEMA_METHODS)}. Please try again with a valid method."
 
         code = agent.context.get_code(
             "match_schema",
@@ -45,7 +82,13 @@ class BDIKitAgent(BeakerAgent):
 
 
     @tool()
-    async def top_matches(self, dataset: str, columns: str, target: str, agent: AgentRef) -> str:
+    async def top_matches(
+        self,
+        dataset: str,
+        columns: str,
+        agent: AgentRef,
+        target: Optional[str] = None,
+    ) -> str:
         """
         Returns the top 10 schema matches between the source and target tables. This is useful
         for evaluating alternative column mappings.
@@ -53,11 +96,18 @@ class BDIKitAgent(BeakerAgent):
         Args:
             dataset (str): The name of the dataset variable.
             columns (str): The column to match.
-            target (str): The target table or standard data vocabulary. Defaults to “gdc”.
+            target (str, optional): The target table or standard data vocabulary.
 
         Returns:
             str: returns the top 10 matches
         """
+        # Apply defaults
+        if target is None or target == "":
+            target = DEFAULT_TARGET
+
+        # Validate target
+        if target not in VALID_TARGETS:
+            return f"Error: Invalid target '{target}'. Valid targets are: {', '.join(VALID_TARGETS)}. Please try again with a valid target."
 
         code = agent.context.get_code(
             "top_matches",
@@ -78,7 +128,14 @@ class BDIKitAgent(BeakerAgent):
 
 
     @tool()
-    async def match_values(self, dataset: str, column_mapping: str, target: str, method: str, agent: AgentRef) -> str:
+    async def match_values(
+        self,
+        dataset: str,
+        column_mapping: str,
+        agent: AgentRef,
+        target: Optional[str] = None,
+        method: Optional[str] = None,
+    ) -> str:
         """
         Returns the top 10 value matches between the value of the source and target columns.
         This is useful for evaluating value matches between a pair columns (column mappings) returned by the match_schema function.
@@ -86,14 +143,31 @@ class BDIKitAgent(BeakerAgent):
         Args:
             dataset (str): The name of the dataset variable.
             column_mapping (tuple): The column and target names for which to find value matches for. The values must be separated by a comma, example: "source_column,target_column"
-            target (str): The target table or standard data vocabulary. Defaults to “gdc”.
-            method (str): The method used for mapping. Defaults to “tfidf”.
+            target (str, optional): The target table or standard data vocabulary.
+            method (str, optional): The method used for mapping.
 
         Returns:
             str: returns the value matches for the given column mapping (source and target column names)
 
         Uppon user's request, the output of match_values() can be fed to materialize_mapping() which materializes the final target using both schema and value mappings.
         """
+        # Apply defaults
+        if target is None or target == "":
+            target = DEFAULT_TARGET
+        if method is None or method == "":
+            method = DEFAULT_VALUE_METHOD
+
+        # Validate target
+        if target not in VALID_TARGETS:
+            return f"Error: Invalid target '{target}'. Valid targets are: {', '.join(VALID_TARGETS)}. Please try again with a valid target."
+
+        # Validate method
+        if method not in VALID_VALUE_METHODS:
+            return f"Error: Invalid method '{method}'. Valid methods are: {', '.join(VALID_VALUE_METHODS)}. Please try again with a valid method."
+
+        # Validate column_mapping format
+        if ',' not in column_mapping:
+            return f"Error: Invalid column_mapping format '{column_mapping}'. Expected format: 'source_column,target_column' (comma-separated)."
 
         code = agent.context.get_code(
             "match_values",
@@ -115,7 +189,13 @@ class BDIKitAgent(BeakerAgent):
 
 
     @tool()
-    async def materialize_mapping(self, dataset: str, mapping_spec: str, output_file: str, agent: AgentRef) -> str:
+    async def materialize_mapping(
+        self,
+        dataset: str,
+        mapping_spec: str,
+        agent: AgentRef,
+        output_file: Optional[str] = None,
+    ) -> str:
         """
         Materializes the final (harmonized) table after applying data transformations specified by the schema mapping and value mappings specifications.
 
@@ -175,11 +255,14 @@ class BDIKitAgent(BeakerAgent):
         Args:
             dataset (str): The name of the dataset variable.
             mapping_spec (MappingSpecLike): the column and value mapping specificiation.
-            output_file (str): The name of the output file to save the materialized target. Detaults to "harmonized_table.csv".
+            output_file (str, optional): The name of the output file to save the materialized target.
 
         Returns:
             str: returns the materialized target using both schema and value mappings
         """
+        # Apply defaults
+        if output_file is None or output_file == "":
+            output_file = DEFAULT_OUTPUT_FILE
 
         code = agent.context.get_code(
             "materialize_mapping",
@@ -210,6 +293,9 @@ class BDIKitAgent(BeakerAgent):
         Returns:
             str: returns a list of acceptable values (and their descriptions) for the given column in the GDC standard
         """
+        # Validate column is provided
+        if not column or column.strip() == "":
+            return "Error: Column name is required. Please provide a valid GDC column name."
 
         code = agent.context.get_code(
             "get_gdc_acceptable_values",

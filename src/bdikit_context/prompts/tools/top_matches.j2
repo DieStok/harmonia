@@ -6,7 +6,7 @@ This is useful for evaluating alternative column mappings when the initial match
 Args:
     dataset (str): The name of the dataset variable.
     columns (str): The column to match.
-    target (str): The target table or standard data vocabulary. Defaults to "gdc".
+    target (str, optional): The target table or standard data vocabulary.
 
 Returns:
     str: returns the top {{ top_k | default(10) }} matches
