@@ -12,9 +12,9 @@
 #   python generate_jobs.py --config experiments/configs/dou_harmonization_nemotron.yaml --gpu
 # =============================================================================
 
-#SBATCH --job-name=harmonia_dou_harmonization_olmo3
-#SBATCH --output=logs/dou_harmonization_olmo3_%j.out
-#SBATCH --error=logs/dou_harmonization_olmo3_%j.err
+#SBATCH --job-name=harmonia_dou_harmonization_glm-4.5-air
+#SBATCH --output=logs/dou_harmonization_glm-4.5-air_%j.out
+#SBATCH --error=logs/dou_harmonization_glm-4.5-air_%j.err
 #SBATCH --time=02:00:00
 #SBATCH --mem=32G
 #SBATCH --cpus-per-task=2
@@ -29,7 +29,7 @@
 set -e
 
 echo "=============================================="
-echo "Harmonia Experiment (GPU): dou_harmonization_olmo3"
+echo "Harmonia Experiment (GPU): dou_harmonization_glm-4.5-air"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
@@ -84,8 +84,8 @@ export OLLAMA_HOST=http://$(hostname):11434
 echo "Ollama endpoint: $LLM_BASE_URL"
 
 # Pre-warm the model by loading it (prevents timeout on first request)
-echo "Pre-loading model olmo-3.1:32b..."
-curl -s http://localhost:11434/api/generate -d "{\"model\": \"olmo-3.1:32b\", \"prompt\": \"Hello\", \"stream\": false}" > /dev/null 2>&1 || echo "  Warning: Model pre-load may have failed"
+echo "Pre-loading model z-ai/glm-4.5-air:free..."
+curl -s http://localhost:11434/api/generate -d "{\"model\": \"z-ai/glm-4.5-air:free\", \"prompt\": \"Hello\", \"stream\": false}" > /dev/null 2>&1 || echo "  Warning: Model pre-load may have failed"
 echo "Model preloaded"
 
 # =============================================================================
@@ -94,8 +94,8 @@ echo "Model preloaded"
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: ollama"
-echo "LLM Model: olmo-3.1:32b"
+echo "LLM Provider: openrouter"
+echo "LLM Model: z-ai/glm-4.5-air:free"
 
 # Start Beaker server
 # Note: bdikit_context is pre-installed in the image with proper entry points
@@ -107,8 +107,8 @@ apptainer exec \
     --bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro \
     --env-file .env \
     --env JUPYTER_SERVER=http://localhost:$PORT \
-    --env LLM_SERVICE_PROVIDER=ollama \
-    --env LLM_SERVICE_MODEL=olmo-3.1:32b \
+    --env LLM_SERVICE_PROVIDER=openrouter \
+    --env LLM_SERVICE_MODEL=z-ai/glm-4.5-air:free \
     --env LLM_BASE_URL=$LLM_BASE_URL \
     --env OLLAMA_HOST=$OLLAMA_HOST \
     jupyter.sif \
@@ -157,7 +157,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/configs/dou_harmonization_olmo3.yaml"
+echo "Config: experiments/configs/dou_harmonization_glm-4.5-air.yaml"
 echo ""
 
 # Get token from env file
@@ -165,7 +165,7 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/configs/dou_harmonization_olmo3.yaml \
+    --config experiments/configs/dou_harmonization_glm-4.5-air.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
     --timeout 3600

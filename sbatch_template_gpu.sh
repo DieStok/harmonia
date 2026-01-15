@@ -97,9 +97,9 @@ echo "Starting Beaker server on port $PORT..."
 echo "LLM Provider: {{llm_provider}}"
 echo "LLM Model: {{llm_model}}"
 
-# Install bdikit_context package and start server
-# Note: --env flags override values from --env-file
-# The pip install registers the bdikit_context with Beaker's context system
+# Start Beaker server
+# Note: bdikit_context is pre-installed in the image with proper entry points
+# --env flags override values from --env-file
 apptainer exec \
     --nv \
     --bind .:/jupyter \
@@ -112,7 +112,7 @@ apptainer exec \
     --env LLM_BASE_URL=$LLM_BASE_URL \
     --env OLLAMA_HOST=$OLLAMA_HOST \
     jupyter.sif \
-    bash -c "pip install -q -e /jupyter 2>/dev/null; beaker dev watch --ip 0.0.0.0 --port $PORT" &
+    beaker dev watch --ip 0.0.0.0 --port $PORT &
 
 SERVER_PID=$!
 echo "Beaker Server PID: $SERVER_PID"

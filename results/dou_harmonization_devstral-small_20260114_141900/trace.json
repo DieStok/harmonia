@@ -1,0 +1,743 @@
+{
+  "experiment": {
+    "name": "dou_harmonization_devstral-small",
+    "description": "Harmonize dou.csv to GDC schema using embeddings method (Devstral-Small 24B via Ollama)"
+  },
+  "llm": {
+    "provider": "ollama",
+    "model": "devstral-small-2:latest"
+  },
+  "timing": {
+    "start_time": "2026-01-14T14:19:00.604415",
+    "end_time": "2026-01-14T14:19:27.413772",
+    "total_duration_seconds": 22.765616934746504
+  },
+  "status": "completed",
+  "error_message": null,
+  "turns": [
+    {
+      "turn": 1,
+      "user_message": "Load the file dou.csv as a dataframe.\nThen subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'\n",
+      "agent_response": "",
+      "response_type": "llm_response",
+      "tool_calls": [],
+      "duration_seconds": 14.953038513660431,
+      "raw_messages": [
+        {
+          "header": {
+            "date": "2026-01-14T15:19:00.612519+01:00",
+            "msg_id": "ba89a4c6-3a33-4a8f-b3b3-fc2ff00e6a8b",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "ba89a4c6-3a33-4a8f-b3b3-fc2ff00e6a8b",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "busy"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_16",
+            "msg_type": "beaker__execute_input",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:00.618456Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_16",
+          "msg_type": "beaker__execute_input",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "code": "\nimport inspect as _inspect\nimport json as _json\nimport dill as _dill\nimport logging as _logging\n_logger = _logging.getLogger(__name__)\n\nclass _SubkernelStateEncoder(_json.JSONEncoder):\n    def default(self, o):\n        # if callable(o):\n            # return f\"Function named\"\n            # return super().default(o)\n        try:\n            return super().default(o)\n        except:\n            return str(o)\n\n_result = {\n    \"modules\": {},\n    \"variables\": {},\n    \"functions\": {},\n    \"classes\": {}\n}\nfor _name, _value in dict(locals()).items():\n    try:\n        if _name.startswith('_') or _name in ('In', 'Out', 'get_ipython', 'exit', 'quit', 'open'):\n            continue\n        if callable(_value):\n            if isinstance(_value, type):\n                _result[\"classes\"][_name] = {\n                    'docstring': _inspect.getdoc(_value)\n                }\n            else:\n                _fndetails = {\n                    'docstring': _inspect.getdoc(_value),\n                    'signature': str(_inspect.signature(_value))\n                }\n                _result[\"functions\"][_name] = _fndetails\n        elif _inspect.ismodule(_value):\n\n            try:\n                _path = str(_value.__file__)\n            except AttributeError:\n                _path = \"(built in)\"\n            _result[\"modules\"][_name] = {\n                'path': _path,\n                'full_name': str(_value.__name__)\n            }\n        else:\n            import pandas as _pandas\n            _size = ''\n            if id(_value) in (id(globals()), id(locals)):\n                _vardetails = {\n                    'value': \"{...skipped...}\",\n                    'type': str(type(_value)),\n                    'size': '',\n                }\n            else:\n                _size = ''\n                if hasattr(_value, \"shape\"):\n                    _size = _value.shape\n                elif hasattr(_value, \"__len__\"):\n                    try:\n                        _size = len(_value)\n                    except Exception:\n                        pass\n\n                # bounds check long sequences for size and things like Ellipsis not being serializable\n                _safe_value = _value\n                _truncated = False\n                try:\n                    _safe_value = _value.head()\n                    _truncated = True\n                except AttributeError:\n                    pass\n                try:\n                    _safe_value = _value[:99]\n                    if len(_value) > 99:\n                        _truncated = True\n                except Exception:\n                    pass\n\n                _vardetails = {\n                    'value': _safe_value,\n                    'type': type(_value).__name__,\n                    'size': str(_size),\n                    'truncated': _truncated\n                }\n            _result[\"variables\"][_name] = _vardetails\n    except Exception as e:\n        _logger.warning(f\"FETCH_STATE_CODE: failed to get variable details for variable `{_name}` of type `{type(_value)}`: {e}\")\ntry:\n    _result = _json.loads(_json.dumps(_result, cls=_SubkernelStateEncoder))\nexcept Exception as e:\n    _logger.warning(f\"FETCH_STATE_CODE: failed to serialize state: {e}\")\n    _result = {}\n_result\n",
+            "execution_count": 1,
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_18",
+            "msg_type": "beaker__execute_reply",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:00.629289Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_18",
+          "msg_type": "beaker__execute_reply",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {
+            "started": "2026-01-14T14:19:00.618431Z",
+            "dependencies_met": true,
+            "engine": "61a2b4af-c4d4-4a0d-b750-e34dc5525342",
+            "status": "ok"
+          },
+          "content": {
+            "status": "ok",
+            "execution_count": 0,
+            "user_expressions": {},
+            "payload": [],
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:15.558597+01:00",
+            "msg_id": "9c4c708b-d79c-4119-a5f9-f22bdb93f03f",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "stream",
+            "version": "5.0"
+          },
+          "msg_id": "9c4c708b-d79c-4119-a5f9-f22bdb93f03f",
+          "msg_type": "stream",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "name": "stderr",
+            "text": "LLM Error:\n    do load request: Post \"http://127.0.0.1:45853/load\": EOF (status code: 500)\n\n    Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py\", line 550, in llm_request\n    result = await task\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 62, in react_async\n    return await super().react_async(query, react_context)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 144, in inner_async\n    return await ensure_async(fn(self, *args, **kwargs))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/utils.py\", line 60, in ensure_async\n    return await fn\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 327, in react_async\n    action = await self.handle_message(HumanMessage(content=query))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 239, in handle_message\n    return await self.execute()\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 65, in execute\n    return await super().execute(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 286, in execute\n    raw_result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 281, in ainvoke\n    return self.handle_invoke_error(error)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 317, in handle_invoke_error\n    raise error\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 272, in ainvoke\n    result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py\", line 5570, in ainvoke\n    return await self.bound.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 425, in ainvoke\n    llm_result = await self.agenerate_prompt(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1132, in agenerate_prompt\n    return await self.agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1090, in agenerate\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1359, in _agenerate_with_cache\n    result = await self._agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1208, in _agenerate\n    final_chunk = await self._achat_stream_with_aggregation(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 991, in _achat_stream_with_aggregation\n    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1131, in _aiterate_over_stream\n    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 937, in _acreate_chat_stream\n    async for part in await self._async_client.chat(**chat_params):\n  File \"/usr/local/lib/python3.10/site-packages/ollama/_client.py\", line 757, in inner\n    raise ResponseError(e.response.text, e.response.status_code) from None\nollama._types.ResponseError: do load request: Post \"http://127.0.0.1:45853/load\": EOF (status code: 500)\n\n    "
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:15.559247+01:00",
+            "msg_id": "62069bb8-caa9-4e10-a569-0a5b92a1c016",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "llm_reply",
+            "version": "5.0"
+          },
+          "msg_id": "62069bb8-caa9-4e10-a569-0a5b92a1c016",
+          "msg_type": "llm_reply",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "status": "ok",
+            "execution_count": null,
+            "return": null
+          },
+          "buffers": [],
+          "channel": "shell"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:15.559558+01:00",
+            "msg_id": "52325bba-725e-4c5c-bb86-f45278d1c16d",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "52325bba-725e-4c5c-bb86-f45278d1c16d",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "74033605-c74c-4ef6-83cd-df073b274b25",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:00.611357+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "idle"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        }
+      ],
+      "timestamp": "2026-01-14T14:19:15.564797"
+    },
+    {
+      "turn": 2,
+      "user_message": "Please match this dataframe to the GDC schema using the embeddings method.\nShow me the top 3 matching columns for each source column.\n",
+      "agent_response": "",
+      "response_type": "llm_response",
+      "tool_calls": [],
+      "duration_seconds": 2.93237697891891,
+      "raw_messages": [
+        {
+          "header": {
+            "date": "2026-01-14T15:19:16.575699+01:00",
+            "msg_id": "19555108-846d-4f9b-a7a2-86f0596462a2",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "19555108-846d-4f9b-a7a2-86f0596462a2",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "busy"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_21",
+            "msg_type": "beaker__execute_input",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:16.578784Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_21",
+          "msg_type": "beaker__execute_input",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "code": "\nimport inspect as _inspect\nimport json as _json\nimport dill as _dill\nimport logging as _logging\n_logger = _logging.getLogger(__name__)\n\nclass _SubkernelStateEncoder(_json.JSONEncoder):\n    def default(self, o):\n        # if callable(o):\n            # return f\"Function named\"\n            # return super().default(o)\n        try:\n            return super().default(o)\n        except:\n            return str(o)\n\n_result = {\n    \"modules\": {},\n    \"variables\": {},\n    \"functions\": {},\n    \"classes\": {}\n}\nfor _name, _value in dict(locals()).items():\n    try:\n        if _name.startswith('_') or _name in ('In', 'Out', 'get_ipython', 'exit', 'quit', 'open'):\n            continue\n        if callable(_value):\n            if isinstance(_value, type):\n                _result[\"classes\"][_name] = {\n                    'docstring': _inspect.getdoc(_value)\n                }\n            else:\n                _fndetails = {\n                    'docstring': _inspect.getdoc(_value),\n                    'signature': str(_inspect.signature(_value))\n                }\n                _result[\"functions\"][_name] = _fndetails\n        elif _inspect.ismodule(_value):\n\n            try:\n                _path = str(_value.__file__)\n            except AttributeError:\n                _path = \"(built in)\"\n            _result[\"modules\"][_name] = {\n                'path': _path,\n                'full_name': str(_value.__name__)\n            }\n        else:\n            import pandas as _pandas\n            _size = ''\n            if id(_value) in (id(globals()), id(locals)):\n                _vardetails = {\n                    'value': \"{...skipped...}\",\n                    'type': str(type(_value)),\n                    'size': '',\n                }\n            else:\n                _size = ''\n                if hasattr(_value, \"shape\"):\n                    _size = _value.shape\n                elif hasattr(_value, \"__len__\"):\n                    try:\n                        _size = len(_value)\n                    except Exception:\n                        pass\n\n                # bounds check long sequences for size and things like Ellipsis not being serializable\n                _safe_value = _value\n                _truncated = False\n                try:\n                    _safe_value = _value.head()\n                    _truncated = True\n                except AttributeError:\n                    pass\n                try:\n                    _safe_value = _value[:99]\n                    if len(_value) > 99:\n                        _truncated = True\n                except Exception:\n                    pass\n\n                _vardetails = {\n                    'value': _safe_value,\n                    'type': type(_value).__name__,\n                    'size': str(_size),\n                    'truncated': _truncated\n                }\n            _result[\"variables\"][_name] = _vardetails\n    except Exception as e:\n        _logger.warning(f\"FETCH_STATE_CODE: failed to get variable details for variable `{_name}` of type `{type(_value)}`: {e}\")\ntry:\n    _result = _json.loads(_json.dumps(_result, cls=_SubkernelStateEncoder))\nexcept Exception as e:\n    _logger.warning(f\"FETCH_STATE_CODE: failed to serialize state: {e}\")\n    _result = {}\n_result\n",
+            "execution_count": 1,
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_23",
+            "msg_type": "beaker__execute_reply",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:16.603813Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_23",
+          "msg_type": "beaker__execute_reply",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {
+            "started": "2026-01-14T14:19:16.578747Z",
+            "dependencies_met": true,
+            "engine": "61a2b4af-c4d4-4a0d-b750-e34dc5525342",
+            "status": "ok"
+          },
+          "content": {
+            "status": "ok",
+            "execution_count": 0,
+            "user_expressions": {},
+            "payload": [],
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:19.500883+01:00",
+            "msg_id": "43ec930a-2342-49d7-92e8-69df98f15b09",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "stream",
+            "version": "5.0"
+          },
+          "msg_id": "43ec930a-2342-49d7-92e8-69df98f15b09",
+          "msg_type": "stream",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "name": "stderr",
+            "text": "LLM Error:\n    do load request: Post \"http://127.0.0.1:37043/load\": EOF (status code: 500)\n\n    Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py\", line 550, in llm_request\n    result = await task\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 62, in react_async\n    return await super().react_async(query, react_context)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 144, in inner_async\n    return await ensure_async(fn(self, *args, **kwargs))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/utils.py\", line 60, in ensure_async\n    return await fn\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 327, in react_async\n    action = await self.handle_message(HumanMessage(content=query))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 239, in handle_message\n    return await self.execute()\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 65, in execute\n    return await super().execute(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 286, in execute\n    raw_result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 281, in ainvoke\n    return self.handle_invoke_error(error)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 317, in handle_invoke_error\n    raise error\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 272, in ainvoke\n    result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py\", line 5570, in ainvoke\n    return await self.bound.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 425, in ainvoke\n    llm_result = await self.agenerate_prompt(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1132, in agenerate_prompt\n    return await self.agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1090, in agenerate\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1359, in _agenerate_with_cache\n    result = await self._agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1208, in _agenerate\n    final_chunk = await self._achat_stream_with_aggregation(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 991, in _achat_stream_with_aggregation\n    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1131, in _aiterate_over_stream\n    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 937, in _acreate_chat_stream\n    async for part in await self._async_client.chat(**chat_params):\n  File \"/usr/local/lib/python3.10/site-packages/ollama/_client.py\", line 757, in inner\n    raise ResponseError(e.response.text, e.response.status_code) from None\nollama._types.ResponseError: do load request: Post \"http://127.0.0.1:37043/load\": EOF (status code: 500)\n\n    "
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:19.501446+01:00",
+            "msg_id": "3d44bd32-7272-49ef-b33e-627447ceec01",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "llm_reply",
+            "version": "5.0"
+          },
+          "msg_id": "3d44bd32-7272-49ef-b33e-627447ceec01",
+          "msg_type": "llm_reply",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "status": "ok",
+            "execution_count": null,
+            "return": null
+          },
+          "buffers": [],
+          "channel": "shell"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:19.501756+01:00",
+            "msg_id": "5d4e27b6-9ba5-4837-a21d-77a7355218a8",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "5d4e27b6-9ba5-4837-a21d-77a7355218a8",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "9ebbc52f-274f-43d0-8672-3ac640918804",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:16.573836+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "idle"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        }
+      ],
+      "timestamp": "2026-01-14T14:19:19.506206"
+    },
+    {
+      "turn": 3,
+      "user_message": "Now please also match the values for each column.\nFor any values that don't have a direct match, suggest the closest alternative.\n",
+      "agent_response": "",
+      "response_type": "llm_response",
+      "tool_calls": [],
+      "duration_seconds": 2.158970158547163,
+      "raw_messages": [
+        {
+          "header": {
+            "date": "2026-01-14T15:19:20.517541+01:00",
+            "msg_id": "50ea6b9f-3122-4783-a4b8-74aea95a7994",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "50ea6b9f-3122-4783-a4b8-74aea95a7994",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "busy"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_26",
+            "msg_type": "beaker__execute_input",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:20.523520Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_26",
+          "msg_type": "beaker__execute_input",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "code": "\nimport inspect as _inspect\nimport json as _json\nimport dill as _dill\nimport logging as _logging\n_logger = _logging.getLogger(__name__)\n\nclass _SubkernelStateEncoder(_json.JSONEncoder):\n    def default(self, o):\n        # if callable(o):\n            # return f\"Function named\"\n            # return super().default(o)\n        try:\n            return super().default(o)\n        except:\n            return str(o)\n\n_result = {\n    \"modules\": {},\n    \"variables\": {},\n    \"functions\": {},\n    \"classes\": {}\n}\nfor _name, _value in dict(locals()).items():\n    try:\n        if _name.startswith('_') or _name in ('In', 'Out', 'get_ipython', 'exit', 'quit', 'open'):\n            continue\n        if callable(_value):\n            if isinstance(_value, type):\n                _result[\"classes\"][_name] = {\n                    'docstring': _inspect.getdoc(_value)\n                }\n            else:\n                _fndetails = {\n                    'docstring': _inspect.getdoc(_value),\n                    'signature': str(_inspect.signature(_value))\n                }\n                _result[\"functions\"][_name] = _fndetails\n        elif _inspect.ismodule(_value):\n\n            try:\n                _path = str(_value.__file__)\n            except AttributeError:\n                _path = \"(built in)\"\n            _result[\"modules\"][_name] = {\n                'path': _path,\n                'full_name': str(_value.__name__)\n            }\n        else:\n            import pandas as _pandas\n            _size = ''\n            if id(_value) in (id(globals()), id(locals)):\n                _vardetails = {\n                    'value': \"{...skipped...}\",\n                    'type': str(type(_value)),\n                    'size': '',\n                }\n            else:\n                _size = ''\n                if hasattr(_value, \"shape\"):\n                    _size = _value.shape\n                elif hasattr(_value, \"__len__\"):\n                    try:\n                        _size = len(_value)\n                    except Exception:\n                        pass\n\n                # bounds check long sequences for size and things like Ellipsis not being serializable\n                _safe_value = _value\n                _truncated = False\n                try:\n                    _safe_value = _value.head()\n                    _truncated = True\n                except AttributeError:\n                    pass\n                try:\n                    _safe_value = _value[:99]\n                    if len(_value) > 99:\n                        _truncated = True\n                except Exception:\n                    pass\n\n                _vardetails = {\n                    'value': _safe_value,\n                    'type': type(_value).__name__,\n                    'size': str(_size),\n                    'truncated': _truncated\n                }\n            _result[\"variables\"][_name] = _vardetails\n    except Exception as e:\n        _logger.warning(f\"FETCH_STATE_CODE: failed to get variable details for variable `{_name}` of type `{type(_value)}`: {e}\")\ntry:\n    _result = _json.loads(_json.dumps(_result, cls=_SubkernelStateEncoder))\nexcept Exception as e:\n    _logger.warning(f\"FETCH_STATE_CODE: failed to serialize state: {e}\")\n    _result = {}\n_result\n",
+            "execution_count": 1,
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_28",
+            "msg_type": "beaker__execute_reply",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:20.540798Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_28",
+          "msg_type": "beaker__execute_reply",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {
+            "started": "2026-01-14T14:19:20.523465Z",
+            "dependencies_met": true,
+            "engine": "61a2b4af-c4d4-4a0d-b750-e34dc5525342",
+            "status": "ok"
+          },
+          "content": {
+            "status": "ok",
+            "execution_count": 0,
+            "user_expressions": {},
+            "payload": [],
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:22.668481+01:00",
+            "msg_id": "2d35b151-3ac6-4c8f-b7dd-201ab709718b",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "stream",
+            "version": "5.0"
+          },
+          "msg_id": "2d35b151-3ac6-4c8f-b7dd-201ab709718b",
+          "msg_type": "stream",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "name": "stderr",
+            "text": "LLM Error:\n    do load request: Post \"http://127.0.0.1:37145/load\": EOF (status code: 500)\n\n    Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py\", line 550, in llm_request\n    result = await task\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 62, in react_async\n    return await super().react_async(query, react_context)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 144, in inner_async\n    return await ensure_async(fn(self, *args, **kwargs))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/utils.py\", line 60, in ensure_async\n    return await fn\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 327, in react_async\n    action = await self.handle_message(HumanMessage(content=query))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 239, in handle_message\n    return await self.execute()\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 65, in execute\n    return await super().execute(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 286, in execute\n    raw_result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 281, in ainvoke\n    return self.handle_invoke_error(error)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 317, in handle_invoke_error\n    raise error\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 272, in ainvoke\n    result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py\", line 5570, in ainvoke\n    return await self.bound.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 425, in ainvoke\n    llm_result = await self.agenerate_prompt(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1132, in agenerate_prompt\n    return await self.agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1090, in agenerate\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1359, in _agenerate_with_cache\n    result = await self._agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1208, in _agenerate\n    final_chunk = await self._achat_stream_with_aggregation(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 991, in _achat_stream_with_aggregation\n    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1131, in _aiterate_over_stream\n    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 937, in _acreate_chat_stream\n    async for part in await self._async_client.chat(**chat_params):\n  File \"/usr/local/lib/python3.10/site-packages/ollama/_client.py\", line 757, in inner\n    raise ResponseError(e.response.text, e.response.status_code) from None\nollama._types.ResponseError: do load request: Post \"http://127.0.0.1:37145/load\": EOF (status code: 500)\n\n    "
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:22.669053+01:00",
+            "msg_id": "28558951-7c83-4610-b2f5-ec143aaa2e20",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "llm_reply",
+            "version": "5.0"
+          },
+          "msg_id": "28558951-7c83-4610-b2f5-ec143aaa2e20",
+          "msg_type": "llm_reply",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "status": "ok",
+            "execution_count": null,
+            "return": null
+          },
+          "buffers": [],
+          "channel": "shell"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:22.669347+01:00",
+            "msg_id": "79364925-f13f-47e2-b68b-ece7aabe1231",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "79364925-f13f-47e2-b68b-ece7aabe1231",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "7cd5f4fb-bdd2-437f-8e32-7b47bd1e9583",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:20.515270+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "idle"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        }
+      ],
+      "timestamp": "2026-01-14T14:19:22.674206"
+    },
+    {
+      "turn": 4,
+      "user_message": "Materialize the mapping and show me the harmonized dataframe.\nAlso show the mapping summary.\n",
+      "agent_response": "",
+      "response_type": "llm_response",
+      "tool_calls": [],
+      "duration_seconds": 2.72123128362,
+      "raw_messages": [
+        {
+          "header": {
+            "date": "2026-01-14T15:19:23.685142+01:00",
+            "msg_id": "b2bbab07-22c7-4923-a3ed-8daa8b12bdaf",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "b2bbab07-22c7-4923-a3ed-8daa8b12bdaf",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "busy"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_31",
+            "msg_type": "beaker__execute_input",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:23.687855Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_31",
+          "msg_type": "beaker__execute_input",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "code": "\nimport inspect as _inspect\nimport json as _json\nimport dill as _dill\nimport logging as _logging\n_logger = _logging.getLogger(__name__)\n\nclass _SubkernelStateEncoder(_json.JSONEncoder):\n    def default(self, o):\n        # if callable(o):\n            # return f\"Function named\"\n            # return super().default(o)\n        try:\n            return super().default(o)\n        except:\n            return str(o)\n\n_result = {\n    \"modules\": {},\n    \"variables\": {},\n    \"functions\": {},\n    \"classes\": {}\n}\nfor _name, _value in dict(locals()).items():\n    try:\n        if _name.startswith('_') or _name in ('In', 'Out', 'get_ipython', 'exit', 'quit', 'open'):\n            continue\n        if callable(_value):\n            if isinstance(_value, type):\n                _result[\"classes\"][_name] = {\n                    'docstring': _inspect.getdoc(_value)\n                }\n            else:\n                _fndetails = {\n                    'docstring': _inspect.getdoc(_value),\n                    'signature': str(_inspect.signature(_value))\n                }\n                _result[\"functions\"][_name] = _fndetails\n        elif _inspect.ismodule(_value):\n\n            try:\n                _path = str(_value.__file__)\n            except AttributeError:\n                _path = \"(built in)\"\n            _result[\"modules\"][_name] = {\n                'path': _path,\n                'full_name': str(_value.__name__)\n            }\n        else:\n            import pandas as _pandas\n            _size = ''\n            if id(_value) in (id(globals()), id(locals)):\n                _vardetails = {\n                    'value': \"{...skipped...}\",\n                    'type': str(type(_value)),\n                    'size': '',\n                }\n            else:\n                _size = ''\n                if hasattr(_value, \"shape\"):\n                    _size = _value.shape\n                elif hasattr(_value, \"__len__\"):\n                    try:\n                        _size = len(_value)\n                    except Exception:\n                        pass\n\n                # bounds check long sequences for size and things like Ellipsis not being serializable\n                _safe_value = _value\n                _truncated = False\n                try:\n                    _safe_value = _value.head()\n                    _truncated = True\n                except AttributeError:\n                    pass\n                try:\n                    _safe_value = _value[:99]\n                    if len(_value) > 99:\n                        _truncated = True\n                except Exception:\n                    pass\n\n                _vardetails = {\n                    'value': _safe_value,\n                    'type': type(_value).__name__,\n                    'size': str(_size),\n                    'truncated': _truncated\n                }\n            _result[\"variables\"][_name] = _vardetails\n    except Exception as e:\n        _logger.warning(f\"FETCH_STATE_CODE: failed to get variable details for variable `{_name}` of type `{type(_value)}`: {e}\")\ntry:\n    _result = _json.loads(_json.dumps(_result, cls=_SubkernelStateEncoder))\nexcept Exception as e:\n    _logger.warning(f\"FETCH_STATE_CODE: failed to serialize state: {e}\")\n    _result = {}\n_result\n",
+            "execution_count": 1,
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_33",
+            "msg_type": "beaker__execute_reply",
+            "username": "dstoker",
+            "session": "f8e7a00f-b096248f9e7d9b2f18e01e52",
+            "date": "2026-01-14T14:19:23.709755Z",
+            "version": "5.4"
+          },
+          "msg_id": "f8e7a00f-b096248f9e7d9b2f18e01e52_1429104_33",
+          "msg_type": "beaker__execute_reply",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {
+            "started": "2026-01-14T14:19:23.687815Z",
+            "dependencies_met": true,
+            "engine": "61a2b4af-c4d4-4a0d-b750-e34dc5525342",
+            "status": "ok"
+          },
+          "content": {
+            "status": "ok",
+            "execution_count": 0,
+            "user_expressions": {},
+            "payload": [],
+            "execution_type": "unknown"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:26.399473+01:00",
+            "msg_id": "7c89e165-1529-448b-9577-734b920f5b72",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "stream",
+            "version": "5.0"
+          },
+          "msg_id": "7c89e165-1529-448b-9577-734b920f5b72",
+          "msg_type": "stream",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "name": "stderr",
+            "text": "LLM Error:\n    do load request: Post \"http://127.0.0.1:39331/load\": EOF (status code: 500)\n\n    Traceback (most recent call last):\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py\", line 550, in llm_request\n    result = await task\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 62, in react_async\n    return await super().react_async(query, react_context)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 144, in inner_async\n    return await ensure_async(fn(self, *args, **kwargs))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/utils.py\", line 60, in ensure_async\n    return await fn\n  File \"/usr/local/lib/python3.10/site-packages/archytas/react.py\", line 327, in react_async\n    action = await self.handle_message(HumanMessage(content=query))\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 239, in handle_message\n    return await self.execute()\n  File \"/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py\", line 65, in execute\n    return await super().execute(*args, **kwargs)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/agent.py\", line 286, in execute\n    raw_result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 281, in ainvoke\n    return self.handle_invoke_error(error)\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 317, in handle_invoke_error\n    raise error\n  File \"/usr/local/lib/python3.10/site-packages/archytas/models/base.py\", line 272, in ainvoke\n    result = await self.model.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py\", line 5570, in ainvoke\n    return await self.bound.ainvoke(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 425, in ainvoke\n    llm_result = await self.agenerate_prompt(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1132, in agenerate_prompt\n    return await self.agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1090, in agenerate\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py\", line 1359, in _agenerate_with_cache\n    result = await self._agenerate(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1208, in _agenerate\n    final_chunk = await self._achat_stream_with_aggregation(\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 991, in _achat_stream_with_aggregation\n    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 1131, in _aiterate_over_stream\n    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):\n  File \"/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py\", line 937, in _acreate_chat_stream\n    async for part in await self._async_client.chat(**chat_params):\n  File \"/usr/local/lib/python3.10/site-packages/ollama/_client.py\", line 757, in inner\n    raise ResponseError(e.response.text, e.response.status_code) from None\nollama._types.ResponseError: do load request: Post \"http://127.0.0.1:39331/load\": EOF (status code: 500)\n\n    "
+          },
+          "buffers": [],
+          "channel": "iopub"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:26.400028+01:00",
+            "msg_id": "2a4eed6d-8b6c-41b1-807d-aaab242b0ec6",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "llm_reply",
+            "version": "5.0"
+          },
+          "msg_id": "2a4eed6d-8b6c-41b1-807d-aaab242b0ec6",
+          "msg_type": "llm_reply",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "status": "ok",
+            "execution_count": null,
+            "return": null
+          },
+          "buffers": [],
+          "channel": "shell"
+        },
+        {
+          "header": {
+            "date": "2026-01-14T15:19:26.400314+01:00",
+            "msg_id": "d43f6817-f1f6-4195-9f43-145918baaef9",
+            "username": "kernel",
+            "session": "c6933423-2a79-488f-a860-d1be95bc8221_session",
+            "msg_type": "status",
+            "version": "5.0"
+          },
+          "msg_id": "d43f6817-f1f6-4195-9f43-145918baaef9",
+          "msg_type": "status",
+          "parent_header": {
+            "msg_id": "1ef296e2-49df-4557-80d9-49221ce6793e",
+            "msg_type": "llm_request",
+            "username": "automation",
+            "session": "4a667dcc-48ec-4450-b0e3-389803a944c0",
+            "date": "2026-01-14T14:19:23.683793+01:00",
+            "version": "5.3"
+          },
+          "metadata": {},
+          "content": {
+            "execution_state": "idle"
+          },
+          "buffers": [],
+          "channel": "iopub"
+        }
+      ],
+      "timestamp": "2026-01-14T14:19:26.405024"
+    }
+  ]
+}

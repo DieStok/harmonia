@@ -1,0 +1,115 @@
+# =============================================================================
+# TEMPLATE: Experiment Configuration for Harmonia Data Harmonization
+# =============================================================================
+# This is a template file showing the structure of experiment configurations.
+# Copy this file and rename it to create new experiments.
+#
+# NOTE: This file is NOT executed as an experiment - it serves as documentation.
+# =============================================================================
+
+experiment:
+  # Unique name for this experiment (used in output folder naming)
+  name: "experiment_name_here"
+  # Human-readable description of what this experiment does
+  description: "Description of the experiment purpose and model being used"
+
+llm:
+  # Provider: "ollama" for local models, "openrouter" for cloud models
+  provider: ollama  # or "openrouter"
+
+  # Model identifier
+  # For Ollama: model name as shown in `ollama list` (e.g., "devstral:latest")
+  # For OpenRouter: full model path (e.g., "mistralai/devstral-small:free")
+  model: model_name_here
+
+  # Base URL for the LLM API
+  # Ollama default: http://localhost:11434
+  # OpenRouter: https://openrouter.ai/api/v1
+  base_url: http://localhost:11434
+
+  # Temperature for model responses (0.0 = deterministic, higher = more random)
+  temperature: 0.0
+
+# =============================================================================
+# MESSAGES: The conversation flow with the LLM agent
+# =============================================================================
+# Each message represents a user turn in the conversation.
+# The agent will respond to each message using its available tools.
+# =============================================================================
+
+messages:
+  # --- Step 1: Load and subset data ---
+  - content: |
+      Load the file dou.csv as a dataframe and subset it to the following columns:
+      Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
+      Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
+    # Maximum seconds to wait for response before timing out
+    wait_seconds: 180
+
+  # --- Step 2: Match schema ---
+  - content: |
+      Please match this to the GDC schema using the 'similarity' method,
+      and fix any results that don't look correct.
+    wait_seconds: 300
+    # Decision mode for handling agent decisions:
+    # - auto_accept: automatically accept agent suggestions
+    # - manual: pause for user input (not supported in automation)
+    decision_mode: auto_accept
+
+  # --- Step 3: Find alternative mappings for specific columns ---
+  - content: |
+      Find alternative mappings for Histologic_type.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Find alternative mappings for Tumor_Size_cm.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  # --- Step 4: Value mappings ---
+  - content: |
+      Find value mappings for the columns Country, Histologic_Grade_FIGO,
+      Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+      If there are any errors in the mappings, please provide suggestions.
+    wait_seconds: 360
+    decision_mode: auto_accept
+
+  # --- Step 5: Materialize final table ---
+  - content: |
+      Please create a final harmonized table based on the discovered column
+      and value mappings and save it at "dou_harmonized.csv".
+    wait_seconds: 600
+
+  # --- Step 6: Compare results ---
+  - content: |
+      Show dou_harmonized.csv and the initial subsetted dou.csv file
+      one after the other for comparison.
+    wait_seconds: 120
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+
+output:
+  # Base directory for experiment results (relative to project root)
+  base_dir: "./results"
+
+  # Artifacts to save from the experiment
+  # These files should be created by the LLM during the conversation
+  save_artifacts:
+    - "dou_harmonized.csv"
+    - "mapping_summary.json"
+
+# =============================================================================
+# DECISION HANDLING (for interactive agent decisions)
+# =============================================================================
+
+decision_handling:
+  # Default mode for all decisions not explicitly specified
+  default_mode: auto_accept
+
+  # Predefined responses for specific decision patterns (regex)
+  predefined_responses:
+    "choose.*alternative": "Please proceed with the recommended option"
+    "multiple.*options": "Pick the first option"

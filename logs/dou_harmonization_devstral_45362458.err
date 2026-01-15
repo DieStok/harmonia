@@ -1,0 +1,661 @@
+WARNING: Ignored environment file variable LLM_SERVICE_PROVIDER: override from --env
+WARNING: Ignored environment file variable LLM_SERVICE_MODEL: override from --env
+[I 2026-01-15 12:13:13.867 BeakerServerApp] Extension package jupyter_server_terminals took 0.1043s to import
+[I 2026-01-15 12:13:13.971 BeakerServerApp] Extension package jupyterlab took 0.1028s to import
+[I 2026-01-15 12:13:18.488 BeakerServerApp] Extension package panel.io.jupyter_server_extension took 4.4004s to import
+[I 2026-01-15 12:13:18.493 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully linked.
+[I 2026-01-15 12:13:18.493 BeakerServerApp] jupyter_lsp | extension was successfully linked.
+[I 2026-01-15 12:13:18.497 BeakerServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2026-01-15 12:13:18.501 BeakerServerApp] jupyterlab | extension was successfully linked.
+[I 2026-01-15 12:13:19.179 BeakerServerApp] notebook_shim | extension was successfully linked.
+[I 2026-01-15 12:13:19.179 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully linked.
+[I 2026-01-15 12:13:19.271 BeakerServerApp] notebook_shim | extension was successfully loaded.
+[I 2026-01-15 12:13:19.301 BeakerServerApp] beaker_kernel.service.notebook | extension was successfully loaded.
+[I 2026-01-15 12:13:19.305 BeakerServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2026-01-15 12:13:19.306 BeakerServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2026-01-15 12:13:19.309 LabApp] JupyterLab extension loaded from /usr/local/lib/python3.10/site-packages/jupyterlab
+[I 2026-01-15 12:13:19.309 LabApp] JupyterLab application directory is /usr/local/share/jupyter/lab
+[I 2026-01-15 12:13:19.309 LabApp] Extension Manager is 'pypi'.
+[I 2026-01-15 12:13:19.451 BeakerServerApp] jupyterlab | extension was successfully loaded.
+[I 2026-01-15 12:13:19.452 BeakerServerApp] panel.io.jupyter_server_extension | extension was successfully loaded.
+[I 2026-01-15 12:13:19.454 BeakerServerApp] Serving notebooks from local directory: /jupyter
+[I 2026-01-15 12:13:19.454 BeakerServerApp] Jupyter Server 2.17.0 is running at:
+[I 2026-01-15 12:13:19.454 BeakerServerApp]     http://0.0.0.0:8158/
+[I 2026-01-15 12:13:19.454 BeakerServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2026-01-15 12:13:19.492 BeakerServerApp] Skipped non-installed server(s): basedpyright, bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyrefly, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[I 2026-01-15 12:13:27.129 BeakerServerApp] Kernel started: a9530400-80d5-4666-9466-96f0ad55be47
+[W 2026-01-15 12:13:27.132 BeakerServerApp] No session ID specified
+[I 2026-01-15 12:13:28.621 BeakerServerApp] Kernel started: 17118f2e-b9b5-462b-96bf-978e0b2be583
+Context has no workflows: disabling tools.
+[I 2026-01-15 12:14:24.998 BeakerServerApp] Adapting from protocol version 5.3 (kernel a9530400-80d5-4666-9466-96f0ad55be47) to 5.4 (client).
+[I 2026-01-15 12:14:24.999 BeakerServerApp] Connecting to kernel a9530400-80d5-4666-9466-96f0ad55be47.
+[W 2026-01-15 12:14:25.001 BeakerServerApp] The websocket_ping_timeout (90000) cannot be longer than the websocket_ping_interval (30000).
+    Setting websocket_ping_timeout=30000
+[I 2026-01-15 12:14:25.016 BeakerServerApp] Kernel shutdown: 17118f2e-b9b5-462b-96bf-978e0b2be583
+[I 2026-01-15 12:14:25.269 BeakerServerApp] Kernel started: 4bbec223-62ad-4d36-8c5d-74f645811508
+Context has no workflows: disabling tools.
+[I 2026-01-15 12:14:27.420 BeakerServerApp] 302 GET / (@127.0.0.1) 1.34ms
+[W 2026-01-15 12:14:27.425 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.42ms referer=None
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:283: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  records=[{
+/usr/local/lib/python3.10/asyncio/events.py:80: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  self._context.run(self._callback, *self._args)
+/usr/local/lib/python3.10/site-packages/langchain_core/language_models/base.py:328: UserWarning: Using fallback GPT-2 tokenizer for token counting. Token counts may be inaccurate for non-GPT-2 models. For accurate counts, use a model-specific method if available.
+  return len(self.get_token_ids(text))
+Successfully ran code, but failed to fetch preview: 'NoneType' object is not callable
+/usr/local/lib/python3.10/asyncio/events.py:80: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  self._context.run(self._callback, *self._args)
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:283: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  records=[{
+/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py:617: LangChainDeprecationWarning: Calling .text() as a method is deprecated. Use .text as a property instead (e.g., message.text).
+  await self.send_chat_history(message.header)
+[I 2026-01-15 12:15:15.350 BeakerServerApp] 302 GET / (@127.0.0.1) 0.46ms
+[W 2026-01-15 12:15:15.352 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.36ms referer=None
+Error: UnpicklingError Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mUnpicklingError[0m                           Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m column_mappings [38;5;241m=[39m [43mbdi[49m[38;5;241;43m.[39;49m[43mmatch_schema[49m[43m([49m[43mdf[49m[43m,[49m[43m [49m[43mtarget[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mgdc[39;49m[38;5;124;43m"[39;49m[43m,[49m[43m [49m[43mmethod[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mct_learning[39;49m[38;5;124;43m"[39;49m[43m)[49m
+[1;32m      3[0m column_mappings[38;5;241m.[39mto_markdown()
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:75[0m, in [0;36mmatch_schema[0;34m(source, target, method, method_args)[0m
+[1;32m     73[0m     [38;5;28;01mif[39;00m method_args [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[1;32m     74[0m         method_args [38;5;241m=[39m {}
+[0;32m---> 75[0m     matcher_instance [38;5;241m=[39m [43mSchemaMatchers[49m[38;5;241;43m.[39;49m[43mget_matcher[49m[43m([49m[43mmethod[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmethod_args[49m[43m)[49m
+[1;32m     76[0m [38;5;28;01melif[39;00m [38;5;28misinstance[39m(method, BaseSchemaMatcher):
+[1;32m     77[0m     matcher_instance [38;5;241m=[39m method
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/one2one/matcher_factory.py:60[0m, in [0;36mSchemaMatchers.get_matcher[0;34m(matcher_name, **matcher_kwargs)[0m
+[1;32m     57[0m module_path, class_name [38;5;241m=[39m matchers[matcher_name][38;5;241m.[39mrsplit([38;5;124m"[39m[38;5;124m.[39m[38;5;124m"[39m, [38;5;241m1[39m)
+[1;32m     58[0m module [38;5;241m=[39m importlib[38;5;241m.[39mimport_module(module_path)
+[0;32m---> 60[0m [38;5;28;01mreturn[39;00m [38;5;28;43mgetattr[39;49m[43m([49m[43mmodule[49m[43m,[49m[43m [49m[43mclass_name[49m[43m)[49m[43m([49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmatcher_kwargs[49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/one2one/contrastivelearning.py:9[0m, in [0;36mContrastiveLearningSchemaMatcher.__init__[0;34m(self, model_name)[0m
+[1;32m      8[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21m__init__[39m([38;5;28mself[39m, model_name: [38;5;28mstr[39m [38;5;241m=[39m DEFAULT_CL_MODEL):
+[0;32m----> 9[0m     [38;5;28mself[39m[38;5;241m.[39mtopk_matcher [38;5;241m=[39m [43mCLTopkSchemaMatcher[49m[43m([49m[43mmodel_name[49m[38;5;241;43m=[39;49m[43mmodel_name[49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60[0m, in [0;36mCLTopkSchemaMatcher.__init__[0;34m(self, model_name, metric)[0m
+[1;32m     58[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21m__init__[39m([38;5;28mself[39m, model_name: [38;5;28mstr[39m [38;5;241m=[39m DEFAULT_CL_MODEL, metric: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mcosine[39m[38;5;124m"[39m):
+[1;32m     59[0m     [38;5;28msuper[39m()[38;5;241m.[39m[38;5;21m__init__[39m(
+[0;32m---> 60[0m         column_embedder[38;5;241m=[39m[43mContrastiveLearningAPI[49m[43m([49m[43mmodel_name[49m[38;5;241;43m=[39;49m[43mmodel_name[49m[43m)[49m, metric[38;5;241m=[39mmetric
+[1;32m     61[0m     )
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45[0m, in [0;36mContrastiveLearningAPI.__init__[0;34m(self, model_path, model_name, batch_size)[0m
+[1;32m     43[0m [38;5;28mself[39m[38;5;241m.[39mbatch_size [38;5;241m=[39m batch_size
+[1;32m     44[0m [38;5;28mself[39m[38;5;241m.[39mdevice [38;5;241m=[39m get_device()
+[0;32m---> 45[0m [38;5;28mself[39m[38;5;241m.[39mmodel [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload_checkpoint[49m[43m([49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48[0m, in [0;36mContrastiveLearningAPI.load_checkpoint[0;34m(self, lm)[0m
+[1;32m     47[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21mload_checkpoint[39m([38;5;28mself[39m, lm: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mroberta[39m[38;5;124m"[39m):
+[0;32m---> 48[0m     ckpt [38;5;241m=[39m [43mtorch[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mmodel_path[49m[43m,[49m[43m [49m[43mmap_location[49m[38;5;241;43m=[39;49m[43mtorch[49m[38;5;241;43m.[39;49m[43mdevice[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mcpu[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m)[49m
+[1;32m     49[0m     scale_loss [38;5;241m=[39m [38;5;241m0.1[39m
+[1;32m     50[0m     lambd [38;5;241m=[39m [38;5;241m3.9[39m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529[0m, in [0;36mload[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)[0m
+[1;32m   1521[0m                 [38;5;28;01mreturn[39;00m _load(
+[1;32m   1522[0m                     opened_zipfile,
+[1;32m   1523[0m                     map_location,
+[0;32m   (...)[0m
+[1;32m   1526[0m                     [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1527[0m                 )
+[1;32m   1528[0m             [38;5;28;01mexcept[39;00m pickle[38;5;241m.[39mUnpicklingError [38;5;28;01mas[39;00m e:
+[0;32m-> 1529[0m                 [38;5;28;01mraise[39;00m pickle[38;5;241m.[39mUnpicklingError(_get_wo_message([38;5;28mstr[39m(e))) [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;28;01mNone[39;00m
+[1;32m   1530[0m         [38;5;28;01mreturn[39;00m _load(
+[1;32m   1531[0m             opened_zipfile,
+[1;32m   1532[0m             map_location,
+[0;32m   (...)[0m
+[1;32m   1535[0m             [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1536[0m         )
+[1;32m   1537[0m [38;5;28;01mif[39;00m mmap:
+
+[0;31mUnpicklingError[0m: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('UnpicklingError', 'Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.', ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mUnpicklingError\x1b[0m                           Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m column_mappings \x1b[38;5;241m=\x1b[39m \x1b[43mbdi\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mmatch_schema\x1b[49m\x1b[43m(\x1b[49m\x1b[43mdf\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mtarget\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mgdc\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mmethod\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mct_learning\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\n\x1b[1;32m      3\x1b[0m column_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:75\x1b[0m, in \x1b[0;36mmatch_schema\x1b[0;34m(source, target, method, method_args)\x1b[0m\n\x1b[1;32m     73\x1b[0m     \x1b[38;5;28;01mif\x1b[39;00m method_args \x1b[38;5;129;01mis\x1b[39;00m \x1b[38;5;28;01mNone\x1b[39;00m:\n\x1b[1;32m     74\x1b[0m         method_args \x1b[38;5;241m=\x1b[39m {}\n\x1b[0;32m---> 75\x1b[0m     matcher_instance \x1b[38;5;241m=\x1b[39m \x1b[43mSchemaMatchers\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mget_matcher\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmethod\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmethod_args\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m     76\x1b[0m \x1b[38;5;28;01melif\x1b[39;00m \x1b[38;5;28misinstance\x1b[39m(method, BaseSchemaMatcher):\n\x1b[1;32m     77\x1b[0m     matcher_instance \x1b[38;5;241m=\x1b[39m method\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/one2one/matcher_factory.py:60\x1b[0m, in \x1b[0;36mSchemaMatchers.get_matcher\x1b[0;34m(matcher_name, **matcher_kwargs)\x1b[0m\n\x1b[1;32m     57\x1b[0m module_path, class_name \x1b[38;5;241m=\x1b[39m matchers[matcher_name]\x1b[38;5;241m.\x1b[39mrsplit(\x1b[38;5;124m"\x1b[39m\x1b[38;5;124m.\x1b[39m\x1b[38;5;124m"\x1b[39m, \x1b[38;5;241m1\x1b[39m)\n\x1b[1;32m     58\x1b[0m module \x1b[38;5;241m=\x1b[39m importlib\x1b[38;5;241m.\x1b[39mimport_module(module_path)\n\x1b[0;32m---> 60\x1b[0m \x1b[38;5;28;01mreturn\x1b[39;00m \x1b[38;5;28;43mgetattr\x1b[39;49m\x1b[43m(\x1b[49m\x1b[43mmodule\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mclass_name\x1b[49m\x1b[43m)\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmatcher_kwargs\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/one2one/contrastivelearning.py:9\x1b[0m, in \x1b[0;36mContrastiveLearningSchemaMatcher.__init__\x1b[0;34m(self, model_name)\x1b[0m\n\x1b[1;32m      8\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21m__init__\x1b[39m(\x1b[38;5;28mself\x1b[39m, model_name: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m DEFAULT_CL_MODEL):\n\x1b[0;32m----> 9\x1b[0m     \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mtopk_matcher \x1b[38;5;241m=\x1b[39m \x1b[43mCLTopkSchemaMatcher\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmodel_name\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mmodel_name\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60\x1b[0m, in \x1b[0;36mCLTopkSchemaMatcher.__init__\x1b[0;34m(self, model_name, metric)\x1b[0m\n\x1b[1;32m     58\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21m__init__\x1b[39m(\x1b[38;5;28mself\x1b[39m, model_name: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m DEFAULT_CL_MODEL, metric: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mcosine\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[1;32m     59\x1b[0m     \x1b[38;5;28msuper\x1b[39m()\x1b[38;5;241m.\x1b[39m\x1b[38;5;21m__init__\x1b[39m(\n\x1b[0;32m---> 60\x1b[0m         column_embedder\x1b[38;5;241m=\x1b[39m\x1b[43mContrastiveLearningAPI\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmodel_name\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mmodel_name\x1b[49m\x1b[43m)\x1b[49m, metric\x1b[38;5;241m=\x1b[39mmetric\n\x1b[1;32m     61\x1b[0m     )\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.__init__\x1b[0;34m(self, model_path, model_name, batch_size)\x1b[0m\n\x1b[1;32m     43\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mbatch_size \x1b[38;5;241m=\x1b[39m batch_size\n\x1b[1;32m     44\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mdevice \x1b[38;5;241m=\x1b[39m get_device()\n\x1b[0;32m---> 45\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mmodel \x1b[38;5;241m=\x1b[39m \x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload_checkpoint\x1b[49m\x1b[43m(\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.load_checkpoint\x1b[0;34m(self, lm)\x1b[0m\n\x1b[1;32m     47\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21mload_checkpoint\x1b[39m(\x1b[38;5;28mself\x1b[39m, lm: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mroberta\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[0;32m---> 48\x1b[0m     ckpt \x1b[38;5;241m=\x1b[39m \x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mmodel_path\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mmap_location\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mdevice\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mcpu\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m     49\x1b[0m     scale_loss \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m0.1\x1b[39m\n\x1b[1;32m     50\x1b[0m     lambd \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m3.9\x1b[39m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529\x1b[0m, in \x1b[0;36mload\x1b[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)\x1b[0m\n\x1b[1;32m   1521\x1b[0m                 \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1522\x1b[0m                     opened_zipfile,\n\x1b[1;32m   1523\x1b[0m                     map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1526\x1b[0m                     \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1527\x1b[0m                 )\n\x1b[1;32m   1528\x1b[0m             \x1b[38;5;28;01mexcept\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError \x1b[38;5;28;01mas\x1b[39;00m e:\n\x1b[0;32m-> 1529\x1b[0m                 \x1b[38;5;28;01mraise\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError(_get_wo_message(\x1b[38;5;28mstr\x1b[39m(e))) \x1b[38;5;28;01mfrom\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mNone\x1b[39;00m\n\x1b[1;32m   1530\x1b[0m         \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1531\x1b[0m             opened_zipfile,\n\x1b[1;32m   1532\x1b[0m             map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1535\x1b[0m             \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1536\x1b[0m         )\n\x1b[1;32m   1537\x1b[0m \x1b[38;5;28;01mif\x1b[39;00m mmap:\n', '\x1b[0;31mUnpicklingError\x1b[0m: Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.'])
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 518, in react_async
+    reaction = await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 308, in execute
+    result = self.model.process_result(raw_result)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 306, in process_result
+    raise ValueError("Response from LLM does not include any content or tool calls. This shouldn't happen.")
+ValueError: Response from LLM does not include any content or tool calls. This shouldn't happen.
+[I 2026-01-15 12:15:50.134 BeakerServerApp] 302 GET / (@127.0.0.1) 0.40ms
+[W 2026-01-15 12:15:50.136 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.36ms referer=None
+Error: UnpicklingError Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mUnpicklingError[0m                           Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m top_matches [38;5;241m=[39m [43mbdi[49m[38;5;241;43m.[39;49m[43mtop_matches[49m[43m([49m[43mdf[49m[43m,[49m[43m [49m[43mcolumns[49m[38;5;241;43m=[39;49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mHistologic_type[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m[43m [49m[43mtarget[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mgdc[39;49m[38;5;124;43m"[39;49m[43m)[49m
+[1;32m      3[0m top_matches[38;5;241m.[39mto_markdown()
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:133[0m, in [0;36mtop_matches[0;34m(source, columns, target, top_k, method, method_args)[0m
+[1;32m    131[0m     [38;5;28;01mif[39;00m method_args [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[1;32m    132[0m         method_args [38;5;241m=[39m {}
+[0;32m--> 133[0m     topk_matcher [38;5;241m=[39m [43mTopkMatchers[49m[38;5;241;43m.[39;49m[43mget_matcher[49m[43m([49m[43mmethod[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmethod_args[49m[43m)[49m
+[1;32m    134[0m [38;5;28;01melif[39;00m [38;5;28misinstance[39m(method, BaseTopkSchemaMatcher):
+[1;32m    135[0m     topk_matcher [38;5;241m=[39m method
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/matcher_factory.py:31[0m, in [0;36mTopkMatchers.get_matcher[0;34m(matcher_name, **matcher_kwargs)[0m
+[1;32m     28[0m module_path, class_name [38;5;241m=[39m matchers[matcher_name][38;5;241m.[39mrsplit([38;5;124m"[39m[38;5;124m.[39m[38;5;124m"[39m, [38;5;241m1[39m)
+[1;32m     29[0m module [38;5;241m=[39m importlib[38;5;241m.[39mimport_module(module_path)
+[0;32m---> 31[0m [38;5;28;01mreturn[39;00m [38;5;28;43mgetattr[39;49m[43m([49m[43mmodule[49m[43m,[49m[43m [49m[43mclass_name[49m[43m)[49m[43m([49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmatcher_kwargs[49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60[0m, in [0;36mCLTopkSchemaMatcher.__init__[0;34m(self, model_name, metric)[0m
+[1;32m     58[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21m__init__[39m([38;5;28mself[39m, model_name: [38;5;28mstr[39m [38;5;241m=[39m DEFAULT_CL_MODEL, metric: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mcosine[39m[38;5;124m"[39m):
+[1;32m     59[0m     [38;5;28msuper[39m()[38;5;241m.[39m[38;5;21m__init__[39m(
+[0;32m---> 60[0m         column_embedder[38;5;241m=[39m[43mContrastiveLearningAPI[49m[43m([49m[43mmodel_name[49m[38;5;241;43m=[39;49m[43mmodel_name[49m[43m)[49m, metric[38;5;241m=[39mmetric
+[1;32m     61[0m     )
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45[0m, in [0;36mContrastiveLearningAPI.__init__[0;34m(self, model_path, model_name, batch_size)[0m
+[1;32m     43[0m [38;5;28mself[39m[38;5;241m.[39mbatch_size [38;5;241m=[39m batch_size
+[1;32m     44[0m [38;5;28mself[39m[38;5;241m.[39mdevice [38;5;241m=[39m get_device()
+[0;32m---> 45[0m [38;5;28mself[39m[38;5;241m.[39mmodel [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload_checkpoint[49m[43m([49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48[0m, in [0;36mContrastiveLearningAPI.load_checkpoint[0;34m(self, lm)[0m
+[1;32m     47[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21mload_checkpoint[39m([38;5;28mself[39m, lm: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mroberta[39m[38;5;124m"[39m):
+[0;32m---> 48[0m     ckpt [38;5;241m=[39m [43mtorch[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mmodel_path[49m[43m,[49m[43m [49m[43mmap_location[49m[38;5;241;43m=[39;49m[43mtorch[49m[38;5;241;43m.[39;49m[43mdevice[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mcpu[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m)[49m
+[1;32m     49[0m     scale_loss [38;5;241m=[39m [38;5;241m0.1[39m
+[1;32m     50[0m     lambd [38;5;241m=[39m [38;5;241m3.9[39m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529[0m, in [0;36mload[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)[0m
+[1;32m   1521[0m                 [38;5;28;01mreturn[39;00m _load(
+[1;32m   1522[0m                     opened_zipfile,
+[1;32m   1523[0m                     map_location,
+[0;32m   (...)[0m
+[1;32m   1526[0m                     [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1527[0m                 )
+[1;32m   1528[0m             [38;5;28;01mexcept[39;00m pickle[38;5;241m.[39mUnpicklingError [38;5;28;01mas[39;00m e:
+[0;32m-> 1529[0m                 [38;5;28;01mraise[39;00m pickle[38;5;241m.[39mUnpicklingError(_get_wo_message([38;5;28mstr[39m(e))) [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;28;01mNone[39;00m
+[1;32m   1530[0m         [38;5;28;01mreturn[39;00m _load(
+[1;32m   1531[0m             opened_zipfile,
+[1;32m   1532[0m             map_location,
+[0;32m   (...)[0m
+[1;32m   1535[0m             [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1536[0m         )
+[1;32m   1537[0m [38;5;28;01mif[39;00m mmap:
+
+[0;31mUnpicklingError[0m: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('UnpicklingError', 'Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.', ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mUnpicklingError\x1b[0m                           Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m top_matches \x1b[38;5;241m=\x1b[39m \x1b[43mbdi\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mtop_matches\x1b[49m\x1b[43m(\x1b[49m\x1b[43mdf\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mcolumns\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43m[\x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mHistologic_type\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m]\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mtarget\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mgdc\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\n\x1b[1;32m      3\x1b[0m top_matches\x1b[38;5;241m.\x1b[39mto_markdown()\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:133\x1b[0m, in \x1b[0;36mtop_matches\x1b[0;34m(source, columns, target, top_k, method, method_args)\x1b[0m\n\x1b[1;32m    131\x1b[0m     \x1b[38;5;28;01mif\x1b[39;00m method_args \x1b[38;5;129;01mis\x1b[39;00m \x1b[38;5;28;01mNone\x1b[39;00m:\n\x1b[1;32m    132\x1b[0m         method_args \x1b[38;5;241m=\x1b[39m {}\n\x1b[0;32m--> 133\x1b[0m     topk_matcher \x1b[38;5;241m=\x1b[39m \x1b[43mTopkMatchers\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mget_matcher\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmethod\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmethod_args\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m    134\x1b[0m \x1b[38;5;28;01melif\x1b[39;00m \x1b[38;5;28misinstance\x1b[39m(method, BaseTopkSchemaMatcher):\n\x1b[1;32m    135\x1b[0m     topk_matcher \x1b[38;5;241m=\x1b[39m method\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/matcher_factory.py:31\x1b[0m, in \x1b[0;36mTopkMatchers.get_matcher\x1b[0;34m(matcher_name, **matcher_kwargs)\x1b[0m\n\x1b[1;32m     28\x1b[0m module_path, class_name \x1b[38;5;241m=\x1b[39m matchers[matcher_name]\x1b[38;5;241m.\x1b[39mrsplit(\x1b[38;5;124m"\x1b[39m\x1b[38;5;124m.\x1b[39m\x1b[38;5;124m"\x1b[39m, \x1b[38;5;241m1\x1b[39m)\n\x1b[1;32m     29\x1b[0m module \x1b[38;5;241m=\x1b[39m importlib\x1b[38;5;241m.\x1b[39mimport_module(module_path)\n\x1b[0;32m---> 31\x1b[0m \x1b[38;5;28;01mreturn\x1b[39;00m \x1b[38;5;28;43mgetattr\x1b[39;49m\x1b[43m(\x1b[49m\x1b[43mmodule\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mclass_name\x1b[49m\x1b[43m)\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmatcher_kwargs\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60\x1b[0m, in \x1b[0;36mCLTopkSchemaMatcher.__init__\x1b[0;34m(self, model_name, metric)\x1b[0m\n\x1b[1;32m     58\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21m__init__\x1b[39m(\x1b[38;5;28mself\x1b[39m, model_name: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m DEFAULT_CL_MODEL, metric: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mcosine\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[1;32m     59\x1b[0m     \x1b[38;5;28msuper\x1b[39m()\x1b[38;5;241m.\x1b[39m\x1b[38;5;21m__init__\x1b[39m(\n\x1b[0;32m---> 60\x1b[0m         column_embedder\x1b[38;5;241m=\x1b[39m\x1b[43mContrastiveLearningAPI\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmodel_name\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mmodel_name\x1b[49m\x1b[43m)\x1b[49m, metric\x1b[38;5;241m=\x1b[39mmetric\n\x1b[1;32m     61\x1b[0m     )\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.__init__\x1b[0;34m(self, model_path, model_name, batch_size)\x1b[0m\n\x1b[1;32m     43\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mbatch_size \x1b[38;5;241m=\x1b[39m batch_size\n\x1b[1;32m     44\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mdevice \x1b[38;5;241m=\x1b[39m get_device()\n\x1b[0;32m---> 45\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mmodel \x1b[38;5;241m=\x1b[39m \x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload_checkpoint\x1b[49m\x1b[43m(\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.load_checkpoint\x1b[0;34m(self, lm)\x1b[0m\n\x1b[1;32m     47\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21mload_checkpoint\x1b[39m(\x1b[38;5;28mself\x1b[39m, lm: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mroberta\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[0;32m---> 48\x1b[0m     ckpt \x1b[38;5;241m=\x1b[39m \x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mmodel_path\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mmap_location\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mdevice\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mcpu\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m     49\x1b[0m     scale_loss \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m0.1\x1b[39m\n\x1b[1;32m     50\x1b[0m     lambd \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m3.9\x1b[39m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529\x1b[0m, in \x1b[0;36mload\x1b[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)\x1b[0m\n\x1b[1;32m   1521\x1b[0m                 \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1522\x1b[0m                     opened_zipfile,\n\x1b[1;32m   1523\x1b[0m                     map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1526\x1b[0m                     \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1527\x1b[0m                 )\n\x1b[1;32m   1528\x1b[0m             \x1b[38;5;28;01mexcept\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError \x1b[38;5;28;01mas\x1b[39;00m e:\n\x1b[0;32m-> 1529\x1b[0m                 \x1b[38;5;28;01mraise\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError(_get_wo_message(\x1b[38;5;28mstr\x1b[39m(e))) \x1b[38;5;28;01mfrom\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mNone\x1b[39;00m\n\x1b[1;32m   1530\x1b[0m         \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1531\x1b[0m             opened_zipfile,\n\x1b[1;32m   1532\x1b[0m             map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1535\x1b[0m             \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1536\x1b[0m         )\n\x1b[1;32m   1537\x1b[0m \x1b[38;5;28;01mif\x1b[39;00m mmap:\n', '\x1b[0;31mUnpicklingError\x1b[0m: Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.'])
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 518, in react_async
+    reaction = await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 308, in execute
+    result = self.model.process_result(raw_result)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 306, in process_result
+    raise ValueError("Response from LLM does not include any content or tool calls. This shouldn't happen.")
+ValueError: Response from LLM does not include any content or tool calls. This shouldn't happen.
+[I 2026-01-15 12:16:05.977 BeakerServerApp] 302 GET / (@127.0.0.1) 0.41ms
+[W 2026-01-15 12:16:05.979 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.37ms referer=None
+Error: UnpicklingError Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mUnpicklingError[0m                           Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m top_matches [38;5;241m=[39m [43mbdi[49m[38;5;241;43m.[39;49m[43mtop_matches[49m[43m([49m[43mdf[49m[43m,[49m[43m [49m[43mcolumns[49m[38;5;241;43m=[39;49m[43m[[49m[38;5;124;43m"[39;49m[38;5;124;43mTumor_Size_cm[39;49m[38;5;124;43m"[39;49m[43m][49m[43m,[49m[43m [49m[43mtarget[49m[38;5;241;43m=[39;49m[38;5;124;43m"[39;49m[38;5;124;43mgdc[39;49m[38;5;124;43m"[39;49m[43m)[49m
+[1;32m      3[0m top_matches[38;5;241m.[39mto_markdown()
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:133[0m, in [0;36mtop_matches[0;34m(source, columns, target, top_k, method, method_args)[0m
+[1;32m    131[0m     [38;5;28;01mif[39;00m method_args [38;5;129;01mis[39;00m [38;5;28;01mNone[39;00m:
+[1;32m    132[0m         method_args [38;5;241m=[39m {}
+[0;32m--> 133[0m     topk_matcher [38;5;241m=[39m [43mTopkMatchers[49m[38;5;241;43m.[39;49m[43mget_matcher[49m[43m([49m[43mmethod[49m[43m,[49m[43m [49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmethod_args[49m[43m)[49m
+[1;32m    134[0m [38;5;28;01melif[39;00m [38;5;28misinstance[39m(method, BaseTopkSchemaMatcher):
+[1;32m    135[0m     topk_matcher [38;5;241m=[39m method
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/matcher_factory.py:31[0m, in [0;36mTopkMatchers.get_matcher[0;34m(matcher_name, **matcher_kwargs)[0m
+[1;32m     28[0m module_path, class_name [38;5;241m=[39m matchers[matcher_name][38;5;241m.[39mrsplit([38;5;124m"[39m[38;5;124m.[39m[38;5;124m"[39m, [38;5;241m1[39m)
+[1;32m     29[0m module [38;5;241m=[39m importlib[38;5;241m.[39mimport_module(module_path)
+[0;32m---> 31[0m [38;5;28;01mreturn[39;00m [38;5;28;43mgetattr[39;49m[43m([49m[43mmodule[49m[43m,[49m[43m [49m[43mclass_name[49m[43m)[49m[43m([49m[38;5;241;43m*[39;49m[38;5;241;43m*[39;49m[43mmatcher_kwargs[49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60[0m, in [0;36mCLTopkSchemaMatcher.__init__[0;34m(self, model_name, metric)[0m
+[1;32m     58[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21m__init__[39m([38;5;28mself[39m, model_name: [38;5;28mstr[39m [38;5;241m=[39m DEFAULT_CL_MODEL, metric: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mcosine[39m[38;5;124m"[39m):
+[1;32m     59[0m     [38;5;28msuper[39m()[38;5;241m.[39m[38;5;21m__init__[39m(
+[0;32m---> 60[0m         column_embedder[38;5;241m=[39m[43mContrastiveLearningAPI[49m[43m([49m[43mmodel_name[49m[38;5;241;43m=[39;49m[43mmodel_name[49m[43m)[49m, metric[38;5;241m=[39mmetric
+[1;32m     61[0m     )
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45[0m, in [0;36mContrastiveLearningAPI.__init__[0;34m(self, model_path, model_name, batch_size)[0m
+[1;32m     43[0m [38;5;28mself[39m[38;5;241m.[39mbatch_size [38;5;241m=[39m batch_size
+[1;32m     44[0m [38;5;28mself[39m[38;5;241m.[39mdevice [38;5;241m=[39m get_device()
+[0;32m---> 45[0m [38;5;28mself[39m[38;5;241m.[39mmodel [38;5;241m=[39m [38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mload_checkpoint[49m[43m([49m[43m)[49m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48[0m, in [0;36mContrastiveLearningAPI.load_checkpoint[0;34m(self, lm)[0m
+[1;32m     47[0m [38;5;28;01mdef[39;00m[38;5;250m [39m[38;5;21mload_checkpoint[39m([38;5;28mself[39m, lm: [38;5;28mstr[39m [38;5;241m=[39m [38;5;124m"[39m[38;5;124mroberta[39m[38;5;124m"[39m):
+[0;32m---> 48[0m     ckpt [38;5;241m=[39m [43mtorch[49m[38;5;241;43m.[39;49m[43mload[49m[43m([49m[38;5;28;43mself[39;49m[38;5;241;43m.[39;49m[43mmodel_path[49m[43m,[49m[43m [49m[43mmap_location[49m[38;5;241;43m=[39;49m[43mtorch[49m[38;5;241;43m.[39;49m[43mdevice[49m[43m([49m[38;5;124;43m"[39;49m[38;5;124;43mcpu[39;49m[38;5;124;43m"[39;49m[43m)[49m[43m)[49m
+[1;32m     49[0m     scale_loss [38;5;241m=[39m [38;5;241m0.1[39m
+[1;32m     50[0m     lambd [38;5;241m=[39m [38;5;241m3.9[39m
+
+File [0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529[0m, in [0;36mload[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)[0m
+[1;32m   1521[0m                 [38;5;28;01mreturn[39;00m _load(
+[1;32m   1522[0m                     opened_zipfile,
+[1;32m   1523[0m                     map_location,
+[0;32m   (...)[0m
+[1;32m   1526[0m                     [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1527[0m                 )
+[1;32m   1528[0m             [38;5;28;01mexcept[39;00m pickle[38;5;241m.[39mUnpicklingError [38;5;28;01mas[39;00m e:
+[0;32m-> 1529[0m                 [38;5;28;01mraise[39;00m pickle[38;5;241m.[39mUnpicklingError(_get_wo_message([38;5;28mstr[39m(e))) [38;5;28;01mfrom[39;00m[38;5;250m [39m[38;5;28;01mNone[39;00m
+[1;32m   1530[0m         [38;5;28;01mreturn[39;00m _load(
+[1;32m   1531[0m             opened_zipfile,
+[1;32m   1532[0m             map_location,
+[0;32m   (...)[0m
+[1;32m   1535[0m             [38;5;241m*[39m[38;5;241m*[39mpickle_load_args,
+[1;32m   1536[0m         )
+[1;32m   1537[0m [38;5;28;01mif[39;00m mmap:
+
+[0;31mUnpicklingError[0m: Weights only load failed. This file can still be loaded, to do so you have two options, [1mdo those steps only if you trust the source of the checkpoint[0m. 
+	(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.
+	(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.
+	WeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.
+
+Check the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('UnpicklingError', 'Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.', ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mUnpicklingError\x1b[0m                           Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m top_matches \x1b[38;5;241m=\x1b[39m \x1b[43mbdi\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mtop_matches\x1b[49m\x1b[43m(\x1b[49m\x1b[43mdf\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mcolumns\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43m[\x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mTumor_Size_cm\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m]\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mtarget\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mgdc\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\n\x1b[1;32m      3\x1b[0m top_matches\x1b[38;5;241m.\x1b[39mto_markdown()\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/api.py:133\x1b[0m, in \x1b[0;36mtop_matches\x1b[0;34m(source, columns, target, top_k, method, method_args)\x1b[0m\n\x1b[1;32m    131\x1b[0m     \x1b[38;5;28;01mif\x1b[39;00m method_args \x1b[38;5;129;01mis\x1b[39;00m \x1b[38;5;28;01mNone\x1b[39;00m:\n\x1b[1;32m    132\x1b[0m         method_args \x1b[38;5;241m=\x1b[39m {}\n\x1b[0;32m--> 133\x1b[0m     topk_matcher \x1b[38;5;241m=\x1b[39m \x1b[43mTopkMatchers\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mget_matcher\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmethod\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmethod_args\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m    134\x1b[0m \x1b[38;5;28;01melif\x1b[39;00m \x1b[38;5;28misinstance\x1b[39m(method, BaseTopkSchemaMatcher):\n\x1b[1;32m    135\x1b[0m     topk_matcher \x1b[38;5;241m=\x1b[39m method\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/matcher_factory.py:31\x1b[0m, in \x1b[0;36mTopkMatchers.get_matcher\x1b[0;34m(matcher_name, **matcher_kwargs)\x1b[0m\n\x1b[1;32m     28\x1b[0m module_path, class_name \x1b[38;5;241m=\x1b[39m matchers[matcher_name]\x1b[38;5;241m.\x1b[39mrsplit(\x1b[38;5;124m"\x1b[39m\x1b[38;5;124m.\x1b[39m\x1b[38;5;124m"\x1b[39m, \x1b[38;5;241m1\x1b[39m)\n\x1b[1;32m     29\x1b[0m module \x1b[38;5;241m=\x1b[39m importlib\x1b[38;5;241m.\x1b[39mimport_module(module_path)\n\x1b[0;32m---> 31\x1b[0m \x1b[38;5;28;01mreturn\x1b[39;00m \x1b[38;5;28;43mgetattr\x1b[39;49m\x1b[43m(\x1b[49m\x1b[43mmodule\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mclass_name\x1b[49m\x1b[43m)\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[38;5;241;43m*\x1b[39;49m\x1b[43mmatcher_kwargs\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/schema_matching/topk/contrastivelearning.py:60\x1b[0m, in \x1b[0;36mCLTopkSchemaMatcher.__init__\x1b[0;34m(self, model_name, metric)\x1b[0m\n\x1b[1;32m     58\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21m__init__\x1b[39m(\x1b[38;5;28mself\x1b[39m, model_name: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m DEFAULT_CL_MODEL, metric: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mcosine\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[1;32m     59\x1b[0m     \x1b[38;5;28msuper\x1b[39m()\x1b[38;5;241m.\x1b[39m\x1b[38;5;21m__init__\x1b[39m(\n\x1b[0;32m---> 60\x1b[0m         column_embedder\x1b[38;5;241m=\x1b[39m\x1b[43mContrastiveLearningAPI\x1b[49m\x1b[43m(\x1b[49m\x1b[43mmodel_name\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mmodel_name\x1b[49m\x1b[43m)\x1b[49m, metric\x1b[38;5;241m=\x1b[39mmetric\n\x1b[1;32m     61\x1b[0m     )\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:45\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.__init__\x1b[0;34m(self, model_path, model_name, batch_size)\x1b[0m\n\x1b[1;32m     43\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mbatch_size \x1b[38;5;241m=\x1b[39m batch_size\n\x1b[1;32m     44\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mdevice \x1b[38;5;241m=\x1b[39m get_device()\n\x1b[0;32m---> 45\x1b[0m \x1b[38;5;28mself\x1b[39m\x1b[38;5;241m.\x1b[39mmodel \x1b[38;5;241m=\x1b[39m \x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload_checkpoint\x1b[49m\x1b[43m(\x1b[49m\x1b[43m)\x1b[49m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/bdikit/models/contrastive_learning/cl_api.py:48\x1b[0m, in \x1b[0;36mContrastiveLearningAPI.load_checkpoint\x1b[0;34m(self, lm)\x1b[0m\n\x1b[1;32m     47\x1b[0m \x1b[38;5;28;01mdef\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21mload_checkpoint\x1b[39m(\x1b[38;5;28mself\x1b[39m, lm: \x1b[38;5;28mstr\x1b[39m \x1b[38;5;241m=\x1b[39m \x1b[38;5;124m"\x1b[39m\x1b[38;5;124mroberta\x1b[39m\x1b[38;5;124m"\x1b[39m):\n\x1b[0;32m---> 48\x1b[0m     ckpt \x1b[38;5;241m=\x1b[39m \x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mload\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;28;43mself\x1b[39;49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mmodel_path\x1b[49m\x1b[43m,\x1b[49m\x1b[43m \x1b[49m\x1b[43mmap_location\x1b[49m\x1b[38;5;241;43m=\x1b[39;49m\x1b[43mtorch\x1b[49m\x1b[38;5;241;43m.\x1b[39;49m\x1b[43mdevice\x1b[49m\x1b[43m(\x1b[49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[38;5;124;43mcpu\x1b[39;49m\x1b[38;5;124;43m"\x1b[39;49m\x1b[43m)\x1b[49m\x1b[43m)\x1b[49m\n\x1b[1;32m     49\x1b[0m     scale_loss \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m0.1\x1b[39m\n\x1b[1;32m     50\x1b[0m     lambd \x1b[38;5;241m=\x1b[39m \x1b[38;5;241m3.9\x1b[39m\n', 'File \x1b[0;32m/usr/local/lib/python3.10/site-packages/torch/serialization.py:1529\x1b[0m, in \x1b[0;36mload\x1b[0;34m(f, map_location, pickle_module, weights_only, mmap, **pickle_load_args)\x1b[0m\n\x1b[1;32m   1521\x1b[0m                 \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1522\x1b[0m                     opened_zipfile,\n\x1b[1;32m   1523\x1b[0m                     map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1526\x1b[0m                     \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1527\x1b[0m                 )\n\x1b[1;32m   1528\x1b[0m             \x1b[38;5;28;01mexcept\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError \x1b[38;5;28;01mas\x1b[39;00m e:\n\x1b[0;32m-> 1529\x1b[0m                 \x1b[38;5;28;01mraise\x1b[39;00m pickle\x1b[38;5;241m.\x1b[39mUnpicklingError(_get_wo_message(\x1b[38;5;28mstr\x1b[39m(e))) \x1b[38;5;28;01mfrom\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mNone\x1b[39;00m\n\x1b[1;32m   1530\x1b[0m         \x1b[38;5;28;01mreturn\x1b[39;00m _load(\n\x1b[1;32m   1531\x1b[0m             opened_zipfile,\n\x1b[1;32m   1532\x1b[0m             map_location,\n\x1b[0;32m   (...)\x1b[0m\n\x1b[1;32m   1535\x1b[0m             \x1b[38;5;241m*\x1b[39m\x1b[38;5;241m*\x1b[39mpickle_load_args,\n\x1b[1;32m   1536\x1b[0m         )\n\x1b[1;32m   1537\x1b[0m \x1b[38;5;28;01mif\x1b[39;00m mmap:\n', '\x1b[0;31mUnpicklingError\x1b[0m: Weights only load failed. This file can still be loaded, to do so you have two options, \x1b[1mdo those steps only if you trust the source of the checkpoint\x1b[0m. \n\t(1) In PyTorch 2.6, we changed the default value of the `weights_only` argument in `torch.load` from `False` to `True`. Re-running `torch.load` with `weights_only` set to `False` will likely succeed, but it can result in arbitrary code execution. Do it only if you got the file from a trusted source.\n\t(2) Alternatively, to load with `weights_only=True` please check the recommended steps in the following error message.\n\tWeightsUnpickler error: Unsupported global: GLOBAL argparse.Namespace was not an allowed global by default. Please use `torch.serialization.add_safe_globals([argparse.Namespace])` or the `torch.serialization.safe_globals([argparse.Namespace])` context manager to allowlist this global if you trust this class/function.\n\nCheck the documentation of torch.load to learn more about types accepted by default with weights_only https://pytorch.org/docs/stable/generated/torch.load.html.'])
+[I 2026-01-15 12:16:22.995 BeakerServerApp] 302 GET / (@127.0.0.1) 0.52ms
+[W 2026-01-15 12:16:22.997 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.37ms referer=None
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mCountry[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mCountry[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mCountry\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mCountry\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mHistologic_Grade_FIGO[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mHistologic grade[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mHistologic_Grade_FIGO\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mHistologic grade\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mHistologic_type[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mTumor type[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mHistologic_type\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mTumor type\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mFIGO_stage[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mFIGO stage[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mFIGO_stage\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mFIGO stage\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mRace[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mRace[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mRace\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mRace\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mEthnicity[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mEthnicity[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mEthnicity\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mEthnicity\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mGender[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mGender[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mGender\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mGender\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+Error: NameError name 'source_df' is not defined
+Traceback:
+[0;31m---------------------------------------------------------------------------[0m
+[0;31mNameError[0m                                 Traceback (most recent call last)
+Cell [0;32mIn[3], line 2[0m
+[1;32m      1[0m [38;5;28;01mimport[39;00m[38;5;250m [39m[38;5;21;01mbdikit[39;00m[38;5;250m [39m[38;5;28;01mas[39;00m[38;5;250m [39m[38;5;21;01mbdi[39;00m
+[0;32m----> 2[0m value_mappings [38;5;241m=[39m bdi[38;5;241m.[39mmatch_values([43msource_df[49m, column_mapping[38;5;241m=[39m([38;5;124m'[39m[38;5;124mTumor_Focality[39m[38;5;124m'[39m, [38;5;124m'[39m[38;5;124mTumor focality[39m[38;5;124m'[39m), target[38;5;241m=[39m[38;5;124m"[39m[38;5;124mgdc[39m[38;5;124m"[39m, method[38;5;241m=[39m[38;5;124m"[39m[38;5;124mtfidf[39m[38;5;124m"[39m)
+[1;32m      3[0m value_mappings[38;5;241m.[39mto_markdown()
+
+[0;31mNameError[0m: name 'source_df' is not defined
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/context.py", line 835, in handle_error
+    raise ExecutionError(content["ename"], content["evalue"], content["traceback"])
+beaker_kernel.lib.utils.ExecutionError: ('NameError', "name 'source_df' is not defined", ['\x1b[0;31m---------------------------------------------------------------------------\x1b[0m', '\x1b[0;31mNameError\x1b[0m                                 Traceback (most recent call last)', 'Cell \x1b[0;32mIn[3], line 2\x1b[0m\n\x1b[1;32m      1\x1b[0m \x1b[38;5;28;01mimport\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdikit\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;28;01mas\x1b[39;00m\x1b[38;5;250m \x1b[39m\x1b[38;5;21;01mbdi\x1b[39;00m\n\x1b[0;32m----> 2\x1b[0m value_mappings \x1b[38;5;241m=\x1b[39m bdi\x1b[38;5;241m.\x1b[39mmatch_values(\x1b[43msource_df\x1b[49m, column_mapping\x1b[38;5;241m=\x1b[39m(\x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mTumor_Focality\x1b[39m\x1b[38;5;124m\'\x1b[39m, \x1b[38;5;124m\'\x1b[39m\x1b[38;5;124mTumor focality\x1b[39m\x1b[38;5;124m\'\x1b[39m), target\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mgdc\x1b[39m\x1b[38;5;124m"\x1b[39m, method\x1b[38;5;241m=\x1b[39m\x1b[38;5;124m"\x1b[39m\x1b[38;5;124mtfidf\x1b[39m\x1b[38;5;124m"\x1b[39m)\n\x1b[1;32m      3\x1b[0m value_mappings\x1b[38;5;241m.\x1b[39mto_markdown()\n', "\x1b[0;31mNameError\x1b[0m: name 'source_df' is not defined"])
+slurmstepd: error: *** JOB 45362458 ON n0102 CANCELLED AT 2026-01-15T12:16:44 ***
+INFO:    Terminating squashfuse_ll after timeout
+INFO:    Timeouts can be caused by a running background process
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/http11.py", line 231, in _receive_event
+httpcore.RemoteProtocolError: Server disconnected without sending a response.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 518, in react_async
+    reaction = await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 286, in execute
+    raw_result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 281, in ainvoke
+    return self.handle_invoke_error(error)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 317, in handle_invoke_error
+    raise error
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 272, in ainvoke
+    result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5570, in ainvoke
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 425, in ainvoke
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1132, in agenerate_prompt
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1090, in agenerate
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1359, in _agenerate_with_cache
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1208, in _agenerate
+    final_chunk = await self._achat_stream_with_aggregation(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 991, in _achat_stream_with_aggregation
+    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1131, in _aiterate_over_stream
+    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 937, in _acreate_chat_stream
+    async for part in await self._async_client.chat(**chat_params):
+  File "/usr/local/lib/python3.10/site-packages/ollama/_client.py", line 752, in inner
+  File "/usr/local/lib/python3.10/contextlib.py", line 199, in __aenter__
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1583, in stream
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+httpx.RemoteProtocolError: Server disconnected without sending a response.
+[I 2026-01-15 12:16:45.906 BeakerServerApp] 302 GET / (@127.0.0.1) 0.56ms
+[E 2026-01-15 12:16:45.908 BeakerServerApp] Uncaught exception GET /?session=96171861-5e2c-47dc-830a-5c473d4efe70 (127.0.0.1)
+    HTTPServerRequest(protocol='http', host='localhost:8158', method='GET', uri='/?session=96171861-5e2c-47dc-830a-5c473d4efe70', version='HTTP/1.1', remote_ip='127.0.0.1')
+    Traceback (most recent call last):
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 1859, in _execute
+      File "/usr/local/lib/python3.10/site-packages/beaker_kernel/service/handlers.py", line 109, in get
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 2843, in get
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 3012, in get_content
+    OSError: [Errno 107] Transport endpoint is not connected: '/usr/local/lib/python3.10/site-packages/beaker_kernel/service/ui/index.html'
+[E 2026-01-15 12:16:45.908 BeakerServerApp] {
+      "Host": "localhost:8158",
+      "Accept": "*/*",
+      "User-Agent": "Python/3.11 aiohttp/3.9.1"
+    }
+[E 2026-01-15 12:16:45.909 BeakerServerApp] 500 GET /?session=96171861-5e2c-47dc-830a-5c473d4efe70 (@127.0.0.1) 1.30ms referer=None
+[W 2026-01-15 12:16:45.910 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.52ms referer=None
+Uncaught exception in ZMQStream callback
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_async/connection.py", line 124, in _connect
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+  File "/usr/local/lib/python3.10/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/zmq/eventloop/zmqstream.py", line 565, in _log_error
+    f.result()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+    new_data = await callback(self, other_stream, data)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/utils.py", line 157, in wrapper
+    result = await fn(self, ctx.message)
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/kernel.py", line 550, in llm_request
+    result = await task
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 62, in react_async
+    return await super().react_async(query, react_context)
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 144, in inner_async
+    return await ensure_async(fn(self, *args, **kwargs))
+  File "/usr/local/lib/python3.10/site-packages/archytas/utils.py", line 60, in ensure_async
+    return await fn
+  File "/usr/local/lib/python3.10/site-packages/archytas/react.py", line 327, in react_async
+    action = await self.handle_message(HumanMessage(content=query))
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 239, in handle_message
+    return await self.execute()
+  File "/usr/local/lib/python3.10/site-packages/beaker_kernel/lib/agent.py", line 65, in execute
+    return await super().execute(*args, **kwargs)
+  File "/usr/local/lib/python3.10/site-packages/archytas/agent.py", line 286, in execute
+    raw_result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 281, in ainvoke
+    return self.handle_invoke_error(error)
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 317, in handle_invoke_error
+    raise error
+  File "/usr/local/lib/python3.10/site-packages/archytas/models/base.py", line 272, in ainvoke
+    result = await self.model.ainvoke(
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/runnables/base.py", line 5570, in ainvoke
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 425, in ainvoke
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1132, in agenerate_prompt
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1090, in agenerate
+  File "/usr/local/lib/python3.10/site-packages/langchain_core/language_models/chat_models.py", line 1359, in _agenerate_with_cache
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1208, in _agenerate
+    final_chunk = await self._achat_stream_with_aggregation(
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 991, in _achat_stream_with_aggregation
+    async for chunk in self._aiterate_over_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 1131, in _aiterate_over_stream
+    async for stream_resp in self._acreate_chat_stream(messages, stop, **kwargs):
+  File "/usr/local/lib/python3.10/site-packages/langchain_ollama/chat_models.py", line 937, in _acreate_chat_stream
+    async for part in await self._async_client.chat(**chat_params):
+  File "/usr/local/lib/python3.10/site-packages/ollama/_client.py", line 752, in inner
+  File "/usr/local/lib/python3.10/contextlib.py", line 199, in __aenter__
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1583, in stream
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1629, in send
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+  File "/usr/local/lib/python3.10/site-packages/httpx/_client.py", line 1730, in _send_single_request
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+  File "/usr/local/lib/python3.10/contextlib.py", line 153, in __exit__
+  File "/usr/local/lib/python3.10/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+httpx.ConnectError: All connection attempts failed
+[I 2026-01-15 12:16:47.270 BeakerServerApp] 302 GET / (@127.0.0.1) 0.41ms
+[E 2026-01-15 12:16:47.271 BeakerServerApp] Uncaught exception GET /?session=7cf14a2a-2a8e-4c80-a9ac-b1ef9113989d (127.0.0.1)
+    HTTPServerRequest(protocol='http', host='localhost:8158', method='GET', uri='/?session=7cf14a2a-2a8e-4c80-a9ac-b1ef9113989d', version='HTTP/1.1', remote_ip='127.0.0.1')
+    Traceback (most recent call last):
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 1859, in _execute
+      File "/usr/local/lib/python3.10/site-packages/beaker_kernel/service/handlers.py", line 109, in get
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 2843, in get
+      File "/usr/local/lib/python3.10/site-packages/tornado/web.py", line 3012, in get_content
+    OSError: [Errno 107] Transport endpoint is not connected: '/usr/local/lib/python3.10/site-packages/beaker_kernel/service/ui/index.html'
+[E 2026-01-15 12:16:47.271 BeakerServerApp] {
+      "Host": "localhost:8158",
+      "Accept": "*/*",
+      "User-Agent": "Python/3.11 aiohttp/3.9.1"
+    }
+[E 2026-01-15 12:16:47.271 BeakerServerApp] 500 GET /?session=7cf14a2a-2a8e-4c80-a9ac-b1ef9113989d (@127.0.0.1) 0.80ms referer=None
+[W 2026-01-15 12:16:47.272 BeakerServerApp] 405 POST /notebook?token=[secret] (@127.0.0.1) 0.36ms referer=None

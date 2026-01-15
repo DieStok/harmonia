@@ -471,6 +471,73 @@ class BeakerClient:
         self.ws = None
         self.session = None
 
+    async def execute_code(self, code: str, timeout: float = 60.0) -> dict:
+        """
+        Execute Python code directly in the kernel.
+
+        Args:
+            code: Python code to execute
+            timeout: Timeout in seconds
+
+        Returns:
+            Dict with 'status', 'output', and 'error' keys
+        """
+        if not self.is_connected:
+            raise RuntimeError("Not connected to Beaker server. Call connect() first.")
+
+        msg = self._make_message("execute_request", {
+            "code": code,
+            "silent": False,
+            "store_history": True,
+            "user_expressions": {},
+            "allow_stdin": False,
+            "stop_on_error": True,
+        })
+        msg_id = msg["header"]["msg_id"]
+
+        await self.ws.send_json(msg)
+
+        # Collect execution results
+        output = []
+        error = None
+        status = "ok"
+
+        end_time = asyncio.get_event_loop().time() + timeout
+        while asyncio.get_event_loop().time() < end_time:
+            try:
+                response = await asyncio.wait_for(self.ws.receive_json(), timeout=5.0)
+                parent = response.get("parent_header", {})
+                if parent.get("msg_id") != msg_id:
+                    continue
+
+                msg_type = response.get("msg_type", "")
+                content = response.get("content", {})
+
+                if msg_type == "stream":
+                    output.append(content.get("text", ""))
+                elif msg_type == "execute_result":
+                    output.append(str(content.get("data", {}).get("text/plain", "")))
+                elif msg_type == "error":
+                    error = "\n".join(content.get("traceback", []))
+                    status = "error"
+                elif msg_type == "status":
+                    if content.get("execution_state") == "idle":
+                        break
+                elif msg_type == "execute_reply":
+                    if content.get("status") == "error":
+                        status = "error"
+                        error = content.get("evalue", "Unknown error")
+                    break
+
+            except asyncio.TimeoutError:
+                continue
+
+        return {
+            "status": status,
+            "output": "".join(output),
+            "error": error,
+        }
+
     async def __aenter__(self) -> "BeakerClient":
         """Async context manager entry."""
         await self.connect()

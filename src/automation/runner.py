@@ -85,6 +85,9 @@ class ExperimentRunner:
         except Exception as e:
             print(f"  Warning: Could not create initial notebook: {e}")
 
+        # Set up kernel working directory for output files
+        await self._setup_kernel_working_directory()
+
         status = "completed"
         error_message = None
 
@@ -260,6 +263,64 @@ class ExperimentRunner:
     def stop(self) -> None:
         """Stop the running experiment."""
         self.is_running = False
+
+    async def _setup_kernel_working_directory(self) -> None:
+        """Set up the kernel working directory to save output files to results folder.
+
+        This executes code in the kernel to:
+        1. Change to the output directory
+        2. Copy input data files to results directory for easy access
+        3. Store paths for data access
+        """
+        # Get absolute path for output directory
+        output_path = str(self.output_dir.absolute())
+
+        # List of common data files to copy
+        data_files = ["dou.csv", "data.csv", "input.csv"]
+
+        setup_code = f'''
+import os
+import shutil
+
+# Store original working directory for data access
+_original_cwd = os.getcwd()
+_data_dir = _original_cwd
+
+# Create and change to results directory for output files
+os.makedirs("{output_path}", exist_ok=True)
+
+# Copy input data files to results directory
+data_files = {data_files}
+for filename in data_files:
+    src = os.path.join(_data_dir, filename)
+    if os.path.exists(src):
+        dst = os.path.join("{output_path}", filename)
+        if not os.path.exists(dst):
+            shutil.copy2(src, dst)
+            print(f"Copied {{filename}} to results directory")
+
+os.chdir("{output_path}")
+
+# Make original data directory accessible via import path
+import sys
+if _data_dir not in sys.path:
+    sys.path.insert(0, _data_dir)
+
+print(f"Working directory set to: {{os.getcwd()}}")
+print(f"Data directory: {{_data_dir}}")
+'''
+        try:
+            result = await self.client.execute_code(setup_code, timeout=30.0)
+            if result["status"] == "ok":
+                print(f"  Kernel working directory: {output_path}")
+                if result.get("output"):
+                    for line in result["output"].strip().split("\n"):
+                        if line:
+                            print(f"  {line}")
+            else:
+                print(f"  Warning: Could not set working directory: {result.get('error', 'Unknown error')}")
+        except Exception as e:
+            print(f"  Warning: Failed to set kernel working directory: {e}")
 
 
 async def run_single_message(

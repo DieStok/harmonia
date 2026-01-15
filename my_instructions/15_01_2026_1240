@@ -1,0 +1,8 @@
+Yes. I want you to create a clear and complete plan for testing this. Please include in this plan two approaches: i) autonomously trying to fix this issue in the ways you provided (first: specify each possible solution further by checking relevant documentation, then ways in which it may not work or be wrong, ways to test that it works, and how you can test after implementation that it has fixed the issues), ii) start an apptainer image that runs for 4 hours with one of the failing ollama models where the agent says it doesn't have the tools needed, not as an experiment, but interactively so I can connect to it and input the prompts one by one while watching verbose log outputs for the agent, and surface the mac terminal command for me to connect to it and the address to connect to. 
+
+So:
+- Formulate a clear plan
+- Fetch relevant documentation from the available codebases if needed
+- output this clear and complete plan for testing these issues and implementing fixesin plans/15_01_2026_1240_fixing_bdikit_tools_agent.md
+- make your todo list
+- execute all steps, including first giving me an interactive server with an ollama tool-enabled LLM so I can see what happens myself (running on an srun command for 4 hours), and then continuing with your own fixes and tests.

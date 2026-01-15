@@ -1,0 +1,114 @@
+<!-- Your assertion that these models do not support tool use is untrue for at least devstral. I will comment on this more below. Here are some now tasks:
+
+For today, I want you to do the following things:
+- Report back to me in summarized form what the status is of the work to be done in this repo. Specifically, deliverable one is to have dou.csv be analysed by different LLMs, set in configuration files, with a set conversation script, within a beaker kernel running in apptainer, that has the bdi-toolkit tools enabled, and for the conversation transcript to be saved, as well as a full trace of the conversation, and a full notebook captured at the end with all interactions and what code was generated. Ideally these experiments should be able to be monitored while in progress, that is, by connecting to the beaker dev UI, where you should see chat messages appear as each step of the conversation script completes. This latter feature is not absolutely essential if it cannot be implemented, since it is mostly about controlled experiments. However, if it does not work I want a full explanation of why this does not work and whether it could be fixed.
+
+Note also: any edited .csv files or other files that are output from the code need to appear in the results directory of that experiment. For instance, for /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/configs/dou_harmonization_glm-4.5-air.yaml the modified _dou.csv for a run should appear in that experiment's result folder, such as /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results/dou_harmonization_glm-4.5-air_20260114_141800 (it is generated with a date and time of the experiment attached). This may be achieved by: i) cd-ing into the results folder for that experiment within the image so that anything saved in the run is saved in this 'home' directory or ii) append a SYSTEM message to the LLM conversation that happens in the container that instructs it to save any outputs in that folder.
+
+Now, there are a few open issues: some ollama models seem not to run properly. You can test whether the models have tool capabilities like this:
+
+curl http://localhost:11434/api/chat -d '{
+  "model": "llama3.1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a location",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "The city name"
+            }
+          },
+          "required": ["location"]
+        }
+      }
+    }
+  ]
+}'
+
+Note that devstral-2 for sure has tool capabilities. You could also check via https://ollama.com/search?c=tools?page=1, page=2, and page=3, this lists all models that have tool capabilities. You can also cross-reference with HuggingFace.
+
+
+
+Do the following:
+- understand the code base: read the essential automation function signatures, read the documentation of any functions that are called in scripts that are imported from ollama, beaker-kernel and archytas in their respective directories (/hpc/compgen/projects/llm_GEO_project/ollama, /hpc/compgen/projects/llm_GEO_project/beaker-kernel, /hpc/compgen/projects/llm_GEO_project/archytas)
+
+Then, with this full context, create a how_this_codebase_works_15_01_2026.md in documentation/codebase_descriptions. that includes what functionality is there, how this relates to the objectives, sample workflows for how to run experiments or launch one experiment interactively, or just run one beaker server with a certain LLM backend to use interactively.
+
+Then, look into the ollama issue and check whether models support tool calling or not. For olmo you need to switch to olmo-3.1:32b (this supports tool calling). If a model does not support tool calling then flag that in its EXPERIMENT_NAME.yaml and do not run experiments with that model.  Make an output called documentation/possible_features/implementing_both_tool_calling_and_non_tool_calling_experiments.md where you describe 5 different ways in which it may be possible to still run the harmonization experiments by just relying on the model's code generation capabilities rather than tool calling capabilities. 
+
+Then, implement proper generation of outputs in the results folder of each experiment and check that this work, and check that for all models that do support tool calling, the experiments run properly end to end, and that the conversation transcripts, full traces, and full notebooks are saved in the results folder of each experiment.
+
+Now: make a full, in depth-plan for going about this work, with time estimates for each step, and deliverables, and share it with me. then IMMEDIATELY start implementation. 
+
+
+
+ -->
+
+Your assertion that these models do not support tool use is untrue for at least devstral. I will comment on this more below. 
+
+Here are some new tasks:
+
+For today, I want you to do the following things:
+- Report back to me in summarized form what the status is of the work to be done in this repo. Specifically, deliverable one is to have dou.csv be analysed by different LLMs, set in configuration files, with a set conversation script, within a beaker kernel running in apptainer, that has the bdi-toolkit tools enabled, and for the conversation transcript to be saved, as well as a full trace of the conversation, and a full notebook captured at the end with all interactions and what code was generated. Ideally these experiments should be able to be monitored while in progress, that is, by connecting to the beaker dev UI, where you should see chat messages appear as each step of the conversation script completes. This latter feature is not absolutely essential if it cannot be implemented, since it is mostly about controlled experiments. However, if it does not work I want a full explanation of why this does not work and whether it could be fixed.
+
+Note also: any edited .csv files or other files that are output from the code need to appear in the results directory of that experiment. For instance, for /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/configs/dou_harmonization_glm-4.5-air.yaml the modified _dou.csv for a run should appear in that experiment's result folder, such as /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results/dou_harmonization_glm-4.5-air_20260114_141800 (it is generated with a date and time of the experiment attached). This may be achieved by: i) cd-ing into the results folder for that experiment within the image so that anything saved in the run is saved in this 'home' directory or ii) append a SYSTEM message to the LLM conversation that happens in the container that instructs it to save any outputs in that folder.
+
+Now, there are a few open issues: some ollama models seem not to run properly. You can test whether the models have tool capabilities like this:
+
+curl http://localhost:11434/api/chat -d '{
+  "model": "llama3.1",
+  "messages": [
+    {
+      "role": "user",
+      "content": "What is the weather in Paris?"
+    }
+  ],
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "Get the current weather for a location",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "location": {
+              "type": "string",
+              "description": "The city name"
+            }
+          },
+          "required": ["location"]
+        }
+      }
+    }
+  ]
+}'
+
+Note that devstral-2 for sure has tool capabilities. You could also check via https://ollama.com/search?c=tools?page=1, page=2, and page=3, this lists all models that have tool capabilities. You can also cross-reference with HuggingFace.
+
+
+
+Do the following:
+- understand the code base: read the essential automation function signatures, read the documentation of any functions that are called in scripts that are imported from ollama, beaker-kernel and archytas in their respective directories (/hpc/compgen/projects/llm_GEO_project/ollama, /hpc/compgen/projects/llm_GEO_project/beaker-kernel, /hpc/compgen/projects/llm_GEO_project/archytas)
+
+Then, with this full context, create a how_this_codebase_works_15_01_2026.md in documentation/codebase_descriptions. that includes what functionality is there, how this relates to the objectives, sample workflows for how to run experiments or launch one experiment interactively, or just run one beaker server with a certain LLM backend to use interactively.
+
+Then, look into the ollama issue and check whether models support tool calling or not. For olmo you need to switch to olmo-3.1:32b (this supports tool calling). If a model does not support tool calling then flag that in its EXPERIMENT_NAME.yaml and do not run experiments with that model.  Make an output called documentation/possible_features/implementing_both_tool_calling_and_non_tool_calling_experiments.md where you describe 5 different ways in which it may be possible to still run the harmonization experiments by just relying on the model's code generation capabilities rather than tool calling capabilities. 
+
+Then, implement proper generation of outputs in the results folder of each experiment and check that this work, and check that for all models that do support tool calling, the experiments run properly end to end, and that the conversation transcripts, full traces, and full notebooks are saved in the results folder of each experiment.
+
+Now: make a full, in depth-plan for going about this work, with time estimates for each step, and deliverables, and output it in plans/15_01_2026_1130. then IMMEDIATELY start implementation. With every step of the implementation, refer to the initial plan and check that you are still on track. 
+
+
+

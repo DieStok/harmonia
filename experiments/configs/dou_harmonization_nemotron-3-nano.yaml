@@ -9,7 +9,7 @@
 
 experiment:
   name: "dou_harmonization_nemotron-3-nano"
-  description: "Harmonize dou.csv to GDC schema using embeddings method (Nemotron-3-Nano 30B via Ollama)"
+  description: "Harmonize dou.csv to GDC schema using similarity method (Nemotron-3-Nano 30B via Ollama)"
 
 llm:
   provider: ollama
@@ -19,26 +19,43 @@ llm:
 
 messages:
   - content: |
-      Load the file dou.csv as a dataframe.
-      Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
-    wait_seconds: 180  # Extra time for local model
+      Load the file dou.csv as a dataframe and subset it to the following columns:
+      Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
+      Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
+    wait_seconds: 180
 
   - content: |
-      Please match this dataframe to the GDC schema using the embeddings method.
-      Show me the top 3 matching columns for each source column.
+      Please match this to the GDC schema using the 'similarity' method,
+      and fix any results that don't look correct.
     wait_seconds: 300
     decision_mode: auto_accept
 
   - content: |
-      Now please also match the values for each column.
-      For any values that don't have a direct match, suggest the closest alternative.
+      Find alternative mappings for Histologic_type.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Find alternative mappings for Tumor_Size_cm.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Find value mappings for the columns Country, Histologic_Grade_FIGO,
+      Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+      If there are any errors in the mappings, please provide suggestions.
     wait_seconds: 360
     decision_mode: auto_accept
 
   - content: |
-      Materialize the mapping and show me the harmonized dataframe.
-      Also show the mapping summary.
+      Please create a final harmonized table based on the discovered column
+      and value mappings and save it at "dou_harmonized.csv".
     wait_seconds: 600
+
+  - content: |
+      Show dou_harmonized.csv and the initial subsetted dou.csv file
+      one after the other for comparison.
+    wait_seconds: 120
 
 output:
   base_dir: "./results"

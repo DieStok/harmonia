@@ -1,44 +1,62 @@
 # =============================================================================
-# Dou Dataset Harmonization Experiment - Kimi-K2
+# Dou Dataset Harmonization Experiment - Kimi-K2 (OpenRouter)
 # =============================================================================
 # This experiment harmonizes the dou.csv dataset to the GDC schema,
 # demonstrating Harmonia's data harmonization capabilities.
+#
+# NOTE: kimi-k2:free may not support tools. Fallback to qwen if needed.
 #
 # Based on the example from the Harmonia paper: https://arxiv.org/pdf/2502.07132
 # =============================================================================
 
 experiment:
   name: "dou_harmonization_kimi-k2"
-  description: "Harmonize dou.csv to GDC schema using embeddings method (Kimi-K2)"
+  description: "Harmonize dou.csv to GDC schema using similarity method (Kimi-K2 via OpenRouter)"
 
 llm:
-  # Note: kimi-k2:free doesn't support tools. Using qwen instead.
   provider: openrouter
-  model: qwen/qwen-2.5-72b-instruct:free
+  model: moonshotai/kimi-k2:free
   temperature: 0.0
 
 messages:
   - content: |
-      Load the file dou.csv as a dataframe.
-      Then subset the columns to just these 4: 'sample_type', 'gender', 'sample_site', 'diagnosis'
-    wait_seconds: 120
+      Load the file dou.csv as a dataframe and subset it to the following columns:
+      Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
+      Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
+    wait_seconds: 180
 
   - content: |
-      Please match this dataframe to the GDC schema using the embeddings method.
-      Show me the top 3 matching columns for each source column.
+      Please match this to the GDC schema using the 'similarity' method,
+      and fix any results that don't look correct.
+    wait_seconds: 300
+    decision_mode: auto_accept
+
+  - content: |
+      Find alternative mappings for Histologic_type.
     wait_seconds: 180
     decision_mode: auto_accept
 
   - content: |
-      Now please also match the values for each column.
-      For any values that don't have a direct match, suggest the closest alternative.
-    wait_seconds: 240
+      Find alternative mappings for Tumor_Size_cm.
+    wait_seconds: 180
     decision_mode: auto_accept
 
   - content: |
-      Materialize the mapping and show me the harmonized dataframe.
-      Also show the mapping summary.
+      Find value mappings for the columns Country, Histologic_Grade_FIGO,
+      Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+      If there are any errors in the mappings, please provide suggestions.
+    wait_seconds: 360
+    decision_mode: auto_accept
+
+  - content: |
+      Please create a final harmonized table based on the discovered column
+      and value mappings and save it at "dou_harmonized.csv".
     wait_seconds: 600
+
+  - content: |
+      Show dou_harmonized.csv and the initial subsetted dou.csv file
+      one after the other for comparison.
+    wait_seconds: 120
 
 output:
   base_dir: "./results"

@@ -39,21 +39,36 @@ From: python:3.10
     echo "=== Space before main install ==="
     df -h /tmp
 
-    # Build the wheel using hatch (this runs the Beaker build hook to register entry points)
+    # First install beaker_kernel to make the hatch build hook available in the system
+    echo "Installing beaker_kernel (provides hatch build hook)..."
+    uv pip install --system --no-cache "beaker_kernel>=1.14.0"
+
+    # Also install hatchling build backend requirements
+    echo "Installing hatchling..."
+    uv pip install --system --no-cache hatchling
+
+    # Build and install the package using pip with --no-build-isolation
+    # This uses the system-installed beaker_kernel for the build hook
     cd /jupyter
-    echo "Building bdikit_context wheel with hatch..."
-    hatch build
-
-    echo "=== Wheel built, contents of dist/ ==="
-    ls -la /jupyter/dist/
-
-    # Install the built wheel (NOT editable) so entry points are properly registered
-    echo "Installing wheel..."
-    uv pip install --system --no-cache /jupyter/dist/*.whl
+    echo "Building and installing bdikit_context (with --no-build-isolation to use system packages)..."
+    pip install --no-cache-dir --no-build-isolation .
 
     # Verify entry points are registered
     echo "=== Verifying entry points ==="
     python3 -c "from importlib.metadata import entry_points; contexts = [ep.name for ep in entry_points(group='beaker.contexts')]; print(f'Registered contexts: {contexts}')"
+
+    # Create legacy JSON mapping file as fallback (Beaker will use this if entry points aren't found)
+    echo "Creating legacy context mapping file..."
+    mkdir -p /usr/local/share/beaker/contexts
+    cat > /usr/local/share/beaker/contexts/bdikit_context.json << 'EOF'
+{
+    "slug": "bdikit_context",
+    "package": "bdikit_context.context",
+    "class_name": "BDIKitContext"
+}
+EOF
+    echo "Created /usr/local/share/beaker/contexts/bdikit_context.json"
+    cat /usr/local/share/beaker/contexts/bdikit_context.json
 
     echo "=== Space after main install ==="
     df -h /tmp

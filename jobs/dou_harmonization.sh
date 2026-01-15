@@ -15,8 +15,8 @@
 #SBATCH --job-name=harmonia_dou_harmonization
 #SBATCH --output=logs/dou_harmonization_%j.out
 #SBATCH --error=logs/dou_harmonization_%j.err
-#SBATCH --time=02:00:00
-#SBATCH --mem=20G
+#SBATCH --time=01:00:00
+#SBATCH --mem=8G
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=tmpspace:1G
 
@@ -54,8 +54,9 @@ echo "Starting Beaker server on port $PORT..."
 echo "LLM Provider: openrouter"
 echo "LLM Model: xiaomi/mimo-v2-flash:free"
 
-# Start server in background
-# Note: --env flags override values from --env-file
+# Start Beaker server
+# Note: bdikit_context is pre-installed in the image with proper entry points
+# --env flags override values from --env-file
 apptainer exec \
     --bind .:/jupyter \
     --pwd /jupyter \
