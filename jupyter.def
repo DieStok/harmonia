@@ -28,6 +28,7 @@ From: python:3.10
     # Copy only essential files, NOT .sif containers
     src /jupyter/src
     pyproject.toml /jupyter/pyproject.toml
+    README.md /jupyter/README.md
     dou.csv /jupyter/dou.csv
 
 %post
