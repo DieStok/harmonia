@@ -1,0 +1,389 @@
+"""
+Manual experiment runner that monitors Beaker sessions and logs interactions.
+
+This runner connects to a running Beaker server and passively monitors all
+WebSocket traffic, logging user messages and agent responses to trace.json
+and conversation.md files - just like automated experiments.
+
+Usage:
+    # Start Beaker server first:
+    ./exec_apptainer_harmonia.sh --config configs/manual/dou_harmonization_manual_devstral.yaml
+
+    # In another terminal, start the monitor:
+    python run_manual_experiment.py --config configs/manual/dou_harmonization_manual_devstral.yaml
+
+    # Interact with Beaker via the web UI
+    # When done, press Ctrl+C to stop monitoring and save logs
+"""
+
+import asyncio
+import signal
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+import aiohttp
+
+from .config import ExperimentConfig, load_config
+from .logger import ConversationLogger, TraceLogger
+
+
+class ManualExperimentRunner:
+    """
+    Runner that monitors a Beaker session and logs all interactions.
+
+    Unlike ExperimentRunner which sends automated messages, this runner
+    passively observes the WebSocket traffic and logs whatever the user
+    does interactively via the Beaker web UI.
+    """
+
+    def __init__(
+        self,
+        server_url: str,
+        token: str,
+        config: ExperimentConfig,
+        output_dir: Optional[Path] = None,
+    ):
+        """
+        Initialize manual experiment runner.
+
+        Args:
+            server_url: Base URL of Beaker server (e.g., "http://localhost:8100")
+            token: Jupyter authentication token
+            config: Experiment configuration (for metadata)
+            output_dir: Override output directory (default from config)
+        """
+        self.server_url = server_url.rstrip("/")
+        self.token = token
+        self.config = config
+
+        # Set up output directory
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        base_dir = Path(output_dir or config.output.base_dir)
+        self.output_dir = base_dir / f"{config.name}_{timestamp}"
+        self.output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Initialize loggers
+        self.trace_logger = TraceLogger(self.output_dir)
+        self.conversation_logger = ConversationLogger(self.output_dir)
+
+        # State
+        self.session: Optional[aiohttp.ClientSession] = None
+        self.ws: Optional[aiohttp.ClientWebSocketResponse] = None
+        self.kernel_id: Optional[str] = None
+        self.is_running = False
+        self.current_turn = 0
+
+        # Track pending requests (msg_id -> user_message)
+        self._pending_requests: dict[str, dict] = {}
+
+    async def start(self) -> None:
+        """
+        Start monitoring the Beaker session.
+
+        This connects to the WebSocket and begins logging all interactions.
+        Call stop() or press Ctrl+C to end monitoring and save logs.
+        """
+        self.is_running = True
+
+        # Initialize loggers
+        self.trace_logger.start_experiment(
+            experiment_name=self.config.name,
+            description=self.config.description,
+            llm_provider=self.config.llm.provider,
+            llm_model=self.config.llm.model,
+        )
+        self.conversation_logger.start_experiment(
+            experiment_name=self.config.name,
+            description=self.config.description,
+            llm_provider=self.config.llm.provider,
+            llm_model=self.config.llm.model,
+        )
+
+        # Connect to server
+        self.session = aiohttp.ClientSession(
+            headers={"Authorization": f"token {self.token}"}
+        )
+
+        # Get existing session/kernel
+        await self._connect_to_kernel()
+
+        print(f"\n{'='*60}")
+        print("Manual Experiment Monitor Started")
+        print(f"{'='*60}")
+        print(f"Experiment: {self.config.name}")
+        print(f"LLM: {self.config.llm.provider}/{self.config.llm.model}")
+        print(f"Output: {self.output_dir}")
+        print(f"{'='*60}")
+        print("\nMonitoring Beaker session... Press Ctrl+C to stop and save logs.\n")
+
+        try:
+            await self._monitor_loop()
+        except asyncio.CancelledError:
+            pass
+        finally:
+            await self._finalize()
+
+    async def _connect_to_kernel(self) -> None:
+        """Connect to existing Beaker kernel via WebSocket."""
+        # Get existing sessions
+        async with self.session.get(f"{self.server_url}/api/sessions") as resp:
+            if resp.status != 200:
+                raise ConnectionError(f"Failed to get sessions: {resp.status}")
+            sessions = await resp.json()
+
+        if not sessions:
+            raise ConnectionError(
+                "No active Beaker session found. "
+                "Start Beaker first with: ./exec_apptainer_harmonia.sh"
+            )
+
+        # Use the first session
+        session = sessions[0]
+        self.kernel_id = session["kernel"]["id"]
+        session_id = session["id"]
+
+        # Connect WebSocket
+        ws_base = self.server_url.replace("http://", "ws://").replace("https://", "wss://")
+        ws_url = f"{ws_base}/api/kernels/{self.kernel_id}/channels?token={self.token}"
+
+        self.ws = await self.session.ws_connect(
+            ws_url,
+            timeout=aiohttp.ClientTimeout(total=None),  # No timeout for monitoring
+        )
+
+        print(f"  Connected to kernel: {self.kernel_id}")
+        print(f"  Session: {session_id}")
+
+    async def _monitor_loop(self) -> None:
+        """Main loop to monitor WebSocket messages."""
+        while self.is_running:
+            try:
+                msg = await asyncio.wait_for(
+                    self.ws.receive_json(),
+                    timeout=1.0,  # Short timeout to check is_running flag
+                )
+                await self._handle_message(msg)
+            except asyncio.TimeoutError:
+                # No message received, continue monitoring
+                continue
+            except aiohttp.WSServerHandshakeError as e:
+                print(f"WebSocket error: {e}")
+                break
+
+    async def _handle_message(self, msg: dict) -> None:
+        """Handle a WebSocket message and log if relevant."""
+        msg_type = msg.get("msg_type", "")
+        content = msg.get("content", {})
+        header = msg.get("header", {})
+        parent_header = msg.get("parent_header", {})
+
+        msg_id = header.get("msg_id", "")
+        parent_msg_id = parent_header.get("msg_id", "")
+
+        # Track llm_request messages (user input)
+        if msg_type == "llm_request":
+            user_message = content.get("request", "")
+            self._pending_requests[msg_id] = {
+                "user_message": user_message,
+                "start_time": asyncio.get_event_loop().time(),
+                "raw_messages": [msg],
+                "tool_calls": [],
+            }
+            print(f"  [Turn {self.current_turn + 1}] User: {user_message[:80]}{'...' if len(user_message) > 80 else ''}")
+
+        # Track responses to pending requests
+        elif parent_msg_id in self._pending_requests:
+            pending = self._pending_requests[parent_msg_id]
+            pending["raw_messages"].append(msg)
+
+            if msg_type == "thought":
+                # Track tool calls from thoughts
+                thought = content.get("thought", "")
+                if "Action:" in thought:
+                    pending["tool_calls"].append({"thought": thought})
+
+            elif msg_type == "llm_response":
+                # Final LLM response - log the complete turn
+                self.current_turn += 1
+                agent_response = content.get("text", "")
+                duration = asyncio.get_event_loop().time() - pending["start_time"]
+
+                self.trace_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=agent_response,
+                    response_type="llm_response",
+                    tool_calls=pending["tool_calls"],
+                    duration_seconds=duration,
+                    raw_messages=pending["raw_messages"],
+                )
+                self.conversation_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=agent_response,
+                    response_type="llm_response",
+                )
+
+                # Auto-save after each turn
+                self._save_intermediate()
+
+                print(f"  [Turn {self.current_turn}] Agent: {agent_response[:80]}{'...' if len(agent_response) > 80 else ''}")
+
+                # Clean up
+                del self._pending_requests[parent_msg_id]
+
+            elif msg_type == "code_cell":
+                # Code cell response
+                self.current_turn += 1
+                code = content.get("code", "")
+                duration = asyncio.get_event_loop().time() - pending["start_time"]
+
+                self.trace_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=code,
+                    response_type="code_cell",
+                    tool_calls=pending["tool_calls"],
+                    duration_seconds=duration,
+                    raw_messages=pending["raw_messages"],
+                )
+                self.conversation_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=f"```python\n{code}\n```",
+                    response_type="code_cell",
+                )
+
+                self._save_intermediate()
+                print(f"  [Turn {self.current_turn}] Agent: [code_cell] {code[:60]}{'...' if len(code) > 60 else ''}")
+
+                del self._pending_requests[parent_msg_id]
+
+            elif msg_type == "error":
+                # Error response
+                self.current_turn += 1
+                traceback = "\n".join(content.get("traceback", []))
+                duration = asyncio.get_event_loop().time() - pending["start_time"]
+
+                self.trace_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=traceback,
+                    response_type="error",
+                    tool_calls=pending["tool_calls"],
+                    duration_seconds=duration,
+                    raw_messages=pending["raw_messages"],
+                )
+                self.conversation_logger.log_turn(
+                    turn=self.current_turn,
+                    user_message=pending["user_message"],
+                    agent_response=f"```\n{traceback}\n```",
+                    response_type="error",
+                )
+
+                self._save_intermediate()
+                print(f"  [Turn {self.current_turn}] Agent: [error] {content.get('ename', 'Error')}")
+
+                del self._pending_requests[parent_msg_id]
+
+    def _save_intermediate(self) -> None:
+        """Save intermediate results (in case of crash or early termination)."""
+        try:
+            # Update end time and save
+            if self.trace_logger.trace:
+                self.trace_logger.trace.end_time = datetime.utcnow().isoformat()
+                total = sum(t.duration_seconds for t in self.trace_logger.trace.turns)
+                self.trace_logger.trace.total_duration_seconds = total
+                self.trace_logger.trace.status = "running"
+            self.trace_logger.save()
+            self.conversation_logger.save()
+        except Exception as e:
+            print(f"  Warning: Failed to save intermediate results: {e}")
+
+    async def _finalize(self) -> None:
+        """Finalize logging and close connections."""
+        print(f"\n{'='*60}")
+        print("Stopping monitor and saving logs...")
+
+        # End experiment
+        self.trace_logger.end_experiment(status="completed")
+        self.conversation_logger.log_summary(
+            total_turns=self.current_turn,
+            total_duration=self.trace_logger.trace.total_duration_seconds if self.trace_logger.trace else 0,
+            status="completed",
+        )
+
+        # Save final logs
+        trace_path = self.trace_logger.save()
+        conv_path = self.conversation_logger.save()
+
+        print(f"\nExperiment complete!")
+        print(f"  Total turns: {self.current_turn}")
+        print(f"  Output directory: {self.output_dir}")
+        print(f"  - {trace_path.name}")
+        print(f"  - {conv_path.name}")
+        print(f"{'='*60}\n")
+
+        # Close connections
+        if self.ws and not self.ws.closed:
+            await self.ws.close()
+        if self.session:
+            await self.session.close()
+
+    def stop(self) -> None:
+        """Stop monitoring."""
+        self.is_running = False
+
+
+async def run_manual_experiment(
+    config_path: Path,
+    server_url: str = "http://localhost:8100",
+    token: Optional[str] = None,
+    output_dir: Optional[Path] = None,
+) -> Path:
+    """
+    Run a manual experiment with logging.
+
+    Args:
+        config_path: Path to experiment configuration YAML
+        server_url: Beaker server URL
+        token: Jupyter authentication token
+        output_dir: Override output directory
+
+    Returns:
+        Path to output directory with logs
+    """
+    import os
+
+    # Load config
+    config = load_config(config_path)
+
+    # Get token from environment if not provided
+    if not token:
+        token = os.environ.get("JUPYTER_TOKEN")
+    if not token:
+        raise ValueError("No token provided. Set JUPYTER_TOKEN or pass --token")
+
+    # Create runner
+    runner = ManualExperimentRunner(
+        server_url=server_url,
+        token=token,
+        config=config,
+        output_dir=output_dir,
+    )
+
+    # Set up signal handlers for graceful shutdown
+    loop = asyncio.get_event_loop()
+
+    def signal_handler():
+        print("\n\nReceived interrupt signal...")
+        runner.stop()
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, signal_handler)
+
+    # Run
+    await runner.start()
+
+    return runner.output_dir

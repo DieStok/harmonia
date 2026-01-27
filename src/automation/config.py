@@ -47,6 +47,10 @@ class ExperimentConfig:
     messages: list[MessageConfig]
     output: OutputConfig = field(default_factory=OutputConfig)
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+    # Manual mode: if True, this config is for manual experiments (no automated messages)
+    manual_mode: bool = False
+    # Optional reference to dataset metadata
+    dataset_metadata: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig":
@@ -82,6 +86,9 @@ class ExperimentConfig:
             predefined_responses=decision_data.get("predefined_responses", {}),
         )
 
+        # Determine manual mode: explicit flag or no messages defined
+        manual_mode = exp.get("manual_mode", len(messages) == 0)
+
         return cls(
             name=exp.get("name", "unnamed_experiment"),
             description=exp.get("description", ""),
@@ -89,6 +96,8 @@ class ExperimentConfig:
             messages=messages,
             output=output,
             decision_handling=decision,
+            manual_mode=manual_mode,
+            dataset_metadata=exp.get("dataset_metadata"),
         )
 
 

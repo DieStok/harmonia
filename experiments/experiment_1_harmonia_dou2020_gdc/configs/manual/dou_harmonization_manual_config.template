@@ -1,0 +1,136 @@
+# =============================================================================
+# Manual Experiment Configuration Template
+# =============================================================================
+# This is a TEMPLATE for creating manual experiment configurations.
+# Manual experiments start Beaker with specific LLM settings but do not
+# run automated conversation scripts - you interact via the web UI.
+#
+# To create a new manual experiment config:
+#   1. Copy this file: cp dou_harmonization_manual_config.template my_experiment.yaml
+#   2. Fill in the placeholders below
+#   3. Run: /path/to/harmonia/exec_apptainer_harmonia.sh --config my_experiment.yaml
+#
+# =============================================================================
+# USAGE:
+#
+#   Option 1 - Direct config launch (recommended):
+#     cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data
+#     /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh \
+#       --config /path/to/your_config.yaml
+#
+#   Option 2 - Pre-generate .env, then launch:
+#     python generate_env.py --config /path/to/your_config.yaml
+#     ./exec_apptainer_harmonia.sh --env /path/to/your_config_associated.env
+#
+# =============================================================================
+
+experiment:
+  # Naming convention: {dataset}_{target_schema}_{mode}_{provider}_{model}
+  # Example: dou_gdc_manual_anyllm-openrouter_claude-3-sonnet
+  name: "DATASET_TARGET_manual_PROVIDER_MODEL"
+
+  # Human-readable description
+  description: "Manual harmonization of DATASET to TARGET schema (MODEL via PROVIDER)"
+
+  # Set to true for manual experiments (no automated messages)
+  manual_mode: true
+
+  # Path to dataset metadata YAML (for reference/documentation)
+  dataset_metadata: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/experiment_metadata.yaml"
+
+# -----------------------------------------------------------------------------
+# LLM Configuration
+# -----------------------------------------------------------------------------
+# Provider options for anyllm backend:
+#   - anyllm:openrouter  (cloud, requires OPENROUTER_API_KEY)
+#   - anyllm:ollama      (local, no API key needed)
+#   - anyllm:openai      (cloud, requires OPENAI_API_KEY)
+#   - anyllm:anthropic   (cloud, requires ANTHROPIC_API_KEY)
+#   - anyllm:groq        (cloud, requires GROQ_API_KEY)
+#   - anyllm:gemini      (cloud, requires GOOGLE_API_KEY)
+#
+# Model examples:
+#   OpenRouter: xiaomi/mimo-v2-flash:free, z-ai/glm-4.5-air:free, anthropic/claude-3.5-sonnet
+#   Ollama:     devstral:latest, qwen3-coder:30b, olmo-3.1:32b, nemotron-3-nano:30b
+#   OpenAI:     gpt-4o, gpt-4-turbo
+#   Anthropic:  claude-3-5-sonnet-20241022
+# -----------------------------------------------------------------------------
+
+llm:
+  provider: anyllm:PROVIDER_HERE   # e.g., anyllm:openrouter or anyllm:ollama
+  model: MODEL_NAME_HERE           # e.g., xiaomi/mimo-v2-flash:free
+  temperature: 0.0                 # 0.0 = deterministic, 1.0 = creative
+
+# -----------------------------------------------------------------------------
+# Output Configuration
+# -----------------------------------------------------------------------------
+# Results will be saved to: {base_dir}/{experiment_name}_{timestamp}/
+
+output:
+  base_dir: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results"
+
+# -----------------------------------------------------------------------------
+# Environment Variables (for reference)
+# -----------------------------------------------------------------------------
+# These values will be automatically written to the generated .env file.
+# You can also manually set these in your .env file.
+
+env_settings:
+  LLM_SERVICE_PROVIDER: "anyllm:PROVIDER_HERE"
+  LLM_SERVICE_MODEL: "MODEL_NAME_HERE"
+  LLM_TEMPERATURE: "0.0"
+  # API Key required for cloud providers (uncomment the relevant one):
+  # OPENROUTER_API_KEY: your_key_here
+  # OPENAI_API_KEY: your_key_here
+  # ANTHROPIC_API_KEY: your_key_here
+  # Note: Ollama runs locally, no API key needed
+
+# -----------------------------------------------------------------------------
+# Data Locations
+# -----------------------------------------------------------------------------
+# These paths are for reference and documentation.
+# cd to working_directory before running exec_apptainer_harmonia.sh
+
+data:
+  # Directory to cd into before running (contains input data)
+  working_directory: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data"
+
+  # Source file (relative to working_directory)
+  source_file: "dou.csv"
+
+  # Absolute path to source file
+  source_file_absolute: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv"
+
+  # Target schema for harmonization
+  target_schema: "gdc"
+
+  # Reference to source paper
+  paper_reference: "https://doi.org/10.1016/j.cell.2020.01.026"
+
+# -----------------------------------------------------------------------------
+# Messages (empty for manual experiments)
+# -----------------------------------------------------------------------------
+# Manual experiments do not have automated messages.
+# You interact with the agent via the Beaker web UI.
+# Uncomment and add messages below to convert to an automated experiment.
+
+# messages:
+#   - content: |
+#       Your first message to the agent here.
+#     wait_seconds: 180
+#     decision_mode: auto_accept  # auto_accept, predefined, or llm_decides
+#
+#   - content: |
+#       Your second message here.
+#     wait_seconds: 300
+
+# -----------------------------------------------------------------------------
+# Decision Handling (for automated experiments only)
+# -----------------------------------------------------------------------------
+# Uncomment if converting to automated experiment with decision points.
+
+# decision_handling:
+#   default_mode: auto_accept
+#   predefined_responses:
+#     "choose.*alternative": "Please proceed with the recommended option"
+#     "multiple.*options": "Pick the first option"
