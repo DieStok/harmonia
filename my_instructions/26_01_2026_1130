@@ -1,0 +1,21 @@
+Please fully analyze /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia for:
+- what it does
+- any implementations of communicating with LLMs.
+
+Then, completely understand the workings of anyLLM here:
+/hpc/compgen/projects/llm_GEO_project/any-llm
+
+Finally: make a complete plan for changing the codebase such that it uses any-llm for its communication with LLM (either locally through ollama API endpoint, or via remote providers). This rewrite will make sure we can easily test our setup with any LLM we choose and should improve maintainability.
+
+In your analysis, surface the following:
+- do we do anything when communicating with LLMs that any-llm cannot easily do or provide?
+- this is not a production environment but research code. Given that, what implementation possibilities of any-llm should we follow?
+- Before writing the plan, first analyze both the codebase and the any-llm code and documentation, and then ask me pertinent questions.
+
+Your plan should contain:
+- a complete overview of code files to change, and which function signatures or function calls to change in them (i.e. a sneak peek of the old function signatures/calls and the new ones)
+- what may need further testing and how to test that current functionality is properly maintained (and pseudocode for these tests)
+- the complete step-by-step implementation plan. 
+
+Make liberal use of Grep and sed to search through the documentation. Finally, I have appended to this chat the entire documentation of any-llm as a .txt file. You can search through this as well to get useful function signatures and API references for implementation. 
+Be sure to output this plan in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/plans with the name 26_01_2026_any-llm.md

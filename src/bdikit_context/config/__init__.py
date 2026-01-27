@@ -22,14 +22,36 @@ except ImportError:
 
 @dataclass
 class LLMConfig:
-    """LLM provider configuration."""
-    provider: str = "openai"
+    """
+    LLM provider configuration.
+
+    Supports two modes:
+    1. Native Archytas providers: "openai", "ollama", etc.
+    2. any-llm unified providers: "anyllm:openai", "anyllm:ollama", etc.
+
+    Use the any-llm prefix for unified provider access with 30+ providers.
+    """
+    provider: str = "openai"  # Can be "anyllm:openai", "anyllm:ollama", etc.
     model: str = "gpt-4o"
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     temperature: float = 0.0
     max_tokens: int = 4096
     extra: Dict[str, Any] = field(default_factory=dict)
+
+    # any-llm specific
+    use_anyllm: bool = False  # Convenience flag to auto-prefix provider with "anyllm:"
+
+    def get_effective_provider(self) -> str:
+        """
+        Get the effective provider name for import path lookup.
+
+        If use_anyllm is True and provider doesn't already have the anyllm: prefix,
+        the prefix will be added automatically.
+        """
+        if self.use_anyllm and not self.provider.lower().startswith("anyllm"):
+            return f"anyllm:{self.provider}"
+        return self.provider
 
 
 @dataclass
@@ -42,8 +64,14 @@ class HarmoniaConfig:
     @classmethod
     def from_env(cls) -> "HarmoniaConfig":
         """Load configuration from environment variables."""
-        # Determine API key based on provider
+        # Determine provider - handle "anyllm:provider" format
         provider = os.getenv("LLM_SERVICE_PROVIDER", "openai").lower()
+
+        # Extract actual provider for API key lookup
+        if provider.startswith("anyllm:"):
+            actual_provider = provider.split(":", 1)[1]
+        else:
+            actual_provider = provider
 
         api_key_map = {
             "openai": os.getenv("OPENAI_API_KEY"),
@@ -54,9 +82,17 @@ class HarmoniaConfig:
             "gemini": os.getenv("GOOGLE_API_KEY"),
             "azure": os.getenv("AZURE_OPENAI_API_KEY"),
             "bedrock": os.getenv("AWS_ACCESS_KEY_ID"),
+            "mistral": os.getenv("MISTRAL_API_KEY"),
+            "together": os.getenv("TOGETHER_API_KEY"),
+            "cohere": os.getenv("COHERE_API_KEY"),
+            "deepseek": os.getenv("DEEPSEEK_API_KEY"),
+            "fireworks": os.getenv("FIREWORKS_API_KEY"),
         }
 
-        api_key = os.getenv("LLM_SERVICE_TOKEN") or api_key_map.get(provider)
+        api_key = os.getenv("LLM_SERVICE_TOKEN") or api_key_map.get(actual_provider)
+
+        # Check if use_anyllm flag is set via environment
+        use_anyllm = os.getenv("USE_ANYLLM", "").lower() in ("true", "1", "yes")
 
         return cls(
             llm=LLMConfig(
@@ -66,6 +102,7 @@ class HarmoniaConfig:
                 base_url=os.getenv("LLM_BASE_URL"),
                 temperature=float(os.getenv("LLM_TEMPERATURE", "0.0")),
                 max_tokens=int(os.getenv("LLM_MAX_TOKENS", "4096")),
+                use_anyllm=use_anyllm,
             ),
             debug=os.getenv("DEBUG", "1") == "1",
         )
@@ -85,12 +122,22 @@ class HarmoniaConfig:
         llm_data = data.get("llm", {})
         provider = llm_data.get("provider", "openai")
 
+        # Extract actual provider for API key lookup (handle anyllm: prefix)
+        if provider.lower().startswith("anyllm:"):
+            actual_provider = provider.lower().split(":", 1)[1]
+        else:
+            actual_provider = provider.lower()
+
         # Environment variables override YAML for API keys (security)
         api_key = (
             os.getenv("LLM_SERVICE_TOKEN") or
-            os.getenv(f"{provider.upper()}_API_KEY") or
+            os.getenv(f"{actual_provider.upper()}_API_KEY") or
             llm_data.get("api_key")
         )
+
+        # Check use_anyllm flag from YAML or environment
+        use_anyllm = llm_data.get("use_anyllm", False) or \
+                     os.getenv("USE_ANYLLM", "").lower() in ("true", "1", "yes")
 
         return cls(
             llm=LLMConfig(
@@ -101,6 +148,7 @@ class HarmoniaConfig:
                 temperature=llm_data.get("temperature", 0.0),
                 max_tokens=llm_data.get("max_tokens", 4096),
                 extra=llm_data.get("extra", {}),
+                use_anyllm=use_anyllm,
             ),
             prompts_dir=Path(data.get("prompts_dir", cls.prompts_dir)),
             debug=data.get("debug", True),

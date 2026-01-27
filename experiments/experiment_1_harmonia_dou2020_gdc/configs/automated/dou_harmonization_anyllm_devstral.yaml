@@ -1,0 +1,71 @@
+# =============================================================================
+# Dou Dataset Harmonization Experiment - Devstral via any-llm (Ollama)
+# =============================================================================
+# This experiment harmonizes the dou.csv dataset to the GDC schema,
+# using the any-llm unified LLM provider interface.
+#
+# Based on the example from the Harmonia paper: https://arxiv.org/pdf/2502.07132
+# =============================================================================
+
+experiment:
+  name: "dou_harmonization_anyllm_devstral"
+  description: "Harmonize dou.csv to GDC schema using similarity method (Devstral 123B via any-llm/Ollama)"
+
+llm:
+  # Using any-llm provider prefix for unified interface
+  provider: anyllm:ollama
+  model: devstral:latest
+  base_url: http://localhost:11434
+  temperature: 0.0
+
+messages:
+  - content: |
+      Load the file dou.csv as a dataframe and subset it to the following columns:
+      Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
+      Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
+    wait_seconds: 180
+
+  - content: |
+      Please match this to the GDC schema using the 'similarity' method,
+      and fix any results that don't look correct.
+    wait_seconds: 300
+    decision_mode: auto_accept
+
+  - content: |
+      Find alternative mappings for Histologic_type.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Find alternative mappings for Tumor_Size_cm.
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+  - content: |
+      Find value mappings for the columns Country, Histologic_Grade_FIGO,
+      Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+      If there are any errors in the mappings, please provide suggestions.
+    wait_seconds: 360
+    decision_mode: auto_accept
+
+  - content: |
+      Please create a final harmonized table based on the discovered column
+      and value mappings and save it at "dou_harmonized.csv".
+    wait_seconds: 600
+
+  - content: |
+      Show dou_harmonized.csv and the initial subsetted dou.csv file
+      one after the other for comparison.
+    wait_seconds: 120
+
+output:
+  base_dir: "./results"
+  save_artifacts:
+    - "dou_harmonized.csv"
+    - "mapping_summary.json"
+
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    "choose.*alternative": "Please proceed with the recommended option"
+    "multiple.*options": "Pick the first option"
