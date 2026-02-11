@@ -126,10 +126,14 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
     if api_key:
         env_content = update_env_value(env_content, 'LLM_SERVICE_TOKEN', api_key)
 
-    # Handle base_url for Ollama
+    # Handle base_url and context_length for Ollama
     if 'ollama' in provider.lower():
         base_url = llm_config.get('base_url', 'http://localhost:11434')
         env_content = update_env_value(env_content, 'LLM_BASE_URL', base_url)
+
+        context_length = llm_config.get('context_length')
+        if context_length is not None:
+            env_content = update_env_value(env_content, 'OLLAMA_CONTEXT_LENGTH', str(context_length))
 
     # Determine output path
     if output_dir is None:

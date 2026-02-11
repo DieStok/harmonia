@@ -505,15 +505,49 @@ except:
     if [ -n "$LLM_MODEL" ]; then
         echo "   Pre-loading model: ${LLM_MODEL}..."
         echo "[$(date)] Pre-loading model: ${LLM_MODEL}" >> "${OLLAMA_LOG_FILE}"
+
+        # Build generate request with optional num_ctx for context length
+        if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
+            GENERATE_DATA="{\"model\": \"${LLM_MODEL}\", \"prompt\": \"Hello\", \"stream\": false, \"options\": {\"num_ctx\": ${OLLAMA_CONTEXT_LENGTH}}}"
+            echo "   Context length: ${OLLAMA_CONTEXT_LENGTH}"
+            echo "[$(date)] Using num_ctx: ${OLLAMA_CONTEXT_LENGTH}" >> "${OLLAMA_LOG_FILE}"
+        else
+            GENERATE_DATA="{\"model\": \"${LLM_MODEL}\", \"prompt\": \"Hello\", \"stream\": false}"
+        fi
+
         # This call blocks until the model is loaded into memory
         if curl -s "http://localhost:${OLLAMA_PORT}/api/generate" \
-            -d "{\"model\": \"${LLM_MODEL}\", \"prompt\": \"Hello\", \"stream\": false}" \
+            -d "$GENERATE_DATA" \
             >> "${OLLAMA_LOG_FILE}" 2>&1; then
             echo "   ✓ Model preloaded successfully"
             echo "[$(date)] Model preloaded successfully" >> "${OLLAMA_LOG_FILE}"
         else
             echo "   Warning: Model pre-load may have failed"
             echo "[$(date)] Warning: Model pre-load may have failed" >> "${OLLAMA_LOG_FILE}"
+        fi
+
+        # Verify model loading with ollama ps
+        echo ""
+        echo "   Verifying model status (ollama ps):"
+        OLLAMA_PS_OUTPUT=$(OLLAMA_HOST="http://localhost:${OLLAMA_PORT}" "${OLLAMA_DIR}/ollama" ps 2>/dev/null || echo "   (could not run ollama ps)")
+        echo "$OLLAMA_PS_OUTPUT" | while IFS= read -r line; do
+            echo "     $line"
+        done
+        echo "[$(date)] ollama ps output:" >> "${OLLAMA_LOG_FILE}"
+        echo "$OLLAMA_PS_OUTPUT" >> "${OLLAMA_LOG_FILE}"
+
+        # Check GPU offload percentage (look at data lines, not header)
+        GPU_PCT=$(echo "$OLLAMA_PS_OUTPUT" | grep -oP '\d+%' | head -1)
+        if [ -n "$GPU_PCT" ]; then
+            if [ "$GPU_PCT" = "0%" ]; then
+                echo "   ⚠ WARNING: Model has 0% GPU offload - running on CPU only"
+                echo "[$(date)] WARNING: Model has 0% GPU offload" >> "${OLLAMA_LOG_FILE}"
+            elif [ "$GPU_PCT" != "100%" ]; then
+                echo "   ⚠ WARNING: Model GPU offload is ${GPU_PCT} (not 100%)"
+                echo "[$(date)] WARNING: Model GPU offload is ${GPU_PCT}" >> "${OLLAMA_LOG_FILE}"
+            else
+                echo "   ✓ Model is 100% GPU offloaded"
+            fi
         fi
     fi
 
@@ -571,6 +605,12 @@ stop_ollama_server() {
     fi
 }
 
+# Export OLLAMA_CONTEXT_LENGTH if set (controls Ollama's context window allocation)
+if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
+    export OLLAMA_CONTEXT_LENGTH
+    echo "   OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH}"
+fi
+
 # Start Ollama if needed
 if is_local_llm_provider "$LLM_PROVIDER"; then
     if ! start_ollama_server; then
@@ -604,12 +644,16 @@ echo "   Ollama Port:              ${OLLAMA_PORT}"
 LLM_IMPORT_PATH=$(grep "^LLM_PROVIDER_IMPORT_PATH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 LLM_TEMPERATURE=$(grep "^LLM_TEMPERATURE=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 LLM_MAX_TOKENS=$(grep "^LLM_MAX_TOKENS=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+OLLAMA_CONTEXT_LENGTH=$(grep "^OLLAMA_CONTEXT_LENGTH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 OPENROUTER_KEY=$(grep "^OPENROUTER_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 OPENAI_KEY=$(grep "^OPENAI_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 ANTHROPIC_KEY=$(grep "^ANTHROPIC_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 echo "   LLM_PROVIDER_IMPORT_PATH: ${LLM_IMPORT_PATH:-auto-detected}"
 echo "   LLM_TEMPERATURE:          ${LLM_TEMPERATURE:-0.0}"
 echo "   LLM_MAX_TOKENS:           ${LLM_MAX_TOKENS:-4096}"
+if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
+    echo "   OLLAMA_CONTEXT_LENGTH:    ${OLLAMA_CONTEXT_LENGTH}"
+fi
 echo ""
 echo "   API Keys configured:"
 if [ -n "$OPENROUTER_KEY" ] && [ "$OPENROUTER_KEY" != "your_openrouter_api_key_here" ]; then
@@ -844,6 +888,9 @@ echo ""
 
 APPTAINER_CMD="$APPTAINER_CMD ${SIF_IMAGE}"
 APPTAINER_CMD="$APPTAINER_CMD beaker dev watch --ip 0.0.0.0 --port $PORT"
+# Increase websocket max message size from default 4MB to 20MB
+# (large model responses can exceed 4MB, causing connection drops)
+APPTAINER_CMD="$APPTAINER_CMD '--ServerApp.tornado_settings={\"websocket_max_message_size\":20971520}'"
 
 # Run based on mode
 if [ "$MONITOR_MODE" = true ]; then

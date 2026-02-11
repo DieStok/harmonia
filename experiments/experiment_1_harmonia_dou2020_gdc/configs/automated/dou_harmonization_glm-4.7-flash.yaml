@@ -1,10 +1,10 @@
 experiment:
-  name: dou_harmonization_nemotron-3-nano
-  description: Harmonize dou.csv to GDC schema using similarity method (Nemotron-3-Nano
-    30B via Ollama)
+  name: dou_harmonization_glm-4.7-flash
+  description: Harmonize dou.csv to GDC schema using similarity method (GLM-4.7-Flash
+    Q8_0 via Ollama)
 llm:
   provider: ollama
-  model: nemotron-3-nano:30b
+  model: glm-4.7-flash:q8_0
   base_url: http://localhost:11434
   temperature: 0.0
   context_length: 64000

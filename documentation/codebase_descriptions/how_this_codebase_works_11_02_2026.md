@@ -481,6 +481,7 @@ class LLMConfig:
     provider: str
     model: str
     temperature: float = 0.0
+    context_length: Optional[int] = None  # Ollama context window (e.g. 64000)
 
 @dataclass
 class MessageConfig:
@@ -773,6 +774,7 @@ llm:
   model: devstral:latest
   base_url: http://localhost:11434
   temperature: 0.0
+  context_length: 64000      # Ollama context window (optional, sets OLLAMA_CONTEXT_LENGTH)
 
 messages:
   - content: |
@@ -854,6 +856,8 @@ python generate_env.py --config config.yaml --base-env /path/to/.env --output-di
 ```
 
 **Output:** Creates `[config_name]_associated.env` files (ignored by `.gitignore`).
+
+For Ollama providers, also writes `OLLAMA_CONTEXT_LENGTH` if `context_length` is set in the YAML config.
 
 ---
 
@@ -963,12 +967,20 @@ USE_ANYLLM=true
 - Requires GPU partition on HPC for larger models
 - Models must be pre-downloaded or pulled at runtime
 - No API key needed
+- **Context length:** Configurable per-model via `context_length` in YAML config (e.g., `context_length: 64000`). This sets `OLLAMA_CONTEXT_LENGTH` env var for `ollama serve` and passes `num_ctx` in the model pre-warm API call. Default Ollama context is only 4096 tokens, which is too small for harmonization tasks.
+- **Model verification:** After model pre-warming, `ollama ps` is run automatically to verify GPU offload percentage. Warnings are logged if the model is not fully loaded on GPU.
 - **Per-job isolation:** When running under SLURM, each job gets its own Ollama instance with:
   - Unique port: `11434 + 1 + (SLURM_JOB_ID % 200)` (range 11435-11634)
   - Per-job PID file: `.ollama_${SLURM_JOB_ID}.pid`
   - Per-job runtime directory: `$TMPDIR/ollama_${SLURM_JOB_ID}`
   - Per-job serve log: `ollama_serve_${SLURM_JOB_ID}.log`
 - Interactive/manual use (no SLURM) keeps default port 11434 with original sharing behavior
+
+### WebSocket Configuration
+
+- Beaker's WebSocket max message size is set to 20MB (default was 4MB in older tornado versions)
+- Configured via `--ServerApp.tornado_settings={"websocket_max_message_size":20971520}` in the Beaker launch command
+- This prevents connection drops for models that produce large responses (e.g., qwen3-coder)
 
 ### OpenRouter (Cloud Models)
 - Access to many model providers through single API

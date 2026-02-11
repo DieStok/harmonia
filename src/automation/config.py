@@ -14,6 +14,7 @@ class LLMConfig:
     provider: str
     model: str
     temperature: float = 0.0
+    context_length: Optional[int] = None
 
 
 @dataclass
@@ -82,6 +83,7 @@ class ExperimentConfig:
             provider=llm_data.get("provider", "openai"),
             model=llm_data.get("model", "gpt-4o"),
             temperature=llm_data.get("temperature", 0.0),
+            context_length=llm_data.get("context_length"),
         )
 
         messages = [

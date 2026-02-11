@@ -1,10 +1,13 @@
+# NOTE: This model is accessed via OpenRouter. Prompts and responses
+# are logged by OpenRouter and may be used for model improvement.
+# See: https://openrouter.ai/docs/privacy
 experiment:
-  name: dou_harmonization_kimi-k2
-  description: Harmonize dou.csv to GDC schema using similarity method (Kimi-K2 via
-    OpenRouter)
+  name: dou_harmonization_pony-alpha
+  description: Harmonize dou.csv to GDC schema using similarity method (Pony-Alpha
+    via OpenRouter)
 llm:
   provider: openrouter
-  model: moonshotai/kimi-k2:free
+  model: openrouter/pony-alpha
   temperature: 0.0
 messages:
 - content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
