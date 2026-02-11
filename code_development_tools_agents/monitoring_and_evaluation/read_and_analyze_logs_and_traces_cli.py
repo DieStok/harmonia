@@ -115,6 +115,7 @@ class TurnAnalysis(BaseModel):
     duration_seconds: float
     has_tool_calls: bool
     raw_message_count: int
+    agent_response_empty: bool = False
     problems: list[DetectedProblem]
 
 
@@ -493,15 +494,38 @@ def detect_problems(
         if verbose:
             for t in turns:
                 turn_problems = _detect_turn_problems(t, log_content, trace_text, taxonomy)
+                response_empty = (
+                    t.get("response_type") == "llm_response"
+                    and not t.get("agent_response", "").strip()
+                )
                 ta = TurnAnalysis(
                     turn=t.get("turn", 0),
                     response_type=t.get("response_type", "unknown"),
                     duration_seconds=t.get("duration_seconds", 0.0),
                     has_tool_calls=bool(t.get("tool_calls")),
                     raw_message_count=len(t.get("raw_messages", [])),
+                    agent_response_empty=response_empty,
                     problems=turn_problems,
                 )
                 turn_analyses.append(ta)
+
+    # 3E: Context Window Exhaustion
+    if trace and "turns" in trace:
+        context_problem = _detect_context_window_exhaustion(trace["turns"], trace_text, taxonomy)
+        if context_problem:
+            problems.append(context_problem)
+
+    # 3F: Response Stream Truncated
+    if trace and "turns" in trace:
+        stream_problem = _detect_response_stream_truncated(trace["turns"], trace_text, taxonomy)
+        if stream_problem:
+            problems.append(stream_problem)
+
+    # 3G: Silent Empty Response (cross-cutting)
+    if trace and "turns" in trace:
+        silent_problem = _detect_silent_empty_response(trace["turns"], taxonomy)
+        if silent_problem:
+            problems.append(silent_problem)
 
     # 3C: Hallucinated Output (check metrics.json)
     hallucination_problem = _detect_hallucinated_output(metrics, taxonomy)
@@ -668,6 +692,132 @@ def _detect_not_using_tools(
         evidence=(
             f"Turns {no_tool_turns} returned text guidance instead of using tools. "
             f"Agent refused to execute code directly."
+        ),
+        remediation=pc.remediation if pc else [],
+    )
+
+
+def _detect_context_window_exhaustion(
+    turns: list[dict], trace_text: str, taxonomy: list[ProblemClass]
+) -> Optional[DetectedProblem]:
+    """
+    3E: Context Window Exhaustion (API Token Limit Exceeded)
+    Compound logic: turns with response_type == "llm_response",
+    empty agent_response, fast duration (<2s), and raw_messages
+    containing "maximum context length".
+    """
+    affected_turns = []
+    token_info = ""
+    for t in turns:
+        if t.get("response_type") != "llm_response":
+            continue
+        response = t.get("agent_response", "")
+        if response.strip():
+            continue
+        duration = t.get("duration_seconds", 999)
+        if duration > 5.0:
+            continue
+        # Check raw_messages for context length error
+        raw_text = json.dumps(t.get("raw_messages", []))
+        if "maximum context length" in raw_text:
+            affected_turns.append(t.get("turn", "?"))
+            # Extract token count from first match
+            if not token_info:
+                m = re.search(r"you requested about (\d+) tokens", raw_text)
+                limit_m = re.search(r"maximum context length is (\d+) tokens", raw_text)
+                if m and limit_m:
+                    token_info = f" (requested ~{m.group(1)} tokens, limit {limit_m.group(1)})"
+
+    if not affected_turns:
+        return None
+
+    pc = _find_pc(taxonomy, "3E")
+    return DetectedProblem(
+        problem_id="3E",
+        category=pc.category if pc else "llm_behavioral",
+        name=pc.name if pc else "Context Window Exhaustion",
+        severity=Severity.ERROR,
+        evidence=(
+            f"Turns {affected_turns} returned empty responses in <2s due to "
+            f"context window overflow{token_info}. "
+            f"Errors silently swallowed in raw_messages."
+        ),
+        remediation=pc.remediation if pc else [],
+    )
+
+
+def _detect_response_stream_truncated(
+    turns: list[dict], trace_text: str, taxonomy: list[ProblemClass]
+) -> Optional[DetectedProblem]:
+    """
+    3F: Response Stream Truncated (Premature Connection Close)
+    Compound logic: turns with response_type == "llm_response",
+    empty agent_response, significant duration (>5s), and raw_messages
+    containing "Response ended prematurely" or "ChunkedEncodingError".
+    """
+    affected_turns = []
+    for t in turns:
+        if t.get("response_type") != "llm_response":
+            continue
+        response = t.get("agent_response", "")
+        if response.strip():
+            continue
+        duration = t.get("duration_seconds", 0)
+        if duration < 5.0:
+            continue
+        raw_text = json.dumps(t.get("raw_messages", []))
+        if "Response ended prematurely" in raw_text or "ChunkedEncodingError" in raw_text:
+            affected_turns.append(t.get("turn", "?"))
+
+    if not affected_turns:
+        return None
+
+    pc = _find_pc(taxonomy, "3F")
+    return DetectedProblem(
+        problem_id="3F",
+        category=pc.category if pc else "llm_behavioral",
+        name=pc.name if pc else "Response Stream Truncated",
+        severity=Severity.ERROR,
+        evidence=(
+            f"Turns {affected_turns} completed with empty agent_response after "
+            f"significant processing time. HTTP response stream was severed "
+            f"mid-transfer (ChunkedEncodingError / Response ended prematurely)."
+        ),
+        remediation=pc.remediation if pc else [],
+    )
+
+
+def _detect_silent_empty_response(
+    turns: list[dict], taxonomy: list[ProblemClass]
+) -> Optional[DetectedProblem]:
+    """
+    3G: Silent Empty Response (No Agent Output)
+    Cross-cutting detection: any turn where response_type is "llm_response"
+    but agent_response is empty or whitespace-only. This catches all cases
+    of silently swallowed errors, including those already covered by 3E/3F
+    and unknown error types.
+    """
+    affected_turns = []
+    for t in turns:
+        if t.get("response_type") != "llm_response":
+            continue
+        response = t.get("agent_response", "")
+        if not response.strip():
+            affected_turns.append(t.get("turn", "?"))
+
+    if not affected_turns:
+        return None
+
+    pc = _find_pc(taxonomy, "3G")
+    return DetectedProblem(
+        problem_id="3G",
+        category=pc.category if pc else "llm_behavioral",
+        name=pc.name if pc else "Silent Empty Response",
+        severity=Severity.WARNING,
+        evidence=(
+            f"Turns {affected_turns} completed with response_type 'llm_response' "
+            f"but agent_response is empty. Errors may have been silently swallowed. "
+            f"Check raw_messages for these turns to diagnose root cause."
         ),
         remediation=pc.remediation if pc else [],
     )
@@ -966,7 +1116,11 @@ def analyze_run(
     if trace and "turns" in trace:
         turns = trace["turns"]
         total_turns = len(turns)
-        successful_turns = sum(1 for t in turns if t.get("response_type") == "llm_response")
+        successful_turns = sum(
+            1 for t in turns
+            if t.get("response_type") == "llm_response"
+            and t.get("agent_response", "").strip()
+        )
         timed_out_turns = sum(1 for t in turns if t.get("response_type") == "timeout")
         timing = trace.get("timing", {})
         total_duration = timing.get("total_duration_seconds")
@@ -1107,7 +1261,10 @@ def format_human_readable(report: AnalysisReport) -> str:
         if run.turns:
             lines.append(f"  Per-turn analysis:")
             for ta in run.turns:
-                status = "OK" if ta.response_type == "llm_response" else ta.response_type.upper()
+                if ta.response_type == "llm_response":
+                    status = "EMPTY" if ta.agent_response_empty else "OK"
+                else:
+                    status = ta.response_type.upper()
                 tools = "tools" if ta.has_tool_calls else "no-tools"
                 lines.append(
                     f"    Turn {ta.turn}: {status} | "

@@ -420,6 +420,146 @@ problem_classes:
       - "Chunk large data: break large data (full GDC schema) into smaller chunks across multiple turns"
       - "Limit LLM response length: set max_tokens in LLM config (e.g., 4096 tokens per turn)"
 
+  - id: "3E"
+    category: "llm_behavioral"
+    name: "Context Window Exhaustion (API Token Limit Exceeded)"
+    description: |
+      The accumulated conversation history (system prompt, all prior turns,
+      raw_messages, Beaker state introspection) exceeds the model's maximum
+      context length. The LLM provider API rejects the request immediately
+      with HTTP 400. Once this occurs, every subsequent turn also fails
+      because the conversation history only grows. The error is silently
+      swallowed by the archytas/toki layer — agent_response is empty and
+      response_type is "llm_response" (not "error"), making the failure
+      invisible without raw_messages inspection.
+
+      Distinguishing signature: turns complete in <2 seconds, agent_response
+      is empty, and raw_messages stderr contains "maximum context length"
+      with an explicit token count. The requested token count is typically
+      far above the model's limit (e.g., 1,015,000 vs 200,000).
+    severity: "error"
+    detection:
+      # Keyword detection catches the API error message in serialized trace text.
+      # Compound logic (_detect_context_window_exhaustion) cross-checks:
+      #   1. Turn has response_type == "llm_response"
+      #   2. agent_response is empty ("")
+      #   3. duration_seconds < 2.0 (API rejects instantly)
+      #   4. raw_messages contain "maximum context length"
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "maximum context length"
+      trace_regex:
+        - "maximum context length is \\d+ tokens"
+        - "you requested about \\d+ tokens"
+    example:
+      source: "trace"
+      snippet: |
+        Error from OpenRouter: {'error': {'message': "This endpoint's maximum
+        context length is 200000 tokens. However, you requested about 1015152
+        tokens (1011709 of text input, 3443 of tool input). Please reduce the
+        length of either one, or use the \"middle-out\" transform to compress
+        your prompt automatically.", 'code': 400}}
+    remediation:
+      - "Implement context window monitoring: track approximate token count before each API call and warn at 80% capacity"
+      - "Implement conversation summarization or truncation when approaching the model's context limit"
+      - "Use provider-specific context compression (e.g., OpenRouter's 'middle-out' transform) if available"
+      - "Surface the API error to agent_response instead of silently returning empty"
+      - "Reduce Beaker state introspection verbosity: raw_messages include large serialized state objects that inflate context"
+
+  - id: "3F"
+    category: "llm_behavioral"
+    name: "Response Stream Truncated (Premature Connection Close)"
+    description: |
+      The LLM provider begins streaming a response but the HTTP connection
+      is severed mid-transfer, resulting in a ChunkedEncodingError or
+      ProtocolError from urllib3/requests. The archytas/toki layer catches
+      the exception but returns an empty string as the agent_response rather
+      than raising an error. The turn is recorded as response_type
+      "llm_response" (apparent success) with an empty response.
+
+      Distinguishing signature: duration is significant (tens of seconds,
+      indicating real LLM processing occurred), agent_response is empty,
+      and raw_messages stderr contains "Response ended prematurely" or
+      "ChunkedEncodingError". Differs from 3E (context exhaustion) by
+      taking real time and having a network-level error rather than a
+      token-count error.
+    severity: "error"
+    detection:
+      # Keyword detection catches the network error in serialized trace text.
+      # Compound logic (_detect_response_stream_truncated) cross-checks:
+      #   1. Turn has response_type == "llm_response"
+      #   2. agent_response is empty ("")
+      #   3. duration_seconds > 5.0 (real processing occurred before stream broke)
+      #   4. raw_messages contain "Response ended prematurely" or "ChunkedEncodingError"
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "Response ended prematurely"
+        - "ChunkedEncodingError"
+      trace_regex:
+        - "(?:Response ended prematurely|ChunkedEncodingError)"
+        - "ProtocolError.*Response ended prematurely"
+    example:
+      source: "trace"
+      snippet: |
+        LLM Error:
+            Response ended prematurely
+
+            Traceback (most recent call last):
+              ...
+            urllib3.exceptions.ProtocolError: Response ended prematurely
+
+            During handling of the above exception, another exception occurred:
+              ...
+            requests.exceptions.ChunkedEncodingError: Response ended prematurely
+    remediation:
+      - "Implement retry logic for transient network errors (ChunkedEncodingError is typically transient)"
+      - "Surface the error in agent_response rather than silently returning empty"
+      - "Add response validation: if agent_response is empty after a non-timeout turn, flag as error"
+      - "Set request timeout and connection keep-alive parameters in the HTTP client"
+
+  - id: "3G"
+    category: "llm_behavioral"
+    name: "Silent Empty Response (No Agent Output)"
+    description: |
+      A turn completes with response_type "llm_response" (apparent success)
+      but agent_response is empty or whitespace-only. This is a cross-cutting
+      detection that catches any case where the LLM framework silently
+      swallowed an error. Specific causes include context window exhaustion
+      (3E) and response stream truncation (3F), but this class also catches
+      unknown error types that result in empty responses.
+
+      When 3E or 3F is also detected for the same run, 3G provides additional
+      context (which specific turns were affected). When neither 3E nor 3F
+      is detected, 3G flags an undiagnosed silent failure.
+    severity: "warning"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_silent_empty_response):
+      #   1. Turn has response_type == "llm_response" (not timeout, not error)
+      #   2. agent_response is empty or whitespace-only
+      #   3. The turn is NOT the last turn (last turn may legitimately be empty)
+      # This is purely compound — no keyword/regex patterns.
+      log_keywords: []
+      log_regex: []
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "turn": 4,
+          "agent_response": "",
+          "response_type": "llm_response",
+          "tool_calls": [],
+          "duration_seconds": 0.646
+        }
+    remediation:
+      - "Investigate raw_messages for the affected turn to identify the root cause"
+      - "Fix the archytas/toki error handling layer to surface errors in agent_response instead of returning empty"
+      - "Add response validation in run_experiment.py: abort or retry if agent_response is empty"
+      - "Log empty responses as explicit warnings in the experiment output"
+
   # ===========================================================================
   # Category 4: Data / Configuration Path Errors
   # ===========================================================================

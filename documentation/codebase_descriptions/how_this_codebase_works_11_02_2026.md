@@ -243,7 +243,7 @@ harmonia/
 ├── code_development_tools_agents/  # Developer tooling (outside Apptainer)
 │   └── monitoring_and_evaluation/
 │       ├── read_and_analyze_logs_and_traces_cli.py  # CLI log/trace analyzer
-│       └── types_of_log_and_trace_problems.yaml     # Error taxonomy (13 classes)
+│       └── types_of_log_and_trace_problems.yaml     # Error taxonomy (16 classes)
 │
 ├── plans/                    # Implementation plans (dated .md files)
 │   └── 05_02_2026_1200.md   # Plan for any-llm-sdk integration
@@ -1217,7 +1217,7 @@ Created in every results directory, this JSON file links all artifacts:
 
 ### CLI Tool (`code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py`)
 
-Analyzes experiment logs and traces to detect problems from a 13-class failure taxonomy.
+Analyzes experiment logs and traces to detect problems from a 16-class failure taxonomy.
 
 **Usage:**
 ```bash
@@ -1247,14 +1247,14 @@ python read_and_analyze_logs_and_traces_cli.py --log-dir ./logs --results-dir ./
 
 ### Error Taxonomy (`code_development_tools_agents/monitoring_and_evaluation/types_of_log_and_trace_problems.yaml`)
 
-Machine-readable taxonomy with 13 problem classes across 5 categories:
+Machine-readable taxonomy with 16 problem classes across 5 categories:
 
 | Category | Problems |
 | -------- | -------- |
-| 1. Infrastructure | 1A: Beaker Server Hung |
-| 2. LLM Connectivity | 2A: Ollama Model Not Found, 2B: API Key Invalid, 2C: Rate Limit, 2D: OpenRouter Unavailable |
-| 3. LLM Behavior | 3A: LLM-Side Timeout, 3B: Not Using Tools, 3C: Hallucinated Output |
-| 4. Data/Config | 4A: Missing Data File, 4B: Wrong Working Directory |
-| 5. Experiment Lifecycle | 5A: No Output Produced, 5B: Partial Completion, 5C: Metrics Failure |
+| 1. Infrastructure | 1A: Beaker Server Hung, 1B: 405 Notebook Save, 1C: ZMQ ReadTimeout |
+| 2. Model Config | 2A: Ollama Model Not Found, 2B: Tool Calling Not Supported, 2C: Ollama Runner Crash, 2D: OpenRouter Model Unavailable, 2E: OpenRouter Rate Limit |
+| 3. LLM Behavioral | 3A: LLM-Side Timeout, 3B: Not Using Tools, 3C: Hallucinated Output, 3D: WebSocket Size Exceeded, 3E: Context Window Exhaustion, 3F: Response Stream Truncated, 3G: Silent Empty Response |
+| 4. Data/Config | 4A: FileNotFoundError — Incorrect Data Path |
+| 5. Output | 5A: No Output Produced |
 
 Each class specifies detection keywords, regex patterns, severity, examples, and remediation steps.

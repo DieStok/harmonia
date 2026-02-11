@@ -345,6 +345,118 @@ File: `logs/10-02-2026_2158_dou_harmonization_nemotron-3-nano_46662638.out`
 
 ---
 
+#### 3E. Context Window Exhaustion (API Token Limit Exceeded)
+
+**Description:** The accumulated conversation history (system prompt, all prior turns, raw_messages, Beaker state introspection code) exceeds the model's maximum context length. The LLM provider API rejects the request immediately with HTTP 400. Once this occurs, every subsequent turn also fails because the conversation history only grows. The error is silently swallowed by the archytas/toki layer — `agent_response` is empty and `response_type` is `"llm_response"` (not `"error"`), making the failure invisible without `raw_messages` inspection.
+
+**Distinguishing signature in trace.json `raw_messages`:**
+```json
+{
+  "name": "stderr",
+  "text": "LLM Error:\n    Error from OpenRouter: {'error': {'message': \"This endpoint's maximum context length is 200000 tokens. However, you requested about 1015152 tokens (1011709 of text input, 3443 of tool input). Please reduce the length of either one, or use the \\\"middle-out\\\" transform to compress your prompt automatically.\", 'code': 400}}"
+}
+```
+
+**Distinguishing characteristics:**
+
+- Turns complete in <2 seconds (API rejects instantly)
+- `agent_response` is empty `""`
+- `response_type` is `"llm_response"` (looks like success but is not)
+- Token count in error message is far above model limit (e.g., 1,015,000 vs 200,000)
+- Token count grows slightly each turn (~100-200 tokens per additional prompt)
+- Tool input remains constant (~3,443 tokens); the growth is all in text input
+
+**Affected experiments (11 Feb 2026):** `pony-alpha` (turns 3-8, requested ~1,015,000 tokens against 200,000 limit)
+
+**Root cause:** The Beaker/archytas pipeline accumulates the full conversation history including all raw_messages (Beaker state introspection, execution inputs/outputs, dill serialization code) into the context sent to the LLM. After a complex turn (e.g., schema matching), the raw_messages can contain hundreds of KB of kernel state, pushing the total context far beyond the model's limit.
+
+**Remediations:**
+
+1. **Implement context window monitoring:** Track approximate token count before each API call and warn at 80% capacity. Abort the experiment gracefully when the limit is approached.
+2. **Implement conversation summarization:** When approaching the model's context limit, summarize earlier turns into a compact summary and drop the raw_messages for those turns.
+3. **Use provider-specific context compression:** OpenRouter offers a `"middle-out" transform` that automatically compresses prompts. Enable this in the API request.
+4. **Reduce Beaker state introspection verbosity:** The raw_messages include large serialized Python state objects (dill pickles, full DataFrame representations). These inflate context rapidly and should be truncated or excluded from the LLM's context.
+5. **Surface the API error:** Modify the archytas/toki error handling to propagate HTTP 400 context length errors to `agent_response` and set `response_type` to `"error"`.
+
+---
+
+#### 3F. Response Stream Truncated (Premature Connection Close)
+
+**Description:** The LLM provider begins streaming a response but the HTTP connection is severed mid-transfer, resulting in a `ChunkedEncodingError` or `ProtocolError` from urllib3/requests. The archytas/toki layer catches the exception but returns an empty string as the `agent_response` rather than raising an error. The turn is recorded as `response_type: "llm_response"` (apparent success) with an empty response.
+
+**Distinguishing signature in trace.json `raw_messages`:**
+```
+LLM Error:
+    Response ended prematurely
+
+    Traceback (most recent call last):
+      File "/usr/local/lib/python3.11/site-packages/requests/models.py", line 820, in generate
+        yield from self.raw.stream(chunk_size, decode_content=True)
+      ...
+    urllib3.exceptions.ProtocolError: Response ended prematurely
+
+    During handling of the above exception, another exception occurred:
+      ...
+    requests.exceptions.ChunkedEncodingError: Response ended prematurely
+```
+
+**Distinguishing characteristics:**
+
+- Duration is significant (tens of seconds), indicating real LLM processing occurred before the stream broke
+- `agent_response` is empty `""`
+- `response_type` is `"llm_response"` (looks like success)
+- Differs from 3E (context exhaustion): takes real time and has a network-level error rather than a token-count error
+- Differs from 3A (timeout): completes within the timeout; the response type is `llm_response`, not `timeout`
+
+**Affected experiments (11 Feb 2026):** `glm-4.5-air` (turn 7, 66.3s duration, stream cut mid-transfer)
+
+**Root cause:** Transient network error between the compute node and the OpenRouter API. The HTTP response stream was interrupted — this can be caused by load balancer timeouts, network instability, or the upstream LLM provider terminating the connection.
+
+**Remediations:**
+
+1. **Implement retry logic:** `ChunkedEncodingError` is typically transient. Retry the same turn 1-2 times with exponential backoff before marking it as failed.
+2. **Surface the error:** Modify archytas/toki to set `agent_response` to the error message and `response_type` to `"error"` when a stream is truncated.
+3. **Add response validation:** In `run_experiment.py`, check if `agent_response` is empty after a non-timeout turn. If so, retry the turn or log it as a stream failure.
+4. **Set HTTP client timeouts:** Configure explicit read timeouts and connection keep-alive parameters in the requests/urllib3 session to detect stream failures earlier.
+
+---
+
+#### 3G. Silent Empty Response (No Agent Output) — Cross-cutting Detection
+
+**Description:** A turn completes with `response_type: "llm_response"` (apparent success) but `agent_response` is empty or whitespace-only. This is a cross-cutting detection that catches any case where the LLM framework silently swallowed an error. Specific causes include context window exhaustion (3E) and response stream truncation (3F), but this class also catches unknown error types that result in empty responses.
+
+**Distinguishing signature in trace.json:**
+```json
+{
+  "turn": 4,
+  "agent_response": "",
+  "response_type": "llm_response",
+  "tool_calls": [],
+  "duration_seconds": 0.646
+}
+```
+
+**Distinguishing characteristics:**
+
+- `response_type` is `"llm_response"` but `agent_response` is empty
+- Without this detection, the CLI incorrectly counts these turns as "successful"
+- When 3E or 3F is also detected for the same run, 3G provides the list of affected turn numbers
+- When neither 3E nor 3F is detected, 3G flags an undiagnosed silent failure
+
+**Affected experiments (11 Feb 2026):**
+
+- `pony-alpha` (turns 3-8, caused by 3E context exhaustion)
+- `glm-4.5-air` (turn 7, caused by 3F stream truncation)
+
+**Remediations:**
+
+1. **Investigate raw_messages:** For each affected turn, inspect `raw_messages` to identify the root cause (context overflow, network error, rate limit, etc.).
+2. **Fix archytas/toki error handling:** The error handling layer should propagate errors to `agent_response` and set `response_type` to `"error"` instead of returning empty strings.
+3. **Add response validation in run_experiment.py:** After each turn, check if `agent_response` is empty. If so, abort or retry instead of continuing with broken state.
+4. **Log empty responses explicitly:** In the experiment output, log a clear warning when an empty response is received from a non-timeout turn.
+
+---
+
 ### Category 4: Data / Configuration Path Errors
 
 #### 4A. FileNotFoundError — Incorrect Data Path in Container
@@ -437,6 +549,12 @@ Is total experiment duration ~2220s with all 8 turns timing out?
     │   └─ YES → Category 4A (Data Path Error)
     ├─ Does the trace contain "WebSocketError: Message size"?
     │   └─ YES → Category 3D (WebSocket Size Exceeded)
+    ├─ Do raw_messages contain "maximum context length"?
+    │   └─ YES → Category 3E (Context Window Exhaustion)
+    ├─ Do raw_messages contain "Response ended prematurely" / "ChunkedEncodingError"?
+    │   └─ YES → Category 3F (Response Stream Truncated)
+    ├─ Are there turns with response_type "llm_response" but empty agent_response?
+    │   └─ YES → Category 3G (Silent Empty Response) — check raw_messages for root cause
     ├─ Do some turns succeed (short duration) but complex turns timeout?
     │   └─ YES → Check tool_calls array
     │       ├─ Always empty → Category 3B (LLM Not Using Tools)
@@ -475,3 +593,10 @@ Is total experiment duration ~2220s with all 8 turns timing out?
 | nemotron-3-nano | 46662638 | ollama | nemotron-3-nano | Ollama runner crash | 2C |
 | olmo3 | 46662639 | ollama | olmo-3.1:32b | Model not found | 2A |
 | qwen3-coder | 46662640 | ollama | qwen3-coder:30b | FileNotFoundError + hallucination + WS crash | 4A, 3C, 3D |
+
+### Affected Experiments Summary (11 Feb 2026)
+
+| Experiment | Job ID | Provider | Model | Primary Failure | Category |
+|---|---|---|---|---|---|
+| glm-4.5-air | 46734241 | openrouter | z-ai/glm-4.5-air:free | LLM timeout + stream truncation + silent empty response | 3A, 3F, 3G |
+| pony-alpha | 46734242 | openrouter | openrouter/pony-alpha | Context window exhaustion + silent empty response | 3E, 3G |
