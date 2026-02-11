@@ -1,0 +1,500 @@
+# =============================================================================
+# Harmonia Experiment Failure Mode Taxonomy
+# =============================================================================
+# Schema version: 1.0
+# Date: 11 February 2026
+#
+# This file defines the problem classes that the CLI log/trace analysis tool
+# uses to categorize experiment failures. Each problem class has:
+#   - id: unique identifier (category_number + letter)
+#   - category: high-level grouping
+#   - name: short descriptive name
+#   - description: full explanation
+#   - severity: critical | error | warning | info
+#   - detection: keyword/regex patterns to search for in logs and traces
+#   - example: real snippet from a log or trace
+#   - remediation: list of suggested fixes
+#
+# COMPOUND DETECTION LOGIC:
+# Some problem classes require compound conditions (e.g., "all turns timeout
+# AND raw_messages count <= 1 per turn"). These cannot be expressed as simple
+# keyword/regex patterns. They are implemented in Python in the CLI tool
+# (see _detect_* methods). This YAML only contains the simple patterns;
+# compound logic is documented in comments under each relevant problem class.
+#
+# See also: documentation/processes/11_02_2026_interpreting_logs_and_traces.md
+# =============================================================================
+
+schema_version: "1.0"
+
+problem_classes:
+
+  # ===========================================================================
+  # Category 1: Infrastructure / Beaker Server Failures
+  # ===========================================================================
+
+  - id: "1A"
+    category: "infrastructure"
+    name: "Beaker Server Hung"
+    description: |
+      The Beaker server becomes unresponsive after processing a previous batch
+      of experiment runs. All 8 turns timeout with an identical, deterministic
+      duration pattern [180, 300, 180, 180, 360, 600, 300, 120] totaling exactly
+      2220 seconds. Each turn's raw_messages contains only a single status:busy
+      message — the Beaker kernel never starts processing.
+    severity: "critical"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_beaker_server_hung):
+      #   1. ALL turns have response_type == "timeout"
+      #   2. Each turn has <= 1 raw_message
+      #   3. Total duration is approximately 2220 seconds (± 30s)
+      # These conditions together distinguish infrastructure hang from
+      # LLM-side timeouts (3A), where raw_messages count > 1 per turn.
+      log_keywords: []
+      log_regex: []
+      # 1A detection is PURELY compound (Python-only). No simple keywords,
+      # because "Request timed out after" also appears in 3A (LLM-side timeout).
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "turn": 1,
+          "agent_response": "Request timed out after 180.0 seconds",
+          "response_type": "timeout",
+          "tool_calls": [],
+          "duration_seconds": 180.001,
+          "raw_messages": [
+            {
+              "msg_type": "status",
+              "content": { "execution_state": "busy" }
+            }
+          ]
+        }
+    remediation:
+      - "Restart Beaker between runs: modify run_experiment.py to restart the Beaker server (or kernel) between experiment runs"
+      - "Detect hung server: send a health-check request (GET /api/sessions) before sending turns; abort if no response within 10s"
+      - "Limit retries: only attempt one run per Beaker server instance, or restart server between retries"
+
+  - id: "1B"
+    category: "infrastructure"
+    name: "405 Method Not Allowed on Notebook Save"
+    description: |
+      Beaker returns HTTP 405 when attempting to save a notebook. This appears
+      in almost all SLURM .out logs as a warning but does not crash the experiment.
+      Beaker's dev mode tries to auto-save notebooks, but the API doesn't support
+      PUT for this path.
+    severity: "info"
+    detection:
+      log_keywords:
+        - "405 PUT /api/contents/notebook.ipynb"
+      log_regex:
+        - "\\d+ PUT /api/contents/.*\\.ipynb"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        [W 2026-02-10 19:34:33.506 BeakerServerApp] 405 PUT /api/contents/notebook.ipynb (::1) 0.74ms referer=None
+    remediation:
+      - "Ignore: this is a non-fatal warning that does not affect experiment results"
+      - "Suppress in logging: configure Beaker's logging level to suppress 405 warnings"
+      - "Fix Beaker config: configure the correct save endpoint if notebook saving is desired"
+
+  - id: "1C"
+    category: "infrastructure"
+    name: "ZMQ ReadTimeout on Context Cleanup"
+    description: |
+      After the experiment completes, the Beaker kernel's cleanup process
+      encounters a ZMQ ReadTimeout when trying to tear down the context.
+      This appears in the SLURM .out log at the very end and does not affect
+      experiment results.
+    severity: "info"
+    detection:
+      log_keywords:
+        - "Uncaught exception in ZMQStream callback"
+        - "zmq.error.ZMQError"
+      log_regex:
+        - "ZMQ.*[Tt]imeout"
+        - "Uncaught exception in ZMQStream"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        Uncaught exception in ZMQStream callback
+        Traceback (most recent call last):
+          File ".../zmq/eventloop/zmqstream.py", line 565, in _log_error
+            f.result()
+          File ".../beaker_kernel/lib/jupyter_kernel_proxy.py", line 253, in handler
+          ...
+          File ".../beaker_kernel/kernel.py", line 550, in llm_request
+            result = await task
+    remediation:
+      - "Ignore: occurs during cleanup after the experiment finishes; does not affect results"
+      - "Graceful shutdown: implement a proper shutdown sequence that sends a kernel shutdown request before disconnecting"
+      - "Catch and suppress: wrap the Beaker kernel's cleanup handler in try/except"
+
+  # ===========================================================================
+  # Category 2: Model Configuration / Availability Errors
+  # ===========================================================================
+
+  - id: "2A"
+    category: "model_config"
+    name: "Ollama Model Not Found"
+    description: |
+      The Ollama API returns HTTP 404 because the requested model name does not
+      match any installed model. The model is either misspelled or not pulled.
+    severity: "critical"
+    detection:
+      log_keywords: []
+      log_regex:
+        - "model '.*' not found"
+        - "ResponseError.*not found.*status code: 404"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        ollama._types.ResponseError: model 'olmo-3.1:32b' not found (status code: 404)
+    remediation:
+      - "Fix model name in config YAML to match an installed model; verify with 'ollama list'"
+      - "Add model validation to exec_apptainer_harmonia.sh: verify requested model exists after Ollama starts"
+      - "Import custom model from HuggingFace GGUF: 'ollama create <name> -f Modelfile'"
+
+  - id: "2B"
+    category: "model_config"
+    name: "Tool Calling Not Supported"
+    description: |
+      The LLM framework (Archytas/LangChain) raises a ValueError because the
+      model's Ollama template does not declare tool support. Ollama determines
+      tool support by checking if the model's Go template references {{ .Tools }}.
+      The model may actually support tool calling natively, but the Ollama template
+      is missing the required block.
+    severity: "critical"
+    detection:
+      log_keywords:
+        - "does not support tool calling"
+        - "does not support tool"
+      log_regex:
+        - "ValueError.*does not support tool"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        ValueError: Model 'kimi-k2' does not support tool calling
+    remediation:
+      - "Use community model with tool template: e.g., 'ollama pull huihui_ai/kimi-k2'"
+      - "Create custom Modelfile that adds {{ .Tools }} template block"
+      - "Check if ValueError comes from Ollama or from Archytas/LangChain pre-checking; add to allowlist if client-side"
+
+  - id: "2C"
+    category: "model_config"
+    name: "Ollama Runner Process Crash"
+    description: |
+      The Ollama runner subprocess crashes with exit status 2 during model
+      inference. This is an Ollama-internal error, typically related to model
+      loading, GGUF format issues, or GPU memory exhaustion.
+    severity: "critical"
+    detection:
+      log_keywords:
+        - "llama runner process has terminated"
+        - "exit status 2"
+      log_regex:
+        - "llama runner.*exit status \\d+"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        llama runner process has terminated: exit status 2
+    remediation:
+      - "Check model integrity: re-pull the model with 'ollama pull <model>'"
+      - "Check GPU memory: use 'seff <jobid>' to check memory usage; try smaller quantization or more VRAM"
+      - "Check Ollama version compatibility: some models require newer Ollama versions"
+
+  - id: "2D"
+    category: "model_config"
+    name: "OpenRouter Model No Longer Available"
+    description: |
+      The OpenRouter API returns HTTP 404 indicating that a free-tier model's
+      free period has ended and the model must be accessed via a paid slug.
+      All turns complete in <1 second (the API error is immediate) and
+      total experiment duration is typically <10s.
+    severity: "critical"
+    detection:
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "period has ended"
+        - "migrate to the paid slug"
+      trace_regex:
+        - "free.*period has ended"
+        - "migrate to the paid slug"
+    example:
+      source: "trace"
+      snippet: |
+        LLM Error:
+            Error from OpenRouter: {'error': {'message': 'The free MiMo-V2-Flash period has ended. To continue using this model, please migrate to the paid slug: xiaomi/mimo-v2-flash', 'code': 404}}
+    remediation:
+      - "Remove from roster: delete the config YAML for models that are no longer free"
+      - "Switch to paid slug: update config to use paid model slug with sufficient OpenRouter credits"
+      - "Add availability check: make lightweight API call before experiment to verify model is accessible"
+
+  - id: "2E"
+    category: "model_config"
+    name: "OpenRouter Rate Limit Exceeded"
+    description: |
+      The OpenRouter API returns HTTP 429 when the free-tier rate limit is
+      exceeded. Free models are typically limited to 20 requests/minute.
+      First 1-2 turns may succeed, then subsequent turns return empty responses
+      very quickly (<1s).
+    severity: "error"
+    detection:
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "Rate limit exceeded"
+        - "rate limit"
+      trace_regex:
+        - "'code': 429"
+        - "Rate limit exceeded.*free-models"
+        - "X-RateLimit-Remaining.*0"
+    example:
+      source: "trace"
+      snippet: |
+        LLM Error:
+            Error from OpenRouter: {'error': {'message': 'Rate limit exceeded: free-models-per-min. ', 'code': 429, 'metadata': {'headers': {'X-RateLimit-Limit': '20', 'X-RateLimit-Remaining': '0'}}}}
+    remediation:
+      - "Add rate limiting: implement configurable delay between turns (3-5s for free models at 20 req/min)"
+      - "Implement retry with backoff: parse X-RateLimit-Reset header and wait before retrying"
+      - "Use paid tier: paid OpenRouter plans have significantly higher rate limits"
+
+  # ===========================================================================
+  # Category 3: LLM Behavioral Failures
+  # ===========================================================================
+
+  - id: "3A"
+    category: "llm_behavioral"
+    name: "LLM-Side Timeout on Complex Tasks"
+    description: |
+      The LLM responds to simple prompts (data loading, basic questions) but
+      stalls/times out on complex analytical tasks (schema matching, value
+      mapping). The model is running but takes too long to generate a response.
+    severity: "error"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_llm_side_timeout):
+      #   1. Turn has response_type == "timeout"
+      #   2. Turn has > 1 raw_message (differentiates from 1A infrastructure hang)
+      #   3. raw_messages include beaker__execute_input or stream messages
+      #      (the kernel IS processing, but the LLM is slow)
+      #   4. Other turns in the same experiment may have succeeded
+      # This distinguishes from 1A where ALL turns timeout with exactly 1
+      # raw_message each.
+      # 3A detection is PURELY compound (Python-only). No simple keywords,
+      # because "Request timed out after" also appears in 1A (Beaker hung).
+      # The compound logic checks raw_message count > 1 per timeout turn.
+      log_keywords: []
+      log_regex: []
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "trace"
+      snippet: |
+        Turn 1: response_type=llm_response, duration=16.8s (success)
+        Turn 3: response_type=timeout, duration=180.0s, raw_messages=[
+          {msg_type: "status", content: {execution_state: "busy"}},
+          {msg_type: "beaker__execute_input", ...},
+          {msg_type: "stream", ...}
+        ]
+    remediation:
+      - "Increase per-turn timeout from 180s to 600s+ for complex tasks in experiment config"
+      - "Simplify prompts: break complex multi-step tasks into smaller, focused turns"
+      - "Use faster/larger models: smaller models (<30B) struggle with complex reasoning; try 70B+ or cloud models"
+
+  - id: "3B"
+    category: "llm_behavioral"
+    name: "LLM Not Using Tools / Text-Only Guidance"
+    description: |
+      The LLM responds to prompts but does NOT use Beaker's code execution
+      capabilities. Instead, it outputs text guidance like "here's the Python
+      code you could run" or "I can't directly manipulate files." This defeats
+      the purpose of the agent framework.
+    severity: "error"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_not_using_tools):
+      #   1. Turn has response_type == "llm_response" (not timeout)
+      #   2. tool_calls array is empty
+      #   3. agent_response contains phrases indicating text-only guidance
+      # The keyword detection below catches the most common phrases.
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "I don't have the capability"
+        - "I can't directly"
+        - "here's how you could"
+        - "I cannot directly"
+        - "you could run"
+        - "I'm unable to"
+      trace_regex:
+        - "(?i)I (?:don't|do not|can't|cannot) (?:have the capability|directly)"
+        - "(?i)here'?s (?:how|the code) you could"
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "turn": 7,
+          "agent_response": "I don't have the capability to directly save files to the filesystem. However, I can guide you through the process...",
+          "response_type": "llm_response",
+          "tool_calls": [],
+          "duration_seconds": 17.0
+        }
+    remediation:
+      - "Improve system prompt: add explicit instructions that the agent MUST use run_code, not just suggest code"
+      - "Use models trained for tool use: code-focused models (devstral) may default to explanation over execution"
+      - "Modify Archytas agent prompt template in archytas/react.py to emphasize tools MUST be used"
+
+  - id: "3C"
+    category: "llm_behavioral"
+    name: "Hallucinated / Fabricated Output Data"
+    description: |
+      When the source data file is not found (FileNotFoundError), some LLMs
+      fabricate output data entirely unrelated to the task rather than reporting
+      the error and stopping. The fabricated data often matches the model's
+      training data patterns (e.g., project management schemas) rather than
+      biomedical data.
+    severity: "error"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_hallucinated_output):
+      #   1. metrics.json exists AND column_mapping_accuracy == 0.0
+      #   2. extra_columns list contains column names not in GDC schema
+      #   3. Often preceded by FileNotFoundError in earlier turns
+      log_keywords: []
+      log_regex: []
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "both"
+      snippet: |
+        // metrics.json showing 0% accuracy with fabricated columns
+        {
+          "column_mapping_accuracy": 0.0,
+          "correct_mappings": 0,
+          "total_expected": 11,
+          "extra_columns": ["dou_id", "dou_title", "dou_description"]
+        }
+    remediation:
+      - "Fix data path to prevent FileNotFoundError in the first place (see 4A)"
+      - "Add data validation: after LLM produces output, verify columns match expected GDC schema"
+      - "Add guardrails: check if dou_harmonized.csv contains expected column names before marking run as successful"
+
+  - id: "3D"
+    category: "llm_behavioral"
+    name: "WebSocket Message Size Exceeded"
+    description: |
+      The LLM generates a response that exceeds the Beaker WebSocket message
+      size limit (4MB default), crashing the connection. Typically happens when
+      the model tries to process or output the entire GDC schema at once.
+    severity: "error"
+    detection:
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "Message size"
+        - "exceeds limit"
+        - "WebSocketError"
+      trace_regex:
+        - "Message size \\d+ exceeds limit \\d+"
+        - "WebSocketError.*Message size"
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "status": "error",
+          "error_message": "WebSocketError: Message size 5784393 exceeds limit 4194304"
+        }
+    remediation:
+      - "Increase WebSocket limit: set c.ServerApp.websocket_max_message_size = 20 * 1024 * 1024 (20MB) in Jupyter config"
+      - "Chunk large data: break large data (full GDC schema) into smaller chunks across multiple turns"
+      - "Limit LLM response length: set max_tokens in LLM config (e.g., 4096 tokens per turn)"
+
+  # ===========================================================================
+  # Category 4: Data / Configuration Path Errors
+  # ===========================================================================
+
+  - id: "4A"
+    category: "data_path"
+    name: "FileNotFoundError — Incorrect Data Path in Container"
+    description: |
+      The LLM (or the code it generates) tries to access a file path that does
+      not exist inside the container. Causes include: incorrect path in config
+      YAML (e.g., /data/... instead of data/...), Beaker kernel cwd not set to
+      /workspace, or LLM generating an absolute path that doesn't match the
+      container's mount structure.
+    severity: "error"
+    detection:
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "FileNotFoundError"
+        - "No such file or directory"
+      trace_regex:
+        - "FileNotFoundError.*No such file or directory"
+        - "\\[Errno 2\\].*No such file or directory"
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "content": {
+            "ename": "FileNotFoundError",
+            "evalue": "[Errno 2] No such file or directory: 'data/one_metadata_table_gdc_schema/data/dou.csv'",
+            "execution_type": "tool",
+            "execution_item_name": "run_code"
+          }
+        }
+    remediation:
+      - "Use absolute paths in configs: /workspace/data/one_metadata_table_gdc_schema/data/dou.csv"
+      - "Fix kernel working directory: ensure Beaker kernel starts with cwd set to /workspace"
+      - "Restructure workspace with symlinks: mount data as symlinks directly in workspace root"
+
+  # ===========================================================================
+  # Category 5: Missing / Incorrect Output
+  # ===========================================================================
+
+  - id: "5A"
+    category: "output"
+    name: "No Output Produced"
+    description: |
+      The experiment completes (or times out) without producing dou_harmonized.csv
+      or any mapping files in the results directory. Results directory exists but
+      contains only trace.json and possibly metrics.json. Almost always a downstream
+      effect of another failure category (1-4).
+    severity: "warning"
+    detection:
+      # COMPOUND LOGIC (implemented in Python as _detect_no_output):
+      #   1. Results directory exists
+      #   2. trace.json exists
+      #   3. No dou_harmonized.csv in results directory
+      #   4. No column_mapping.json or value_mapping.json
+      # This is checked by examining the results folder contents, not by
+      # keyword/regex matching.
+      log_keywords: []
+      log_regex: []
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "both"
+      snippet: |
+        Results directory contains only:
+          trace.json
+          metrics.json
+        Missing expected files:
+          dou_harmonized.csv
+          column_mapping.json
+          value_mapping.json
+    remediation:
+      - "Fix upstream issues first: this is almost always a downstream effect of another failure"
+      - "Add output verification: after final turn, check if expected output files exist; log NO_OUTPUT_PRODUCED status"
+      - "Add save results fallback: if LLM produced intermediate results in memory, add automated save step"

@@ -1,6 +1,6 @@
 #!/bin/bash
 # =============================================================================
-# Harmonia Experiment SBATCH Template
+# Harmonia Experiment SBATCH Template - CPU (Cloud LLM providers)
 # =============================================================================
 # This template is used by generate_jobs.py to create individual job scripts.
 # Variables in {{double_braces}} are replaced by the generator.
@@ -10,11 +10,14 @@
 #
 # Or generate jobs first:
 #   python generate_jobs.py --config experiments/configs/dou_harmonization.yaml
+#
+# Note: For local LLM providers (ollama, anyllm:ollama), use sbatch_template_gpu.sh
+#       or exec_apptainer_harmonia.sh will auto-start Ollama on CPU nodes too.
 # =============================================================================
 
 #SBATCH --job-name=harmonia_{{experiment_name}}
-#SBATCH --output=logs/{{experiment_name}}_%j.out
-#SBATCH --error=logs/{{experiment_name}}_%j.err
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
 #SBATCH --time={{time_limit}}
 #SBATCH --mem={{memory}}
 #SBATCH --cpus-per-task={{cpus}}
@@ -26,11 +29,23 @@
 
 set -e
 
+# Generate unique run ID for linking logs to results
+RUN_ID=$(python3 -c "import secrets; print(secrets.token_hex(4))")
+export RUN_ID
+
+# Redirect all output to date-stamped log files (includes run_id)
+LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
+LOG_OUT="logs/${LOG_TIMESTAMP}_{{experiment_name}}_${SLURM_JOB_ID}_${RUN_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_{{experiment_name}}_${SLURM_JOB_ID}_${RUN_ID}.err"
+mkdir -p logs
+exec > "$LOG_OUT" 2> "$LOG_ERR"
+
 echo "=============================================="
 echo "Harmonia Experiment: {{experiment_name}}"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
+echo "Run ID: $RUN_ID"
 echo "Node: $(hostname)"
 echo "Date: $(date)"
 echo ""
@@ -46,27 +61,28 @@ echo "Using port: $PORT"
 mkdir -p logs
 
 # =============================================================================
-# Start Beaker Server
+# Start Beaker Server with exec_apptainer_harmonia.sh
 # =============================================================================
+# The exec script handles:
+# - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
+# - Ollama logging to logs/ollama_<timestamp>.log
+# - Model pre-loading/warming
+# - Apptainer image selection (new harmonia image with any-llm support)
+# - Data and results directory binding
+# - Environment variable configuration
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
 echo "LLM Provider: {{llm_provider}}"
 echo "LLM Model: {{llm_model}}"
+echo ""
 
-# Start Beaker server
-# Note: bdikit_context is pre-installed in the image with proper entry points
-# --env flags override values from --env-file
-apptainer exec \
-    --bind .:/jupyter \
-    --pwd /jupyter \
-    {{ssl_bind}} \
-    --env-file {{env_file}} \
-    --env JUPYTER_SERVER=http://localhost:$PORT \
-    --env LLM_SERVICE_PROVIDER={{llm_provider}} \
-    --env LLM_SERVICE_MODEL={{llm_model}} \
-    jupyter.sif \
-    beaker dev watch --ip 0.0.0.0 --port $PORT &
+# Start Beaker server via exec script (handles Ollama automatically if needed)
+./exec_apptainer_harmonia.sh \
+    --port $PORT \
+    --config {{config_path}} \
+    --job-name "{{experiment_name}}_${SLURM_JOB_ID}" \
+    --run-id "$RUN_ID" &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
@@ -85,7 +101,7 @@ trap cleanup EXIT
 
 # Wait for server to be ready
 echo "Waiting for server to start..."
-MAX_WAIT=60
+MAX_WAIT=90  # Increased timeout for potential model loading
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then

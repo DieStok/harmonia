@@ -6,10 +6,19 @@
 # Generated .env files from experiment configs
 *_associated.env
 *.sif*
-/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/plans/improve_harmonia_code.md
-./plans/improve_harmonia_code.md
-plans/improve_harmonia_code.md
+
 jupyter.sif.newer.backup
 hpc_group
 hpc_passwd
 test_inner.sh
+
+# Virtual environment
+.venv/
+.uv_cache/
+.tmp/
+
+# Logs (SLURM stdout/stderr, Beaker, Ollama)
+logs/
+
+# Experiment results (trace.json, conversation.md, harmonized output)
+results/

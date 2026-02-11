@@ -1,0 +1,212 @@
+# =============================================================================
+# Harmonia Beaker LLM Agent Environment - Apptainer Definition
+# =============================================================================
+# This definition builds an Apptainer image with:
+# - Beaker kernel for interactive notebooks
+# - BDI-Kit context for data harmonization
+# - any-llm-sdk for unified LLM provider access (30+ providers)
+# - Full support for anyllm:ollama, anyllm:openai, etc.
+#
+# Build with:
+#   ./build_harmonia_apptainer.sh
+#
+# Or manually:
+#   srun -J apptainer_build_claude-code --time=02:00:00 --mem=32G --gres=tmpspace:100G bash -c "
+#     cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia
+#     export TMPDIR=\$TMPDIR APPTAINER_TMPDIR=\$TMPDIR APPTAINER_CACHEDIR=\$TMPDIR
+#     apptainer build harmonia_beaker_LLM_agent_environment_apptainer.sif harmonia_beaker_LLM_agent_environment_apptainer.def
+#   "
+# =============================================================================
+
+Bootstrap: docker
+From: python:3.11
+
+%post
+    # ==========================================================================
+    # Phase 1: Environment Setup
+    # ==========================================================================
+    # Use /var/tmp for builds - it has more space than /tmp in container
+    export TMPDIR=/var/tmp
+    export UV_CACHE_DIR=/var/tmp/uv_cache
+    export PIP_CACHE_DIR=/var/tmp/pip_cache
+    mkdir -p /var/tmp/uv_cache /var/tmp/pip_cache
+
+    echo "=== Initial space ==="
+    df -h /var/tmp /tmp
+
+    # Create jupyter user
+    useradd -m jupyter
+
+    # Install system dependencies
+    apt update && apt install -y lsof git curl
+
+    # ==========================================================================
+    # Phase 2: Python Package Management Setup
+    # ==========================================================================
+    # Install uv for fast package management
+    pip install --no-cache-dir uv
+
+    # Install hatch and hatchling for building packages
+    TMPDIR=/var/tmp uv pip install --system --no-cache hatch hatchling
+
+    echo "=== Space after hatch install ==="
+    df -h /var/tmp
+
+%files
+    # Copy only essential files, NOT .sif containers
+    src /jupyter/src
+    pyproject.toml /jupyter/pyproject.toml
+    README.md /jupyter/README.md
+    # Note: dou.csv is accessed via bind mount at runtime, not copied into image
+
+%post
+    # ==========================================================================
+    # Phase 3: Main Package Installation
+    # ==========================================================================
+    # Use /var/tmp for builds - it has more space than /tmp in container
+    export TMPDIR=/var/tmp
+    export UV_CACHE_DIR=/var/tmp/uv_cache
+    export PIP_CACHE_DIR=/var/tmp/pip_cache
+    mkdir -p /var/tmp/uv_cache /var/tmp/pip_cache
+
+    chown -R 1000:1000 /jupyter
+
+    # Safety: Remove any accidentally copied .sif files
+    echo "=== Cleaning up any .sif files ==="
+    find /jupyter -name "*.sif*" -type f -delete 2>/dev/null || true
+
+    echo "=== Space before main install ==="
+    df -h /var/tmp
+
+    # --------------------------------------------------------------------------
+    # Install beaker_kernel (provides hatch build hook and kernel functionality)
+    # --------------------------------------------------------------------------
+    echo "Installing beaker_kernel (provides hatch build hook)..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache "beaker_kernel>=1.14.0"
+
+    # --------------------------------------------------------------------------
+    # Install any-llm-sdk with provider dependencies
+    # --------------------------------------------------------------------------
+    # any-llm-sdk provides unified access to 30+ LLM providers
+    # We install with ollama extra for local LLM support
+    echo "Installing any-llm-sdk with ollama provider..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache "any-llm-sdk[ollama] @ git+https://github.com/mozilla-ai/any-llm.git"
+
+    # Verify any-llm installation
+    echo "=== Verifying any-llm installation ==="
+    python3 -c "from any_llm import AnyLLM; print('any_llm imported successfully')"
+    python3 -c "import ollama; print('ollama package imported successfully')"
+
+    # --------------------------------------------------------------------------
+    # Install additional dependencies for archytas
+    # --------------------------------------------------------------------------
+    # These are needed for message conversion and tool handling
+    echo "Installing langchain-core for message types..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache langchain-core
+
+    # --------------------------------------------------------------------------
+    # Build and install bdikit_context
+    # --------------------------------------------------------------------------
+    cd /jupyter
+    echo "Building and installing bdikit_context (with --no-build-isolation to use system packages)..."
+    TMPDIR=/var/tmp pip install --no-cache-dir --no-build-isolation .
+
+    # --------------------------------------------------------------------------
+    # Verify installations
+    # --------------------------------------------------------------------------
+    echo "=== Verifying bdikit_context installation ==="
+    python3 -c "from bdikit_context.context import BDIKitContext; print('BDIKitContext imported successfully')"
+    python3 -c "from bdikit_context.agent import BDIKitAgent; print('BDIKitAgent imported successfully')"
+
+    echo "=== Verifying code_context installation ==="
+    python3 -c "from code_context.context import CodeContext; print('CodeContext imported successfully')"
+
+    echo "=== Verifying bdikit_context.llm.anyllm installation ==="
+    python3 -c "from bdikit_context.llm.anyllm import AnyLLMModel; print('AnyLLMModel imported successfully')"
+    python3 -c "from bdikit_context.llm.anyllm import ChatAnyLLM; print('ChatAnyLLM imported successfully')"
+
+    # Verify entry points are registered
+    echo "=== Verifying entry points ==="
+    python3 -c "from importlib.metadata import entry_points; contexts = [ep.name for ep in entry_points(group='beaker.contexts')]; print(f'Registered contexts: {contexts}')"
+
+    # --------------------------------------------------------------------------
+    # Create legacy JSON mapping file as fallback
+    # --------------------------------------------------------------------------
+    echo "Creating legacy context mapping file..."
+    mkdir -p /usr/local/share/beaker/contexts
+    cat > /usr/local/share/beaker/contexts/bdikit_context.json << 'EOF'
+{
+    "slug": "bdikit_context",
+    "package": "bdikit_context.context",
+    "class_name": "BDIKitContext"
+}
+EOF
+    echo "Created /usr/local/share/beaker/contexts/bdikit_context.json"
+    cat /usr/local/share/beaker/contexts/bdikit_context.json
+
+    cat > /usr/local/share/beaker/contexts/code_context.json << 'EOF'
+{
+    "slug": "code_context",
+    "package": "code_context.context",
+    "class_name": "CodeContext"
+}
+EOF
+    echo "Created /usr/local/share/beaker/contexts/code_context.json"
+    cat /usr/local/share/beaker/contexts/code_context.json
+
+    # ==========================================================================
+    # Phase 4: Cleanup
+    # ==========================================================================
+    echo "=== Cleaning up temp files ==="
+    rm -rf /var/tmp/uv_cache /var/tmp/pip_cache
+
+    echo "=== Space after main install ==="
+    df -h /var/tmp
+
+    echo "=== Final /jupyter contents ==="
+    ls -la /jupyter/
+
+    echo "=== Installed packages (key ones) ==="
+    python3 -c "import pkg_resources; pkgs = ['beaker-kernel', 'any-llm-sdk', 'bdikit-context', 'langchain-core', 'ollama']; [print(f'{p}: {pkg_resources.get_distribution(p).version}') for p in pkgs if any(d.key == p for d in pkg_resources.working_set)]" 2>/dev/null || true
+
+    echo ""
+    echo "=============================================="
+    echo "BUILD COMPLETE"
+    echo "=============================================="
+
+%environment
+    export PYTHONPATH=/jupyter
+    # Ensure SSL certificates are available for API calls
+    export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+    export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+
+%runscript
+    cd /jupyter
+    exec beaker dev watch --ip 0.0.0.0
+
+%labels
+    Author dstoker
+    Version 1.0
+    Description Harmonia Beaker LLM Agent Environment with any-llm-sdk support
+
+%help
+    Harmonia Beaker LLM Agent Environment
+    =====================================
+
+    This container provides:
+    - Beaker kernel for interactive notebooks
+    - BDI-Kit context for data harmonization to GDC schema
+    - any-llm-sdk for unified LLM provider access
+
+    Supported LLM providers via anyllm:
+    - Local: ollama, lmstudio, vllm, llamafile
+    - Cloud: openai, anthropic, mistral, groq, together, perplexity, deepseek
+    - Gateway: openrouter, azure, bedrock, vertexai
+
+    Usage:
+        # Start Beaker server
+        ./exec_apptainer_harmonia.sh --config configs/manual/my_config.yaml
+
+        # Or manually
+        apptainer exec --bind .:/jupyter harmonia_beaker_LLM_agent_environment_apptainer.sif \
+            beaker dev watch --ip 0.0.0.0 --port 8100

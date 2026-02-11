@@ -126,16 +126,30 @@ class ManualExperimentRunner:
 
     async def _connect_to_kernel(self) -> None:
         """Connect to existing Beaker kernel via WebSocket."""
-        # Get existing sessions
-        async with self.session.get(f"{self.server_url}/api/sessions") as resp:
-            if resp.status != 200:
-                raise ConnectionError(f"Failed to get sessions: {resp.status}")
-            sessions = await resp.json()
+        # Wait for a session to be created (user needs to open browser first)
+        print("Waiting for Beaker session to be created...")
+        print("  → Open the Beaker URL in your browser to create a session")
+
+        sessions = []
+        wait_time = 0
+        max_wait = 3600  # Wait up to 1 hour for user to connect
+
+        while not sessions and wait_time < max_wait:
+            async with self.session.get(f"{self.server_url}/api/sessions") as resp:
+                if resp.status != 200:
+                    raise ConnectionError(f"Failed to get sessions: {resp.status}")
+                sessions = await resp.json()
+
+            if not sessions:
+                await asyncio.sleep(5)
+                wait_time += 5
+                if wait_time % 30 == 0:
+                    print(f"  Still waiting for session... ({wait_time}s)")
 
         if not sessions:
             raise ConnectionError(
-                "No active Beaker session found. "
-                "Start Beaker first with: ./exec_apptainer_harmonia.sh"
+                "No active Beaker session found after timeout. "
+                "Make sure to open the Beaker URL in your browser."
             )
 
         # Use the first session

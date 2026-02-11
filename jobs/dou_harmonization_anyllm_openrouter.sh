@@ -1,19 +1,25 @@
 #!/bin/bash
 # =============================================================================
-# Harmonia Experiment SBATCH Template - any-llm with OpenRouter
+# Harmonia Experiment SBATCH Template - CPU (Cloud LLM providers)
 # =============================================================================
-# This script runs the dou.csv harmonization experiment using the any-llm
-# unified LLM provider interface with OpenRouter backend.
+# This template is used by generate_jobs.py to create individual job scripts.
+# Variables in {{double_braces}} are replaced by the generator.
 #
 # Usage:
-#   sbatch jobs/dou_harmonization_anyllm_openrouter.sh
+#   sbatch jobs/experiment_gpt4o.sh
+#
+# Or generate jobs first:
+#   python generate_jobs.py --config experiments/configs/dou_harmonization.yaml
+#
+# Note: For local LLM providers (ollama, anyllm:ollama), use sbatch_template_gpu.sh
+#       or exec_apptainer_harmonia.sh will auto-start Ollama on CPU nodes too.
 # =============================================================================
 
-#SBATCH --job-name=harmonia_anyllm_openrouter
-#SBATCH --output=logs/dou_harmonization_anyllm_openrouter_%j.out
-#SBATCH --error=logs/dou_harmonization_anyllm_openrouter_%j.err
-#SBATCH --time=02:00:00
-#SBATCH --mem=16G
+#SBATCH --job-name=harmonia_dou_harmonization_anyllm_openrouter
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
+#SBATCH --time=01:00:00
+#SBATCH --mem=8G
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=tmpspace:1G
 
@@ -23,16 +29,20 @@
 
 set -e
 
+# Redirect all output to date-stamped log files
+LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_anyllm_openrouter_${SLURM_JOB_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_anyllm_openrouter_${SLURM_JOB_ID}.err"
+mkdir -p logs
+exec > "$LOG_OUT" 2> "$LOG_ERR"
+
 echo "=============================================="
-echo "Harmonia Experiment (any-llm): dou_harmonization_anyllm_openrouter"
+echo "Harmonia Experiment: dou_harmonization_anyllm_openrouter"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $(hostname)"
 echo "Date: $(date)"
-echo ""
-echo "Backend: any-llm (unified LLM provider interface)"
-echo "Provider: OpenRouter"
 echo ""
 
 # Change to project directory
@@ -40,54 +50,36 @@ cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoke
 
 # Dynamic port based on job ID to avoid conflicts
 PORT=$((8100 + (SLURM_JOB_ID % 100)))
-echo "Using Beaker port: $PORT"
+echo "Using port: $PORT"
 
 # Create logs directory
 mkdir -p logs
 
 # =============================================================================
-# Verify any-llm is available
+# Start Beaker Server with exec_apptainer_harmonia.sh
 # =============================================================================
-
-echo ""
-echo "Verifying any-llm-sdk availability..."
-
-ANY_LLM_PATH=/hpc/compgen/projects/llm_GEO_project/any-llm
-if [ -d "$ANY_LLM_PATH" ]; then
-    echo "  Found any-llm at: $ANY_LLM_PATH"
-else
-    echo "  ERROR: any-llm not found at $ANY_LLM_PATH"
-    exit 1
-fi
-
-# =============================================================================
-# Start Beaker Server
-# =============================================================================
+# The exec script handles:
+# - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
+# - Ollama logging to logs/ollama_<timestamp>.log
+# - Model pre-loading/warming
+# - Apptainer image selection (new harmonia image with any-llm support)
+# - Data and results directory binding
+# - Environment variable configuration
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: anyllm:openrouter (any-llm unified interface)"
+echo "LLM Provider: anyllm:openrouter"
 echo "LLM Model: xiaomi/mimo-v2-flash:free"
+echo ""
 
-# Start Beaker server with any-llm mounted and in PYTHONPATH
-# Note: Using --writable-tmpfs to allow temporary writes
-apptainer exec \
-    --writable-tmpfs \
-    --bind .:/jupyter \
-    --bind $ANY_LLM_PATH:/any-llm:ro \
-    --pwd /jupyter \
-    --bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro \
-    --env-file .env \
-    --env JUPYTER_SERVER=http://localhost:$PORT \
-    --env LLM_SERVICE_PROVIDER=openrouter \
-    --env LLM_SERVICE_MODEL=xiaomi/mimo-v2-flash:free \
-    --env LLM_PROVIDER_IMPORT_PATH=bdikit_context.llm.anyllm.AnyLLMModel \
-    --env PYTHONPATH=/jupyter:/any-llm/src \
-    jupyter.sif \
-    beaker dev watch --ip 0.0.0.0 --port $PORT &
+# Start Beaker server via exec script (handles Ollama automatically if needed)
+./exec_apptainer_harmonia.sh \
+    --port $PORT \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_openrouter.yaml \
+    --job-name "dou_harmonization_anyllm_openrouter_${SLURM_JOB_ID}" &
 
 SERVER_PID=$!
-echo "Beaker Server PID: $SERVER_PID"
+echo "Server PID: $SERVER_PID"
 
 # Function to cleanup on exit
 cleanup() {
@@ -102,12 +94,12 @@ cleanup() {
 trap cleanup EXIT
 
 # Wait for server to be ready
-echo "Waiting for Beaker server to start..."
-MAX_WAIT=90
+echo "Waiting for server to start..."
+MAX_WAIT=90  # Increased timeout for potential model loading
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then
-        echo "Beaker server is ready!"
+        echo "Server is ready!"
         break
     fi
     sleep 2
@@ -116,7 +108,7 @@ while [ $WAITED -lt $MAX_WAIT ]; do
 done
 
 if [ $WAITED -ge $MAX_WAIT ]; then
-    echo "ERROR: Beaker server failed to start within $MAX_WAIT seconds"
+    echo "ERROR: Server failed to start within $MAX_WAIT seconds"
     exit 1
 fi
 
@@ -126,7 +118,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/configs/dou_harmonization_anyllm_openrouter.yaml"
+echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_openrouter.yaml"
 echo ""
 
 # Get token from env file
@@ -134,10 +126,10 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/configs/dou_harmonization_anyllm_openrouter.yaml \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_openrouter.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
-    --timeout 3600
+    --timeout 300
 
 EXIT_CODE=$?
 

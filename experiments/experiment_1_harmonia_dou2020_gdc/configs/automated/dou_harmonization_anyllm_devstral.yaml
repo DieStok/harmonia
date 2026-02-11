@@ -1,71 +1,106 @@
-# =============================================================================
-# Dou Dataset Harmonization Experiment - Devstral via any-llm (Ollama)
-# =============================================================================
-# This experiment harmonizes the dou.csv dataset to the GDC schema,
-# using the any-llm unified LLM provider interface.
-#
-# Based on the example from the Harmonia paper: https://arxiv.org/pdf/2502.07132
-# =============================================================================
-
 experiment:
-  name: "dou_harmonization_anyllm_devstral"
-  description: "Harmonize dou.csv to GDC schema using similarity method (Devstral 123B via any-llm/Ollama)"
-
+  name: dou_harmonization_anyllm_devstral
+  description: Harmonize dou.csv to GDC schema using similarity method (Devstral 123B
+    via any-llm/Ollama)
 llm:
-  # Using any-llm provider prefix for unified interface
   provider: anyllm:ollama
   model: devstral:latest
   base_url: http://localhost:11434
   temperature: 0.0
-
 messages:
-  - content: |
-      Load the file dou.csv as a dataframe and subset it to the following columns:
-      Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
-      Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
-    wait_seconds: 180
+- content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
+    and subset it to the following columns:
 
-  - content: |
-      Please match this to the GDC schema using the 'similarity' method,
-      and fix any results that don't look correct.
-    wait_seconds: 300
-    decision_mode: auto_accept
+    Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
 
-  - content: |
-      Find alternative mappings for Histologic_type.
-    wait_seconds: 180
-    decision_mode: auto_accept
+    Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
 
-  - content: |
-      Find alternative mappings for Tumor_Size_cm.
-    wait_seconds: 180
-    decision_mode: auto_accept
+    '
+  wait_seconds: 180
+- content: 'Please match this to the GDC schema using the ''similarity'' method,
 
-  - content: |
-      Find value mappings for the columns Country, Histologic_Grade_FIGO,
-      Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
-      If there are any errors in the mappings, please provide suggestions.
-    wait_seconds: 360
-    decision_mode: auto_accept
+    and fix any results that don''t look correct.
 
-  - content: |
-      Please create a final harmonized table based on the discovered column
-      and value mappings and save it at "dou_harmonized.csv".
-    wait_seconds: 600
+    '
+  wait_seconds: 300
+  decision_mode: auto_accept
+- content: 'Find alternative mappings for Histologic_type.
 
-  - content: |
-      Show dou_harmonized.csv and the initial subsetted dou.csv file
-      one after the other for comparison.
-    wait_seconds: 120
+    '
+  wait_seconds: 180
+  decision_mode: auto_accept
+- content: 'Find alternative mappings for Tumor_Size_cm.
 
+    '
+  wait_seconds: 180
+  decision_mode: auto_accept
+- content: 'Find value mappings for the columns Country, Histologic_Grade_FIGO,
+
+    Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+
+    If there are any errors in the mappings, please provide suggestions.
+
+    '
+  wait_seconds: 360
+  decision_mode: auto_accept
+- content: 'Please create a final harmonized table based on the discovered column
+
+    and value mappings and save it as "results/dou_harmonized.csv".
+
+    '
+  wait_seconds: 600
+- content: 'Now save the column mapping you used as "results/column_mapping.json".
+
+    The format should be a JSON object where each key is the original source
+
+    column name and each value is the GDC column name it was mapped to.
+
+    For example: {"Country": "country_of_birth", "Age": "age_at_index", ...}
+
+    Include all columns, even those that were not mapped (set value to null).
+
+
+    Also save the value mapping as "results/value_mapping.json".
+
+    The format should be a JSON object where each key is the original source
+
+    column name, and each value is another object mapping each unique source
+
+    value to its harmonized target value.
+
+    For example: {"Histologic_Grade_FIGO": {"FIGO grade 1": "G1", "FIGO grade 2":
+    "G2"}, ...}
+
+    For columns where values were not changed, use the string "__identity__" instead
+    of
+
+    the mapping object.'
+  wait_seconds: 300
+  decision_mode: auto_accept
+- content: 'Show dou_harmonized.csv and the initial subsetted dou.csv file
+
+    one after the other for comparison.
+
+    '
+  wait_seconds: 120
 output:
-  base_dir: "./results"
+  base_dir: ./results
   save_artifacts:
-    - "dou_harmonized.csv"
-    - "mapping_summary.json"
-
+  - dou_harmonized.csv
+  - column_mapping.json
+  - value_mapping.json
 decision_handling:
   default_mode: auto_accept
   predefined_responses:
-    "choose.*alternative": "Please proceed with the recommended option"
-    "multiple.*options": "Pick the first option"
+    choose.*alternative: Please proceed with the recommended option
+    multiple.*options: Pick the first option
+evaluation:
+  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
+  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
+  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
+  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
+  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
+  column_mapping_file: column_mapping.json
+  value_mapping_file: value_mapping.json
+  index_column: null
+  numeric_tolerance: null

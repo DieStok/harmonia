@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import asyncio
+import json
 import os
 import sys
 from pathlib import Path
@@ -81,6 +82,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _load_json(path) -> dict | None:
+    """Load JSON file, return None if not found."""
+    if path is None:
+        return None
+    path = Path(path)
+    if not path.exists():
+        return None
+    return json.loads(path.read_text())
+
+
 def on_turn_complete(turn: int, message: str, response) -> None:
     """Callback to print progress during experiment."""
     status_icon = "✓" if response.response_type == "llm_response" else "⚠"
@@ -141,6 +152,58 @@ async def main() -> int:
         print(f"  Output directory: {output_dir}")
         print(f"  - trace.json: Full execution trace")
         print(f"  - conversation.md: Simplified conversation log")
+
+        # Calculate metrics if evaluation config is present
+        if config.evaluation and config.evaluation.gold_standard:
+            print(f"\nCalculating metrics...")
+            try:
+                from evaluation.metrics import calculate_all_metrics
+                from evaluation.schemas import MetricsResult
+
+                # Load gold standard files
+                gold_column_mapping = _load_json(config.evaluation.gold_column_mapping)
+                gold_value_mapping = _load_json(config.evaluation.gold_value_mapping)
+                acceptable_columns = _load_json(config.evaluation.acceptable_columns_file)
+
+                # Load LLM-produced mappings (if they exist)
+                llm_column_mapping_path = output_dir / config.evaluation.column_mapping_file
+                llm_column_mapping = _load_json(llm_column_mapping_path) if llm_column_mapping_path.exists() else None
+
+                # Load trace.json for metadata
+                trace_path = output_dir / "trace.json"
+                trace_data = _load_json(trace_path) if trace_path.exists() else None
+
+                # Find LLM output CSV
+                llm_output = output_dir / "dou_harmonized.csv"
+
+                # Check for value mapping file
+                llm_value_mapping_path = output_dir / config.evaluation.value_mapping_file
+                value_mapping_found = llm_value_mapping_path.exists() if config.evaluation.value_mapping_file else False
+
+                if llm_output.exists():
+                    result = calculate_all_metrics(
+                        gold_standard_csv=Path(config.evaluation.gold_standard),
+                        llm_output_csv=llm_output,
+                        gold_column_mapping=gold_column_mapping,
+                        llm_column_mapping=llm_column_mapping,
+                        gold_value_mapping=gold_value_mapping,
+                        acceptable_columns=acceptable_columns,
+                        index_column=config.evaluation.index_column,
+                        numeric_tolerance=config.evaluation.numeric_tolerance,
+                        trace_json=trace_data,
+                        value_mapping_file_found=value_mapping_found,
+                    )
+
+                    metrics_path = output_dir / "metrics.json"
+                    metrics_path.write_text(result.model_dump_json(indent=2))
+                    print(f"  ✓ Metrics saved to: {metrics_path}")
+                    print(f"  - metrics.json: Harmonization metrics")
+                else:
+                    print(f"  ⚠ LLM output CSV not found at {llm_output}")
+                    print(f"  Skipping metrics calculation.")
+            except Exception as e:
+                print(f"  ⚠ Error calculating metrics: {e}")
+                # Don't fail the whole experiment just because metrics failed
 
         return 0
 

@@ -3,6 +3,7 @@ Experiment runner for automated Beaker experiments.
 """
 
 import asyncio
+import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -36,10 +37,14 @@ class ExperimentRunner:
         self.config = config
         self.on_turn_complete = on_turn_complete
 
-        # Set up output directory
+        # Set up output directory (includes RUN_ID if available from environment)
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        run_id = os.environ.get("RUN_ID", "")
         base_dir = Path(output_dir or config.output.base_dir)
-        self.output_dir = base_dir / f"{config.name}_{timestamp}"
+        if run_id:
+            self.output_dir = base_dir / f"{config.name}_{timestamp}_{run_id}"
+        else:
+            self.output_dir = base_dir / f"{config.name}_{timestamp}"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize loggers

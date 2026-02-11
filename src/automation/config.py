@@ -39,6 +39,21 @@ class DecisionConfig:
 
 
 @dataclass
+class EvaluationConfig:
+    """Evaluation configuration for metrics calculation."""
+    gold_standard: Optional[str] = None
+    input_file: Optional[str] = None
+    gold_column_mapping: Optional[str] = None
+    gold_value_mapping: Optional[str] = None
+    acceptable_columns_file: Optional[str] = None
+    column_mapping_file: str = "column_mapping.json"
+    value_mapping_file: str = "value_mapping.json"
+    index_column: Optional[str] = None
+    numeric_tolerance: Optional[float] = None
+    numeric_precision: Optional[int] = None
+
+
+@dataclass
 class ExperimentConfig:
     """Complete experiment configuration."""
     name: str
@@ -47,6 +62,7 @@ class ExperimentConfig:
     messages: list[MessageConfig]
     output: OutputConfig = field(default_factory=OutputConfig)
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     # Manual mode: if True, this config is for manual experiments (no automated messages)
     manual_mode: bool = False
     # Optional reference to dataset metadata
@@ -60,6 +76,7 @@ class ExperimentConfig:
         messages_data = data.get("messages", [])
         output_data = data.get("output", {})
         decision_data = data.get("decision_handling", {})
+        evaluation_data = data.get("evaluation", {})
 
         llm = LLMConfig(
             provider=llm_data.get("provider", "openai"),
@@ -86,6 +103,19 @@ class ExperimentConfig:
             predefined_responses=decision_data.get("predefined_responses", {}),
         )
 
+        evaluation = EvaluationConfig(
+            gold_standard=evaluation_data.get("gold_standard"),
+            input_file=evaluation_data.get("input_file"),
+            gold_column_mapping=evaluation_data.get("gold_column_mapping"),
+            gold_value_mapping=evaluation_data.get("gold_value_mapping"),
+            acceptable_columns_file=evaluation_data.get("acceptable_columns_file"),
+            column_mapping_file=evaluation_data.get("column_mapping_file", "column_mapping.json"),
+            value_mapping_file=evaluation_data.get("value_mapping_file", "value_mapping.json"),
+            index_column=evaluation_data.get("index_column"),
+            numeric_tolerance=evaluation_data.get("numeric_tolerance"),
+            numeric_precision=evaluation_data.get("numeric_precision"),
+        )
+
         # Determine manual mode: explicit flag or no messages defined
         manual_mode = exp.get("manual_mode", len(messages) == 0)
 
@@ -96,6 +126,7 @@ class ExperimentConfig:
             messages=messages,
             output=output,
             decision_handling=decision,
+            evaluation=evaluation,
             manual_mode=manual_mode,
             dataset_metadata=exp.get("dataset_metadata"),
         )

@@ -42,9 +42,10 @@ anyllm-mistral = ["any-llm-sdk[mistral]"]
 anyllm-all = ["any-llm-sdk[all]"]
 
 # Beaker context entry points for autodiscovery
-# This registers BDIKitContext with beaker's autodiscovery system
+# This registers contexts with beaker's autodiscovery system
 [project.entry-points."beaker.contexts"]
 bdikit_context = "bdikit_context.context:BDIKitContext"
+code_context = "code_context.context:CodeContext"
 
 [project.urls]
 Documentation = "https://github.com/unknown/beaker-buildtest#readme"

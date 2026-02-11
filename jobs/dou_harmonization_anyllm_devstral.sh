@@ -1,21 +1,27 @@
 #!/bin/bash
 # =============================================================================
-# Harmonia Experiment SBATCH Template - any-llm with Ollama
+# Harmonia Experiment SBATCH Template - GPU with Local LLM (Ollama)
 # =============================================================================
-# This script runs the dou.csv harmonization experiment using the any-llm
-# unified LLM provider interface with Ollama backend.
+# This template is used by generate_jobs.py to create GPU job scripts.
+# Variables in {{double_braces}} are replaced by the generator.
 #
 # Usage:
-#   sbatch jobs/dou_harmonization_anyllm_devstral.sh
+#   sbatch jobs/experiment_ollama.sh
+#
+# Or generate jobs first:
+#   python generate_jobs.py --config experiments/configs/dou_harmonization_nemotron.yaml --gpu
+#
+# Note: Ollama server is automatically started by exec_apptainer_harmonia.sh
+#       when a local LLM provider is detected (ollama, anyllm:ollama, etc.)
 # =============================================================================
 
-#SBATCH --job-name=harmonia_anyllm_devstral
-#SBATCH --output=logs/dou_harmonization_anyllm_devstral_%j.out
-#SBATCH --error=logs/dou_harmonization_anyllm_devstral_%j.err
-#SBATCH --time=02:00:00
-#SBATCH --mem=32G
-#SBATCH --cpus-per-task=2
-#SBATCH --gres=tmpspace:1G
+#SBATCH --job-name=harmonia_dou_harmonization_anyllm_devstral
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
+#SBATCH --time=04:00:00
+#SBATCH --mem=64G
+#SBATCH --cpus-per-task=8
+#SBATCH --gres=tmpspace:60G
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=1
 
@@ -25,15 +31,20 @@
 
 set -e
 
+# Redirect all output to date-stamped log files
+LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_anyllm_devstral_${SLURM_JOB_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_anyllm_devstral_${SLURM_JOB_ID}.err"
+mkdir -p logs
+exec > "$LOG_OUT" 2> "$LOG_ERR"
+
 echo "=============================================="
-echo "Harmonia Experiment (any-llm): dou_harmonization_anyllm_devstral"
+echo "Harmonia Experiment (GPU): dou_harmonization_anyllm_devstral"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
 echo "Node: $(hostname)"
 echo "Date: $(date)"
-echo ""
-echo "Backend: any-llm (unified LLM provider interface)"
 echo ""
 
 # Change to project directory
@@ -41,97 +52,34 @@ cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoke
 
 # Dynamic port based on job ID to avoid conflicts
 PORT=$((8100 + (SLURM_JOB_ID % 100)))
-echo "Using Beaker port: $PORT"
+OLLAMA_PORT=$((11434 + 1 + (SLURM_JOB_ID % 200)))
+echo "Using Beaker port: $PORT, Ollama port: $OLLAMA_PORT"
 
 # Create logs directory
 mkdir -p logs
 
 # =============================================================================
-# Start Ollama Server
+# Start Beaker Server with exec_apptainer_harmonia.sh
 # =============================================================================
-
-echo ""
-echo "Starting Ollama server..."
-
-OLLAMA_DIR=/hpc/compgen/projects/ollama/ollama_run/analysis/dstoker
-
-# Start Ollama server
-$OLLAMA_DIR/start_ollama.sh &
-OLLAMA_START_PID=$!
-
-# Wait for Ollama to initialize and verify it's responding
-echo "Waiting for Ollama to start..."
-OLLAMA_READY=0
-for i in {1..60}; do
-    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-        OLLAMA_READY=1
-        echo "Ollama server is responding (waited ${i}s)"
-        break
-    fi
-    sleep 1
-done
-
-if [ $OLLAMA_READY -eq 0 ]; then
-    echo "ERROR: Ollama server not responding after 60 seconds"
-    exit 1
-fi
-
-# Set Ollama endpoint for Beaker/Archytas
-export LLM_BASE_URL=http://$(hostname):11434
-export OLLAMA_HOST=http://$(hostname):11434
-
-echo "Ollama endpoint: $LLM_BASE_URL"
-
-# Pre-warm the model by loading it (prevents timeout on first request)
-echo "Pre-loading model devstral:latest..."
-curl -s http://localhost:11434/api/generate -d "{\"model\": \"devstral:latest\", \"prompt\": \"Hello\", \"stream\": false}" > /dev/null 2>&1 || echo "  Warning: Model pre-load may have failed"
-echo "Model preloaded"
-
-# =============================================================================
-# Install any-llm in container (if not present)
-# =============================================================================
-
-echo ""
-echo "Installing any-llm-sdk in container..."
-
-# Install any-llm-sdk into a local directory that will be mounted
-ANY_LLM_PATH=/hpc/compgen/projects/llm_GEO_project/any-llm
-if [ -d "$ANY_LLM_PATH" ]; then
-    echo "  Found any-llm at: $ANY_LLM_PATH"
-else
-    echo "  ERROR: any-llm not found at $ANY_LLM_PATH"
-    exit 1
-fi
-
-# =============================================================================
-# Start Beaker Server
-# =============================================================================
+# The exec script handles:
+# - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
+# - Ollama logging to logs/ollama_<timestamp>.log
+# - Model pre-loading/warming
+# - Apptainer image selection (new harmonia image with any-llm support)
+# - Data and results directory binding
+# - Environment variable configuration
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: anyllm:ollama (any-llm unified interface)"
+echo "LLM Provider: anyllm:ollama"
 echo "LLM Model: devstral:latest"
+echo ""
 
-# Start Beaker server with any-llm mounted and in PYTHONPATH
-# Note: Using --writable-tmpfs to allow pip installs in tmpfs
-# The any-llm source is mounted and added to PYTHONPATH
-apptainer exec \
-    --nv \
-    --writable-tmpfs \
-    --bind .:/jupyter \
-    --bind $ANY_LLM_PATH:/any-llm:ro \
-    --pwd /jupyter \
-    --bind /etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem:ro \
-    --env-file .env \
-    --env JUPYTER_SERVER=http://localhost:$PORT \
-    --env LLM_SERVICE_PROVIDER=ollama \
-    --env LLM_SERVICE_MODEL=devstral:latest \
-    --env LLM_PROVIDER_IMPORT_PATH=bdikit_context.llm.anyllm.AnyLLMModel \
-    --env LLM_BASE_URL=$LLM_BASE_URL \
-    --env OLLAMA_HOST=$OLLAMA_HOST \
-    --env PYTHONPATH=/jupyter:/any-llm/src \
-    jupyter.sif \
-    beaker dev watch --ip 0.0.0.0 --port $PORT &
+# Start Beaker server via exec script (handles Ollama automatically)
+./exec_apptainer_harmonia.sh \
+    --port $PORT \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml \
+    --job-name "dou_harmonization_anyllm_devstral_${SLURM_JOB_ID}" &
 
 SERVER_PID=$!
 echo "Beaker Server PID: $SERVER_PID"
@@ -144,16 +92,13 @@ cleanup() {
         kill $SERVER_PID 2>/dev/null || true
         wait $SERVER_PID 2>/dev/null || true
     fi
-    # Stop Ollama server
-    echo "Stopping Ollama server..."
-    $OLLAMA_DIR/stop_ollama.sh 2>/dev/null || true
     echo "Done."
 }
 trap cleanup EXIT
 
 # Wait for server to be ready
 echo "Waiting for Beaker server to start..."
-MAX_WAIT=90
+MAX_WAIT=300  # 5 minutes - allows time for Ollama model loading + Beaker startup
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then
@@ -176,7 +121,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/configs/dou_harmonization_anyllm_devstral.yaml"
+echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml"
 echo ""
 
 # Get token from env file
@@ -184,10 +129,10 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/configs/dou_harmonization_anyllm_devstral.yaml \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
-    --timeout 3600
+    --timeout 300
 
 EXIT_CODE=$?
 
