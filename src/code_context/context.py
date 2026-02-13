@@ -14,6 +14,7 @@ from pathlib import Path
 
 from beaker_kernel.lib.context import BeakerContext
 from .agent import CodeAgent
+from prompt_logging import print_prompt_composition, register_prompt_json_logger
 
 
 class CodeContext(BeakerContext):
@@ -33,6 +34,10 @@ class CodeContext(BeakerContext):
         """Initialize with the CodeAgent."""
         super().__init__(beaker_kernel, CodeAgent, config)
 
+        # Prompt composition logging
+        print_prompt_composition(self.agent, context_slug="code_context")
+        register_prompt_json_logger(self.agent, context_slug="code_context")
+
     async def auto_context(self):
         """
         Provide the system prompt for the LLM.
@@ -46,10 +51,17 @@ class CodeContext(BeakerContext):
         custom_prompt_path = os.environ.get("HARMONIA_CODE_CONTEXT_PROMPT")
         if custom_prompt_path and Path(custom_prompt_path).exists():
             prompt = Path(custom_prompt_path).read_text()
-            print(f"[Harmonia] Using custom code context prompt: {custom_prompt_path}")
+            if not hasattr(self, '_auto_context_logged'):
+                print(f"\n{'=' * 80}")
+                print(f"AUTO-CONTEXT (domain prompt) — code_context [{len(prompt)} chars]:")
+                print(f"[from custom file: {custom_prompt_path}]")
+                print(f"{'=' * 80}")
+                print(prompt)
+                print(f"{'=' * 80}\n")
+                self._auto_context_logged = True
             return prompt
 
-        return f"""You are a Python code execution assistant running in a Jupyter-like environment.
+        prompt = f"""You are a Python code execution assistant running in a Jupyter-like environment.
 
 ## Your Capabilities
 - You can write and execute Python code
@@ -69,3 +81,13 @@ class CodeContext(BeakerContext):
 ## Code Execution
 To execute code, use the code execution tool. The output will be shown to the user.
 """
+
+        if not hasattr(self, '_auto_context_logged'):
+            print(f"\n{'=' * 80}")
+            print(f"AUTO-CONTEXT (domain prompt) — code_context [{len(prompt)} chars]:")
+            print(f"{'=' * 80}")
+            print(prompt)
+            print(f"{'=' * 80}\n")
+            self._auto_context_logged = True
+
+        return prompt

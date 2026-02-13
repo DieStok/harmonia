@@ -5,6 +5,7 @@ from beaker_kernel.lib.context import BeakerContext
 
 from .agent import BDIKitAgent
 from .prompts import PromptLoader, get_prompt_loader
+from prompt_logging import print_prompt_composition, register_prompt_json_logger
 
 if TYPE_CHECKING:
     from beaker_kernel.kernel import BeakerKernel
@@ -48,8 +49,9 @@ class BDIKitContext(BeakerContext):
         # Override tool descriptions from Jinja2 templates (if custom dir specified)
         self._override_tool_descriptions()
 
-        # Log the full system prompt for diagnostics
-        self._log_prompt_config()
+        # Prompt composition logging (replaces _log_prompt_config)
+        print_prompt_composition(self.agent, context_slug="bdikit_context")
+        register_prompt_json_logger(self.agent, context_slug="bdikit_context")
 
     def _override_tool_descriptions(self):
         """Replace tool descriptions on StructuredTool objects with rendered Jinja2 templates.
@@ -82,17 +84,6 @@ class BDIKitContext(BeakerContext):
                 except Exception as e:
                     print(f"[Harmonia] Warning: Could not load tool template for {lc_tool.name}: {e}")
 
-    def _log_prompt_config(self):
-        """Log the current prompt configuration for diagnostics."""
-        import json
-        config_info = {
-            "prompts_dir": str(self.prompt_loader.prompts_dir),
-            "react_prelude_override": os.environ.get("HARMONIA_REACT_PRELUDE", None),
-            "tool_prompts_dir_override": os.environ.get("HARMONIA_TOOL_PROMPTS_DIR", None),
-            "code_context_prompt_override": os.environ.get("HARMONIA_CODE_CONTEXT_PROMPT", None),
-        }
-        print(f"[Harmonia] Prompt configuration: {json.dumps(config_info, indent=2)}")
-
     async def setup(self, context_info=None, parent_header=None):
         await super().setup(context_info, parent_header)
 
@@ -112,10 +103,13 @@ class BDIKitContext(BeakerContext):
             suppress_output=True,
         )
 
-        # Print the full system prompt on first call for diagnostics
-        if not hasattr(self, '_system_prompt_logged'):
-            print(f"[Harmonia] Full system prompt ({len(system_prompt)} chars):")
+        # Print the domain prompt on first call (completes Output A from prompt_logging)
+        if not hasattr(self, '_auto_context_logged'):
+            print(f"\n{'=' * 80}")
+            print(f"AUTO-CONTEXT (domain prompt) — bdikit_context [{len(system_prompt)} chars]:")
+            print(f"{'=' * 80}")
             print(system_prompt)
-            self._system_prompt_logged = True
+            print(f"{'=' * 80}\n")
+            self._auto_context_logged = True
 
         return system_prompt

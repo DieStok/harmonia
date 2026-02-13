@@ -862,6 +862,10 @@ APPTAINER_CMD="$APPTAINER_CMD --env DATA_DIR=/workspace/data"
 APPTAINER_CMD="$APPTAINER_CMD --env RESULTS_DIR=/workspace/results"
 APPTAINER_CMD="$APPTAINER_CMD --env WORKSPACE_DIR=/workspace"
 
+# Pass run metadata into container for structured prompt logging
+APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_RUN_ID=${RUN_ID}"
+APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_EXPERIMENT_NAME=${EXPERIMENT_NAME}"
+
 # Bind custom prompt directories into the container (if configured)
 PROMPTS_DIR=$(grep "^HARMONIA_PROMPTS_DIR=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 if [ -n "$PROMPTS_DIR" ] && [ -d "$PROMPTS_DIR" ]; then

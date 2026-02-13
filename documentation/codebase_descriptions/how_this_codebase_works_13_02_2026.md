@@ -1,0 +1,1369 @@
+# Harmonia Metadata Agent Codebase Documentation
+
+**Date:** 12-02-2026
+**Author:** Generated documentation for the Harmonia data harmonization experiment automation framework
+
+---
+
+## IMPORTANT: Agent Onboarding Protocol
+
+Before starting any work on this codebase, coding agents MUST:
+
+1. **Check the datasets folder** for Harmonia experiments:
+   ```
+   harmonia_metadata_agent/raw/datasets_harmonia/
+   ```
+   This contains the three experiments from the Harmonia paper with all necessary data.
+
+2. **Read the latest instructions** from:
+   ```
+   harmonia_metadata_agent/analysis/dstoker/harmonia/my_instructions/
+   ```
+   Always read the most recent file (by date) and ask the user if anything has changed.
+
+---
+
+## Project Goal
+
+This project runs **metadata harmonization agents** using (local) LLMs and the beaker-dev framework to evaluate performance on specific data harmonization tasks.
+
+**Core objective:** Use LLM agents with the BDI-Kit library to automatically harmonize biomedical metadata tables to standard vocabularies (primarily GDC - Genomic Data Commons), measuring and comparing agent performance across different LLMs.
+
+**Current state:**
+- Automated experiments work with multiple LLM backends
+- Manual interactive experiments via port-forwarded Beaker notebook
+- **Implemented:** Metrics evaluation pipeline (`src/evaluation/`) with schema v1.1 for comparing harmonized output to gold standard data
+- **Implemented:** Configurable prompts per experiment via YAML config `prompts` section (system prompt, ReAct prelude, tool descriptions, code context prompt)
+
+---
+
+## Overview
+
+This codebase automates data harmonization experiments using the BDI-Kit library within Beaker kernel environments. It enables:
+- Running scripted LLM conversations for data harmonization tasks
+- Supporting 30+ LLM providers via the any-llm unified interface
+- Executing experiments on HPC clusters via SLURM
+- Capturing conversation traces, notebooks, and harmonized output files
+- Interactive manual experiments via port-forwarded Beaker notebooks
+
+---
+
+## Experiment Types
+
+### 1. Automated Experiments
+Scripted experiments where the exact same interaction script is given to each LLM in turn. The LLM completes the interaction autonomously and results are logged for comparison.
+
+**Location:** `experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/`
+
+**How it works:**
+1. `exec_apptainer_harmonia.sh` starts Beaker server inside Apptainer container
+2. `run_experiment.py` connects via WebSocket, sends scripted messages, captures responses
+3. Both processes run outside the container (Python scripts connect to Beaker's WebSocket API)
+
+**Shorthand command (single terminal):**
+```bash
+cd /path/to/data/directory
+./exec_apptainer_harmonia.sh &
+sleep 10
+python run_experiment.py --config configs/automated/dou_harmonization_anyllm_devstral.yaml
+```
+
+**Full srun command for HPC:**
+```bash
+srun -J harmonia_automated --account=compgen --time=02:00:00 --mem=20G bash -c '
+cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh &
+BEAKER_PID=$!
+sleep 10
+python /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/run_experiment.py \
+    --config /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml
+kill $BEAKER_PID
+'
+```
+
+### 2. Manual (Interactive) Experiments
+Start the beaker-dev server with the correct LLM backend and interactively run analysis in a Beaker notebook via SSH port forwarding to the HPC.
+
+**Location:** `experiments/experiment_1_harmonia_dou2020_gdc/configs/manual/`
+
+**How it works:**
+1. `exec_apptainer_harmonia.sh` starts Beaker server inside Apptainer container
+2. User interacts via web UI (not a script)
+3. `run_manual_experiment.py` passively monitors WebSocket traffic and logs interactions
+
+#### Option A: Single command with logging (recommended)
+
+**Shorthand command:**
+```bash
+cd /path/to/data/directory
+./exec_apptainer_harmonia.sh --config configs/manual/dou_harmonization_manual_devstral.yaml --monitor
+```
+
+**Full srun command for HPC:**
+```bash
+srun -J harmonia_manual --account=compgen --time=04:00:00 --mem=20G bash -c '
+cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh \
+    --config /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/experiment_1_harmonia_dou2020_gdc/configs/manual/dou_harmonization_manual_devstral.yaml \
+    --monitor
+'
+```
+
+This `--monitor` flag:
+1. Starts Beaker server in background
+2. Waits for server to be ready
+3. Starts the logging monitor in foreground
+4. Cleans up Beaker when you press Ctrl+C
+
+#### Option B: Two terminals (for debugging)
+
+**Terminal 1 - Start Beaker server:**
+```bash
+cd /path/to/data/directory
+./exec_apptainer_harmonia.sh --config configs/manual/dou_harmonization_manual_devstral.yaml
+```
+
+**Terminal 2 - Start monitor:**
+```bash
+python run_manual_experiment.py --config configs/manual/dou_harmonization_manual_devstral.yaml
+```
+
+#### Option C: Without logging
+
+```bash
+# Just start the Beaker server
+./exec_apptainer_harmonia.sh --config configs/manual/dou_harmonization_manual_devstral.yaml
+
+# Or use a pre-generated .env file
+./exec_apptainer_harmonia.sh --env configs/manual/my_config_associated.env
+
+# Or use default .env (original method)
+./exec_apptainer_harmonia.sh --port 8100
+```
+
+#### SSH Access
+
+After starting the server (any option above), set up SSH tunnel from your local machine:
+```bash
+ssh -L 8100:localhost:8100 hpc_login_node
+# Then access http://localhost:8100 in browser
+```
+
+Manual configs define LLM settings but no automated messages. Use the template at `configs/manual/dou_harmonization_manual_config.template` to create new manual experiment configs.
+
+**Logging for manual experiments:** The `run_manual_experiment.py` script (or `--monitor` flag) connects to the running Beaker server via WebSocket and passively monitors all interactions, creating `trace.json` and `conversation.md` just like automated experiments.
+
+---
+
+## Harmonia Experiments (Datasets)
+
+All experiment data is in: `harmonia_metadata_agent/raw/datasets_harmonia/`
+
+### Experiment 1: One Metadata Table to GDC Schema
+**Location:** `one_metadata_table_gdc_schema/`
+
+Proof-of-principle harmonization of a single dataset to GDC standard.
+- **Source:** Dou et al. 2020 - Endometrial Carcinoma Proteogenomics
+- **Data file:** `data/dou.csv` (17 columns, 190 rows)
+- **Task:** Map columns to GDC schema using schema matching and value mapping
+
+### Experiment 2: Two Metadata Tables Harmonization
+**Location:** `two_metadata_tables_harmonize/`
+
+Harmonize metadata from two related endometrial cancer studies.
+- **Sources:** Dou et al. 2020 + Dou et al. 2023
+- **Task:** Combine 153 + 190 samples with different column schemas
+
+### Experiment 3: Ten Metadata Tables Pan-Cancer
+**Location:** `ten_metadata_tables_harmonize/`
+
+Large-scale benchmark with ground truth from Li et al. 2023.
+- **Sources:** 10 CPTAC cancer studies (PDAC, ccRCC, UCEC, LUAD, HNSCC, BRCA, HGSC, LSCC, COAD, GBM)
+- **Ground truth:** `data/ground_truth/li_2023_harmonized_metadata_metadata_table.csv`
+- **Task:** Evaluate against manually harmonized reference
+
+Each experiment folder contains:
+- `experiment_metadata.yaml` - Configuration with paper citations, DOIs, file specifications
+- `readme.md` - Overview and context
+- `data/` - CSV/XLSX data files
+- `papers/` - Source publication PDFs
+
+---
+
+## Directory Structure
+
+```
+harmonia/
+├── src/
+│   ├── automation/           # Experiment automation framework
+│   │   ├── __init__.py       # Exports: load_config, ExperimentConfig, BeakerClient, ExperimentRunner, TraceLogger, ConversationLogger
+│   │   ├── client.py         # WebSocket client for Beaker kernel communication
+│   │   ├── runner.py         # Experiment execution orchestration
+│   │   ├── config.py         # Configuration dataclasses for experiments
+│   │   └── logger.py         # Trace and conversation logging
+│   │
+│   ├── evaluation/            # Metrics evaluation pipeline
+│   │   ├── __init__.py
+│   │   ├── schemas.py         # Pydantic schemas for metrics.json (v1.1)
+│   │   └── metrics.py         # Core metrics calculation functions
+│   │
+│   ├── prompt_logging.py      # Prompt composition logging (stdout + JSON)
+│   │
+│   └── bdikit_context/       # BDI-Kit Beaker context package
+│       ├── __init__.py       # Package init (configures LLM environment)
+│       ├── __about__.py      # Version info
+│       ├── context.py        # BeakerContext implementation
+│       ├── agent.py          # BDIKitAgent with tool definitions
+│       ├── config/           # Configuration management
+│       │   └── __init__.py   # LLMConfig, HarmoniaConfig, get_config(), reset_config()
+│       ├── llm/              # LLM provider system
+│       │   ├── __init__.py   # configure_llm_environment(), get_provider_info()
+│       │   ├── anyllm.py     # ChatAnyLLM, AnyLLMModel (30+ providers)
+│       │   └── direct.py     # DirectLLMRunner for non-Beaker use
+│       ├── prompts/          # Prompt template system
+│       │   ├── __init__.py   # PromptLoader, get_prompt_loader()
+│       │   └── *.j2          # Jinja2 templates
+│       └── procedures/       # Code templates for BDI-Kit functions
+│           └── python3/
+│               ├── match_schema.py
+│               ├── match_values.py
+│               ├── top_matches.py
+│               ├── materialize_mapping.py
+│               └── get_gdc_acceptable_values.py
+│
+├── experiments/
+│   ├── experiment_1_harmonia_dou2020_gdc/
+│   │   └── configs/
+│   │       ├── automated/    # YAML configs for scripted experiments
+│   │       │   ├── experiment_config.template
+│   │       │   └── dou_harmonization_*.yaml
+│   │       ├── manual/       # YAML configs for interactive experiments
+│   │       │   ├── dou_harmonization_manual_config.template
+│   │       │   └── dou_harmonization_manual_*.yaml
+│   │       └── prompts/      # Configurable prompt variants per experiment
+│   │           ├── system_prompt/
+│   │           │   ├── v1_default/system/main.j2
+│   │           │   └── v2_autonomous/system/main.j2
+│   │           ├── react_agent_prompts/
+│   │           │   ├── v1_default/prelude.txt
+│   │           │   └── v2_tool_focused/prelude.txt
+│   │           └── code_context_prompts/
+│   │               └── v1_default/prompt.txt
+│   ├── experiment_2_harmonia_2_metadata_tables_dou2020_dou2023/  # (placeholder)
+│   └── experiment_3_harmonia_10_metadata_tables/                  # (placeholder)
+│
+├── code_development_tools_agents/  # Developer tooling (outside Apptainer)
+│   └── monitoring_and_evaluation/
+│       ├── read_and_analyze_logs_and_traces_cli.py  # CLI log/trace analyzer
+│       └── types_of_log_and_trace_problems.yaml     # Error taxonomy (16 classes)
+│
+├── plans/                    # Implementation plans (dated .md files)
+│   └── 05_02_2026_1200.md   # Plan for any-llm-sdk integration
+│
+├── my_instructions/          # Latest instructions for agents
+│   └── 27_01_2026_1330.md   # Most recent (read this!)
+│
+├── documentation/
+│   ├── codebase_descriptions/
+│   │   └── how_this_codebase_works_*.md
+│   └── processes/
+│       └── 11_02_2026_interpreting_logs_and_traces.md  # Failure mode reference
+│
+├── jobs/                     # Generated SLURM job scripts
+├── results/                  # Experiment output directories
+├── logs/                     # SLURM stdout/stderr logs
+│
+├── run_experiment.py         # CLI entry point for automated experiments
+├── run_manual_experiment.py  # CLI entry point for manual experiment logging
+├── calculate_metrics.py      # CLI entry point for standalone metrics calculation
+├── generate_jobs.py          # Script to generate SLURM job scripts
+├── generate_env.py           # Generate .env files from experiment configs
+│
+├── # Container files (NEW and LEGACY)
+├── harmonia_beaker_LLM_agent_environment_apptainer.def  # NEW: Apptainer definition with any-llm-sdk
+├── harmonia_beaker_LLM_agent_environment_apptainer.sif  # NEW: Built image (4.7GB) with any-llm support
+├── build_harmonia_apptainer.sh                          # NEW: Build script for new image
+├── jupyter.def               # LEGACY: Original Apptainer definition
+├── jupyter.sif               # LEGACY: Original built image (fallback)
+├── build_apptainer.sh        # LEGACY: Original build script
+│
+├── exec_apptainer_harmonia.sh # Run script for Beaker server (auto-detects image, per-job Ollama isolation)
+├── sbatch_template.sh        # SLURM job template (CPU)
+├── sbatch_template_gpu.sh    # SLURM job template (GPU, with Ollama port display)
+├── .env                      # API keys and configuration (base file)
+└── .env.template             # Template for creating .env files
+```
+
+---
+
+## Apptainer Images
+
+### NEW: `harmonia_beaker_LLM_agent_environment_apptainer.sif` (Recommended)
+
+**Built:** 05-02-2026
+**Size:** 4.7 GB
+**Base:** Python 3.11
+
+This is the new Apptainer image with full any-llm-sdk support. It includes:
+
+- **any-llm-sdk** - Unified access to 30+ LLM providers
+- **ollama Python package** - For local LLM inference
+- **bdikit_context.llm.anyllm module** - AnyLLMModel and ChatAnyLLM classes
+- **langchain-core** - Message type compatibility
+- **beaker-kernel >= 1.14.0** - Latest Beaker functionality
+
+**Build command:**
+```bash
+srun -J apptainer_build_claude-code --time=02:00:00 --mem=32G --gres=tmpspace:100G bash
+./build_harmonia_apptainer.sh
+```
+
+**Verification:**
+```bash
+apptainer exec harmonia_beaker_LLM_agent_environment_apptainer.sif \
+    python3 -c "from bdikit_context.llm.anyllm import AnyLLMModel; print('OK')"
+```
+
+### LEGACY: `jupyter.sif`
+
+The original Apptainer image. Still works but does **NOT** include:
+- any-llm-sdk
+- bdikit_context.llm.anyllm module
+
+Use this as a fallback if the new image has issues, but note that `anyllm:*` providers won't work.
+
+### Image Auto-Detection
+
+`exec_apptainer_harmonia.sh` automatically detects which image to use:
+
+1. **Priority 1:** `--image` argument (if specified)
+2. **Priority 2:** `harmonia_beaker_LLM_agent_environment_apptainer.sif` (new image)
+3. **Priority 3:** `jupyter.sif` (legacy fallback)
+
+---
+
+## Key Components
+
+### 1. Automation Framework (`src/automation/`)
+
+#### `client.py` - BeakerClient
+Handles WebSocket communication with the Beaker Jupyter server.
+
+**Class: `AgentResponse`**
+```python
+@dataclass
+class AgentResponse:
+    content: str
+    response_type: str  # "llm_response", "code_cell", "stream", "error", "timeout"
+    raw_messages: list[dict] = field(default_factory=list)
+    duration_seconds: float = 0.0
+    tool_calls: list[dict] = field(default_factory=list)
+```
+
+**Class: `BeakerClient`**
+```python
+class BeakerClient:
+    def __init__(self, server_url: str, token: str, timeout: float = 300.0) -> None
+
+    @property
+    def is_connected(self) -> bool
+
+    async def connect(self) -> None
+    async def disconnect(self) -> None
+
+    # Message handling
+    async def send_message(self, message: str, timeout: Optional[float] = None) -> AgentResponse
+    async def send_message_stream(self, message: str, timeout: Optional[float] = None) -> AsyncIterator[dict]
+
+    # Code execution
+    async def execute_code(self, code: str, timeout: float = 60.0) -> dict
+
+    # Notebook management
+    async def save_notebook(self, cells: list[dict], name: str = "experiment") -> dict
+    async def get_notebook(self, session_id: str = None) -> Optional[dict]
+
+    # Context manager support
+    async def __aenter__(self) -> "BeakerClient"
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None
+```
+
+**Connection Flow:**
+```python
+async with BeakerClient(server_url, token) as client:
+    response = await client.send_message("Load dou.csv...")
+    print(response.content)
+```
+
+#### `runner.py` - ExperimentRunner
+Orchestrates the full experiment lifecycle.
+
+**Class: `ExperimentRunner`**
+```python
+class ExperimentRunner:
+    def __init__(
+        self,
+        client: BeakerClient,
+        config: ExperimentConfig,
+        output_dir: Optional[Path] = None,
+        on_turn_complete: Optional[Callable[[int, str, AgentResponse], None]] = None,
+    ) -> None
+
+    async def run(self, interactive: bool = False) -> Path
+    def stop(self) -> None
+```
+
+The output directory name includes `RUN_ID` from the environment if available:
+`<config.name>_<timestamp>_<run_id>` (or just `<config.name>_<timestamp>` without it).
+
+**Standalone Function:**
+```python
+async def run_single_message(
+    client: BeakerClient,
+    message: str,
+    timeout: float = 60.0,
+) -> AgentResponse
+```
+
+**Output Directory Structure:**
+```
+results/<experiment_name>_<timestamp>[_<run_id>]/
+├── .experiment_id      # JSON metadata linking run_id, logs, config
+├── trace.json          # Full message trace with raw WebSocket data
+├── conversation.md     # Human-readable conversation log
+├── dou.csv            # Input data (copied)
+└── harmonized_table.csv # Output (if successful)
+```
+
+The `run_id` suffix is an 8-character hex string (e.g., `a1b2c3d4`) that uniquely links
+logs to results folders. See "Uniform Experiment Tracking" section below.
+
+#### `manual_runner.py` - ManualExperimentRunner
+Monitors manual/interactive Beaker sessions and logs all interactions.
+
+**Class: `ManualExperimentRunner`**
+```python
+class ManualExperimentRunner:
+    def __init__(
+        self,
+        server_url: str,
+        token: str,
+        config: ExperimentConfig,
+        output_dir: Optional[Path] = None,
+    ) -> None
+
+    async def start(self) -> None  # Start monitoring (blocks until stop)
+    def stop(self) -> None         # Stop monitoring and save logs
+```
+
+**Standalone Function:**
+```python
+async def run_manual_experiment(
+    config_path: Path,
+    server_url: str = "http://localhost:8100",
+    token: Optional[str] = None,
+    output_dir: Optional[Path] = None,
+) -> Path
+```
+
+**How it works:**
+1. Connects to an existing Beaker kernel via WebSocket
+2. Passively monitors all `llm_request` and `llm_response` messages
+3. Logs each user-agent interaction as a turn
+4. Auto-saves after each turn (crash-safe)
+5. On Ctrl+C, finalizes and saves `trace.json` and `conversation.md`
+
+**Usage:**
+```bash
+# Option 1: Single command with --monitor flag (recommended)
+./exec_apptainer_harmonia.sh --config configs/manual/my_config.yaml --monitor
+
+# Option 2: Two terminals (for debugging)
+# Terminal 1: Start Beaker
+./exec_apptainer_harmonia.sh --config configs/manual/my_config.yaml
+# Terminal 2: Start monitor
+python run_manual_experiment.py --config configs/manual/my_config.yaml
+```
+
+#### `config.py` - Configuration Dataclasses
+Defines the structure of experiment configuration.
+
+```python
+@dataclass
+class LLMConfig:
+    provider: str
+    model: str
+    temperature: float = 0.0
+    context_length: Optional[int] = None  # Ollama context window (e.g. 64000)
+
+@dataclass
+class MessageConfig:
+    content: str
+    wait_seconds: int = 30
+    decision_mode: Optional[str] = None  # "auto_accept", "predefined", "llm_decides"
+
+@dataclass
+class OutputConfig:
+    base_dir: str = "./results"
+    save_artifacts: list[str] = field(default_factory=list)
+
+@dataclass
+class DecisionConfig:
+    default_mode: str = "auto_accept"
+    predefined_responses: dict[str, str] = field(default_factory=dict)
+
+@dataclass
+class PromptsConfig:
+    prompts_base_dir: Optional[str] = None
+    system_prompt_dir: Optional[str] = None
+    react_prelude: Optional[str] = None
+    code_context_prompt: Optional[str] = None
+    tool_prompts_dir: Optional[str] = None
+
+@dataclass
+class ExperimentConfig:
+    name: str
+    description: str
+    llm: LLMConfig
+    messages: list[MessageConfig]
+    output: OutputConfig = field(default_factory=OutputConfig)
+    decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+    prompts: PromptsConfig = field(default_factory=PromptsConfig)
+    # Manual mode: if True, this config is for manual experiments (no automated messages)
+    manual_mode: bool = False
+    # Optional reference to dataset metadata YAML
+    dataset_metadata: Optional[str] = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig"
+
+def load_config(config_path: str | Path) -> ExperimentConfig
+def load_conversation(conversation_path: str | Path) -> list[MessageConfig]
+```
+
+#### `logger.py` - Logging Classes
+
+**Dataclasses:**
+```python
+@dataclass
+class TurnRecord:
+    turn: int
+    user_message: str
+    agent_response: str
+    response_type: str
+    tool_calls: list[dict] = field(default_factory=list)
+    duration_seconds: float = 0.0
+    raw_messages: list[dict] = field(default_factory=list)
+    timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+@dataclass
+class ExperimentTrace:
+    experiment_name: str
+    description: str
+    llm_provider: str
+    llm_model: str
+    start_time: str
+    end_time: Optional[str] = None
+    turns: list[TurnRecord] = field(default_factory=list)
+    total_duration_seconds: float = 0.0
+    status: str = "running"  # running, completed, failed, timeout, cancelled
+    error_message: Optional[str] = None
+
+    def to_dict(self) -> dict[str, Any]
+```
+
+**Class: `TraceLogger`** - Full JSON traces
+```python
+class TraceLogger:
+    def __init__(self, output_dir: Path) -> None
+    def start_experiment(self, experiment_name: str, description: str, llm_provider: str, llm_model: str) -> None
+    def log_turn(self, turn: int, user_message: str, agent_response: str, response_type: str,
+                 tool_calls: list[dict] = None, duration_seconds: float = 0.0, raw_messages: list[dict] = None) -> None
+    def end_experiment(self, status: str = "completed", error_message: Optional[str] = None) -> None
+    def save(self, filename: str = "trace.json") -> Path
+    def build_notebook_cells(self) -> list[dict]
+```
+
+**Class: `ConversationLogger`** - Markdown conversation logs
+```python
+class ConversationLogger:
+    def __init__(self, output_dir: Path) -> None
+    def start_experiment(self, experiment_name: str, description: str, llm_provider: str, llm_model: str) -> None
+    def log_turn(self, turn: int, user_message: str, agent_response: str, response_type: str = "llm_response") -> None
+    def log_error(self, error_message: str) -> None
+    def log_summary(self, total_turns: int, total_duration: float, status: str) -> None
+    def save(self, filename: str = "conversation.md") -> Path
+    def get_content(self) -> str
+```
+
+---
+
+### 2. BDI-Kit Context (`src/bdikit_context/`)
+
+#### `context.py` - BDIKitContext
+Beaker context that provides BDI-Kit tools to the LLM agent. Supports per-experiment prompt overrides via env vars.
+
+```python
+class BDIKitContext(BeakerContext):
+    enabled_subkernels = ["python3"]
+    SLUG = "bdikit_context"
+
+    def __init__(self, beaker_kernel: "BeakerKernel", config: Dict[str, Any]) -> None
+        # Reads HARMONIA_PROMPTS_DIR env var → creates per-instance PromptLoader
+        # Reads HARMONIA_REACT_PRELUDE env var → overrides agent.custom_prelude
+        # Calls _override_tool_descriptions() → mutates StructuredTool.description
+        # Calls print_prompt_composition() → Output A (stdout layers)
+        # Calls register_prompt_json_logger() → Output B (one-shot JSON on first execute)
+    def _override_tool_descriptions(self) -> None  # Replaces tool descs from .j2 templates
+    async def setup(self, context_info=None, parent_header=None) -> None
+    async def auto_context(self) -> str  # Returns system prompt (prints domain prompt on first call)
+```
+
+#### `agent.py` - BDIKitAgent
+Defines tools available to the LLM for data harmonization.
+
+**Constants:**
+```python
+VALID_SCHEMA_METHODS = [
+    "similarity_flooding", "coma", "cupid", "distribution_based", "jaccard_distance",
+    "two_phase", "max_val_sim", "magneto_zs_bp", "magneto_ft_bp", "magneto_zs_llm",
+    "magneto_ft_llm", "llm"
+]
+DEFAULT_SCHEMA_METHOD = "magneto_ft_bp"
+
+VALID_VALUE_METHODS = ["edit_distance", "llm", "llm_numeric", "tfidf", "embedding"]
+DEFAULT_VALUE_METHOD = "tfidf"
+
+VALID_TARGETS = ["gdc"]
+DEFAULT_TARGET = "gdc"
+
+DEFAULT_OUTPUT_FILE = "harmonized_table.csv"
+```
+
+**Available Tools:**
+
+| Tool | Signature | Description |
+|------|-----------|-------------|
+| `match_schema` | `(dataset: str, agent: AgentRef, target: Optional[str] = None, method: Optional[str] = None) -> str` | Maps source columns to target schema |
+| `top_matches` | `(dataset: str, columns: str, agent: AgentRef, target: Optional[str] = None) -> str` | Shows top 10 alternative column mappings |
+| `match_values` | `(dataset: str, column_mapping: str, agent: AgentRef, target: Optional[str] = None, method: Optional[str] = None) -> str` | Maps values between source and target columns |
+| `materialize_mapping` | `(dataset: str, mapping_spec: str, agent: AgentRef, output_file: Optional[str] = None) -> str` | Creates the final harmonized table |
+| `get_gdc_acceptable_values` | `(column: str, agent: AgentRef) -> str` | Lists valid values for GDC columns |
+
+Note: All Optional parameters have defaults applied internally (target="gdc", method="magneto_ft_bp"/"tfidf").
+
+#### `config/__init__.py` - Configuration Management
+
+**Class: `LLMConfig`** (for bdikit_context)
+```python
+@dataclass
+class LLMConfig:
+    provider: str = "openai"  # Can be "anyllm:openai", "anyllm:ollama", etc.
+    model: str = "gpt-4o"
+    api_key: Optional[str] = None
+    base_url: Optional[str] = None
+    temperature: float = 0.0
+    max_tokens: int = 4096
+    extra: Dict[str, Any] = field(default_factory=dict)
+    use_anyllm: bool = False
+
+    def get_effective_provider(self) -> str
+```
+
+**Class: `HarmoniaConfig`**
+```python
+@dataclass
+class HarmoniaConfig:
+    llm: LLMConfig = field(default_factory=LLMConfig)
+    prompts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "prompts")
+    debug: bool = True
+
+    @classmethod
+    def from_env(cls) -> "HarmoniaConfig"
+
+    @classmethod
+    def from_yaml(cls, path: Path) -> "HarmoniaConfig"
+
+def get_config() -> HarmoniaConfig
+def reset_config() -> None
+```
+
+#### `llm/__init__.py` - LLM Provider Configuration
+
+```python
+PROVIDER_IMPORT_MAP = {
+    # Native Archytas providers
+    "openai": "archytas.models.openai.OpenAIModel",
+    "ollama": "archytas.models.ollama.OllamaModel",
+    "openrouter": "archytas.models.openrouter.OpenRouterModel",
+    "anthropic": "archytas.models.anthropic.AnthropicModel",
+    ...
+    # any-llm unified providers (30+ supported)
+    "anyllm": "bdikit_context.llm.anyllm.AnyLLMModel",
+    "anyllm:openai": "bdikit_context.llm.anyllm.AnyLLMModel",
+    "anyllm:ollama": "bdikit_context.llm.anyllm.AnyLLMModel",
+    ...
+}
+
+def configure_llm_environment() -> None
+def get_provider_info() -> dict
+```
+
+#### `llm/anyllm.py` - Unified LLM Provider
+
+**IMPORTANT:** This module requires the new `harmonia_beaker_LLM_agent_environment_apptainer.sif` image. The legacy `jupyter.sif` does not include any-llm-sdk.
+
+```python
+class ChatAnyLLM:
+    def __init__(self, *, provider: str, model: str, api_key: Optional[str] = None,
+                 api_base: Optional[str] = None, temperature: float = 0.0, max_tokens: int = 4096) -> None
+    def bind_tools(self, tools: Sequence[Any]) -> "ChatAnyLLM"
+    def invoke(self, input: list[BaseMessage], *args, **kwargs) -> AIMessage
+    async def ainvoke(self, input: list[BaseMessage], *args, **kwargs) -> AIMessage
+    def get_num_tokens_from_messages(self, *, messages: list[BaseMessage], tools: Optional[Sequence[Any]] = None) -> int
+
+class AnyLLMModel(BaseArchytasModel):
+    DEFAULT_MODEL = "gpt-4o"
+    DEFAULT_PROVIDER = "openai"
+
+    def auth(self, **kwargs) -> None
+    def initialize_model(self, **kwargs) -> ChatAnyLLM
+    async def get_num_tokens_from_messages(self, messages: list[BaseMessage], tools: Optional[Sequence] = None) -> int
+    def contextsize(self, model_name: Optional[str] = None) -> int | None
+```
+
+#### `llm/direct.py` - Direct LLM Runner (No Beaker)
+
+```python
+@dataclass
+class DirectLLMConfig:
+    provider: str
+    model: str
+    api_key: Optional[str] = None
+    api_base: Optional[str] = None
+    temperature: float = 0.0
+    max_tokens: int = 4096
+    system_prompt: Optional[str] = None
+
+@dataclass
+class DirectLLMResult:
+    content: str
+    model: str
+    provider: str
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    duration_seconds: float = 0.0
+    raw_response: Optional[ChatCompletion] = None
+
+class DirectLLMRunner:
+    def __init__(self, provider: str, model: str, api_key: Optional[str] = None,
+                 api_base: Optional[str] = None, temperature: float = 0.0,
+                 max_tokens: int = 4096, system_prompt: Optional[str] = None) -> None
+    async def complete(self, prompt: str, conversation_history: Optional[list[dict]] = None, **kwargs) -> DirectLLMResult
+    async def complete_stream(self, prompt: str, conversation_history: Optional[list[dict]] = None, **kwargs) -> AsyncIterator[str]
+    def complete_sync(self, prompt: str, conversation_history: Optional[list[dict]] = None, **kwargs) -> DirectLLMResult
+    async def multi_turn_conversation(self, prompts: list[str], **kwargs) -> list[DirectLLMResult]
+
+async def quick_complete(prompt: str, provider: str = "openai", model: str = "gpt-4o", **kwargs) -> str
+def quick_complete_sync(prompt: str, provider: str = "openai", model: str = "gpt-4o", **kwargs) -> str
+```
+
+#### `prompts/__init__.py` - Prompt Template System
+
+```python
+class PromptLoader:
+    def __init__(self, prompts_dir: Optional[Path] = None) -> None
+    def render(self, template_name: str, **kwargs) -> str
+    def get_system_prompt(self, **kwargs) -> str
+    def get_tool_description(self, tool_name: str, **kwargs) -> str
+    def list_tools(self) -> List[str]
+
+def get_prompt_loader(prompts_dir: Optional[Path] = None) -> PromptLoader
+```
+
+---
+
+### 3. Experiment Configuration
+
+Experiments are defined in YAML files in `experiments/experiment_*/configs/`.
+
+#### Automated Experiments (`configs/automated/`)
+
+Scripted experiments with predefined messages:
+
+```yaml
+experiment:
+  name: "dou_harmonization_devstral"
+  description: "Harmonize dou.csv using Devstral"
+
+llm:
+  provider: anyllm:ollama    # or "ollama", "openrouter", "anyllm:openai", etc.
+  model: devstral:latest
+  base_url: http://localhost:11434
+  temperature: 0.0
+  context_length: 64000      # Ollama context window (optional, sets OLLAMA_CONTEXT_LENGTH)
+
+messages:
+  - content: |
+      Load the file dou.csv as a dataframe...
+    wait_seconds: 180
+    decision_mode: auto_accept
+
+output:
+  base_dir: "./results"
+  save_artifacts:
+    - "harmonized_table.csv"
+
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    "choose.*method": "Use the similarity method"
+
+# Optional: configurable prompts (all fields optional)
+prompts:
+  prompts_base_dir: "../prompts"                              # Relative to config file
+  system_prompt_dir: "system_prompt/v2_autonomous"            # Custom system prompt template dir
+  react_prelude: "react_agent_prompts/v2_tool_focused/prelude.txt"  # Custom ReAct prelude
+  code_context_prompt: "code_context_prompts/v1_default/prompt.txt"  # Custom code context prompt
+  tool_prompts_dir: "bdikit_prompts/v2_detailed"              # Custom tool description templates
+```
+
+#### Configurable Prompts
+
+Experiments can override prompts via the `prompts:` section in the YAML config. All fields are optional — when omitted, defaults are used. The flow is:
+
+```
+YAML prompts section → generate_env.py → HARMONIA_* env vars in .env → exec_apptainer_harmonia.sh binds dirs → BDIKitContext/CodeContext reads env vars
+```
+
+| Env Variable | Config Field | Used By | Purpose |
+|---|---|---|---|
+| `HARMONIA_PROMPTS_DIR` | `system_prompt_dir` | `BDIKitContext.__init__()` | Custom `system/main.j2` template directory |
+| `HARMONIA_REACT_PRELUDE` | `react_prelude` | `BDIKitContext.__init__()` | Custom ReAct agent prelude text file |
+| `HARMONIA_TOOL_PROMPTS_DIR` | `tool_prompts_dir` | `BDIKitContext._override_tool_descriptions()` | Custom tool `.j2` template directory |
+| `HARMONIA_CODE_CONTEXT_PROMPT` | `code_context_prompt` | `CodeContext.auto_context()` | Custom code context prompt text file |
+
+#### Manual Experiments (`configs/manual/`)
+
+Interactive experiments with no automated messages:
+
+```yaml
+experiment:
+  name: "dou_gdc_manual_anyllm-ollama_devstral"
+  description: "Manual harmonization of dou.csv to GDC schema"
+  manual_mode: true
+  dataset_metadata: "/path/to/experiment_metadata.yaml"
+
+llm:
+  provider: anyllm:ollama
+  model: devstral:latest
+  temperature: 0.0
+
+output:
+  base_dir: "/path/to/harmonia/results"
+
+# Optional: environment settings for generate_env.py
+env_settings:
+  LLM_SERVICE_PROVIDER: "anyllm:ollama"
+  LLM_SERVICE_MODEL: "devstral:latest"
+
+# Optional: data location documentation
+data:
+  working_directory: "/path/to/data"
+  source_file: "dou.csv"
+  target_schema: "gdc"
+
+# No messages section - user interacts via Beaker UI
+```
+
+**Template:** `configs/manual/dou_harmonization_manual_config.template`
+
+---
+
+### 4. Environment Generation (`generate_env.py`)
+
+Script to generate experiment-specific `.env` files from YAML configs.
+
+```python
+def load_base_env(base_env_path: Path) -> str
+def load_experiment_config(config_path: Path) -> dict
+def update_env_value(env_content: str, key: str, value: str) -> str
+def get_provider_import_path(provider: str) -> str
+def get_api_key_for_provider(provider: str, env_content: str) -> str
+def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir: Path = None) -> Path
+```
+
+**Usage:**
+```bash
+# Generate .env from single config
+python generate_env.py --config path/to/config.yaml
+
+# Generate .env for all configs in directory
+python generate_env.py --config-dir path/to/configs/
+
+# Specify custom base .env and output directory
+python generate_env.py --config config.yaml --base-env /path/to/.env --output-dir ./output/
+```
+
+**Output:** Creates `[config_name]_associated.env` files (ignored by `.gitignore`).
+
+**Prompt env vars:** When a `prompts` section exists in the YAML config, `generate_env.py` resolves paths (relative to config file via `prompts_base_dir`) and writes `HARMONIA_PROMPTS_DIR`, `HARMONIA_REACT_PRELUDE`, `HARMONIA_CODE_CONTEXT_PROMPT`, `HARMONIA_TOOL_PROMPTS_DIR` to the `.env` file.
+
+For Ollama providers, also writes `OLLAMA_CONTEXT_LENGTH` if `context_length` is set in the YAML config.
+
+---
+
+### 5. Container Environment
+
+The Apptainer containers provide:
+- Jupyter server with Beaker kernel
+- BDI-Kit library for data harmonization
+- Pre-installed bdikit_context package
+- LLM provider libraries
+
+**New image additionally provides:**
+- any-llm SDK for unified provider support (30+ providers)
+- `bdikit_context.llm.anyllm` module
+- ollama Python package for local LLMs
+
+**Build (new image):**
+```bash
+srun -J apptainer_build_claude-code --time=02:00:00 --mem=32G --gres=tmpspace:100G bash
+./build_harmonia_apptainer.sh
+```
+
+**Run:**
+```bash
+# Using default .env (auto-detects new or legacy image)
+./exec_apptainer_harmonia.sh [--port 8100]
+
+# Using custom .env file
+./exec_apptainer_harmonia.sh --env path/to/custom.env
+
+# Auto-generate .env from experiment config (recommended for manual experiments)
+./exec_apptainer_harmonia.sh --config path/to/experiment_config.yaml
+
+# With logging monitor (single command for manual experiments with logging)
+./exec_apptainer_harmonia.sh --config path/to/experiment_config.yaml --monitor
+
+# Explicitly specify image
+./exec_apptainer_harmonia.sh --image path/to/custom.sif
+
+# Show help
+./exec_apptainer_harmonia.sh --help
+```
+
+**Options:**
+| Flag | Description |
+|------|-------------|
+| `--port, -p PORT` | Port to run Beaker on (default: 8100) |
+| `--env, -e FILE` | Path to custom .env file |
+| `--config, -c FILE` | Path to experiment config YAML (auto-generates .env) |
+| `--monitor, -m` | Enable logging monitor (requires --config) |
+| `--image, -i FILE` | Path to Apptainer image (default: auto-detect) |
+| `--run-id, -R ID` | Unique 8-char hex run ID (auto-generated if not provided) |
+| `--job-name NAME` | Job name for logging (default: derived from config) |
+| `--help, -h` | Show help message |
+
+**Bind Mounts (automatic):**
+The execution script automatically binds:
+- Current directory → `/jupyter` (source code access)
+- Data directory → same path (read-only): `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia`
+- Results directory → same path (read-write): `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results`
+- SSL certificate (if available)
+
+**Context Registration:**
+The bdikit_context is registered via Python entry points:
+```toml
+[project.entry-points."beaker.contexts"]
+bdikit_context = "bdikit_context.context:BDIKitContext"
+```
+
+---
+
+## LLM Provider Configuration
+
+### Supported Providers (30+)
+
+**Native Archytas Providers:**
+- openai, ollama, openrouter, anthropic, azure, bedrock, gemini, groq
+
+**any-llm Unified Providers (requires new image):**
+Use `anyllm:` prefix for unified interface:
+- anyllm:openai, anyllm:ollama, anyllm:anthropic, anyllm:openrouter
+- anyllm:mistral, anyllm:groq, anyllm:together, anyllm:perplexity
+- anyllm:bedrock, anyllm:azure, anyllm:cohere, anyllm:deepseek, anyllm:fireworks
+
+### Environment Variables
+
+```bash
+# Provider and model
+LLM_SERVICE_PROVIDER=anyllm:ollama
+LLM_SERVICE_MODEL=devstral:latest
+LLM_PROVIDER_IMPORT_PATH=bdikit_context.llm.anyllm.AnyLLMModel
+
+# API keys (provider-specific)
+OPENAI_API_KEY=sk-...
+OPENROUTER_API_KEY=sk-or-...
+ANTHROPIC_API_KEY=sk-ant-...
+OLLAMA_HOST=http://localhost:11434
+
+# Optional
+LLM_TEMPERATURE=0.0
+LLM_MAX_TOKENS=4096
+LLM_BASE_URL=http://localhost:11434
+USE_ANYLLM=true
+
+# Run metadata (passed into container by exec_apptainer_harmonia.sh)
+HARMONIA_RUN_ID=a1b2c3d4         # 8-char hex run ID
+HARMONIA_EXPERIMENT_NAME=dou_harmonization_devstral  # From YAML config
+RESULTS_DIR=/workspace/results    # Container-internal results mount point
+```
+
+### Ollama (Local Models)
+- Requires GPU partition on HPC for larger models
+- Models must be pre-downloaded or pulled at runtime
+- No API key needed
+- **Context length:** Configurable per-model via `context_length` in YAML config (e.g., `context_length: 64000`). This sets `OLLAMA_CONTEXT_LENGTH` env var for `ollama serve` and passes `num_ctx` in the model pre-warm API call. Default Ollama context is only 4096 tokens, which is too small for harmonization tasks.
+- **Model verification:** After model pre-warming, `ollama ps` is run automatically to verify GPU offload percentage. Warnings are logged if the model is not fully loaded on GPU.
+- **Per-job isolation:** When running under SLURM, each job gets its own Ollama instance with:
+  - Unique port: `11434 + 1 + (SLURM_JOB_ID % 200)` (range 11435-11634)
+  - Per-job PID file: `.ollama_${SLURM_JOB_ID}.pid`
+  - Per-job runtime directory: `$TMPDIR/ollama_${SLURM_JOB_ID}`
+  - Per-job serve log: `ollama_serve_${SLURM_JOB_ID}.log`
+- Interactive/manual use (no SLURM) keeps default port 11434 with original sharing behavior
+
+### WebSocket Configuration
+
+- Beaker's WebSocket max message size is set to 20MB (default was 4MB in older tornado versions)
+- Configured via `--ServerApp.tornado_settings={"websocket_max_message_size":20971520}` in the Beaker launch command
+- This prevents connection drops for models that produce large responses (e.g., qwen3-coder)
+
+### OpenRouter (Cloud Models)
+- Access to many model providers through single API
+- Requires `OPENROUTER_API_KEY`
+
+---
+
+## Sample Workflows
+
+### Running an Experiment Locally
+
+```bash
+# Set environment variables (or use .env file)
+export LLM_SERVICE_PROVIDER="anyllm:ollama"
+export LLM_SERVICE_MODEL="devstral:latest"
+
+# Start the Beaker server in container
+./exec_apptainer_harmonia.sh
+
+# Run experiment (in another terminal)
+python run_experiment.py experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml
+```
+
+### Running Experiments on HPC (SLURM)
+
+```bash
+# Generate SLURM job scripts for all experiments
+python generate_jobs.py --config-dir experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/
+
+# Submit a single job
+sbatch jobs/dou_harmonization_devstral.sh
+
+# Check job status
+squeue -u $USER
+```
+
+### Launching Interactive Beaker Server
+
+```bash
+# On HPC
+./exec_apptainer_harmonia.sh --port 8100
+
+# On local machine (SSH tunnel)
+ssh -L 8100:localhost:8100 hpc_user@hpc_login
+
+# Access in browser: http://localhost:8100
+# Token is printed in console output
+```
+
+---
+
+## Tool Calling Requirements
+
+**Important:** The Beaker kernel uses Archytas ReAct agent which requires LLMs to support function/tool calling. Models without tool support will fail.
+
+**Models with Tool Support (Ollama):**
+- devstral:latest
+- devstral-small:latest
+- qwen3-coder:30b
+- olmo3:latest (newer versions)
+
+**Models WITHOUT Tool Support:**
+- Some older Ollama models
+- Some free-tier OpenRouter models
+
+---
+
+## Evaluation Pipeline (`src/evaluation/`)
+
+### Schema v1.1 (`schemas.py`)
+
+Pydantic models that define the structure of `metrics.json` output:
+
+- **`ExperimentMetadata`** - experiment name, timestamp, LLM provider/model, timing
+- **`ColumnMappingMetrics`** - schema mapping quality with dual precision (`precision_excl_null`, `precision_incl_null`), recall, accuracy
+- **`ColumnMappingDetail`** - per-column mapping details (correct, wrong, missing, explicitly null)
+- **`ColumnValueMetrics`** - per-column value harmonization quality (accuracy, macro-averaged precision/recall/F1 both incl/excl empty)
+- **`ErrorCategorization`** - breakdown of errors (whitespace_only, case_only, whitespace_and_case, genuine)
+- **`Misclassification`** - individual error details with row index
+- **`OverallSummary`** - aggregate statistics across all columns
+- **`MetricsResult`** - top-level result with nested `metadata: ExperimentMetadata`, all metrics, diagnostics
+
+### Core Metrics (`metrics.py`)
+
+Key functions:
+- `calculate_column_mapping_metrics()` - evaluates how well the LLM mapped source columns to target schema
+- `calculate_column_value_metrics()` - evaluates value harmonization quality per column with optional `numeric_tolerance`
+- `calculate_all_metrics()` - orchestrates full evaluation with index-based row alignment (inner join when `index_column` provided)
+
+Features:
+- **Numeric tolerance** - float columns compared within tolerance (e.g., "23.5" vs "23.50")
+- **Index-based row alignment** - joins on index column instead of sort+truncate
+- **Dual precision** for column mapping (with and without null mappings)
+- **Confusion matrix** per column: `{expected_value: {predicted_value: count}}`
+- **Error categorization** - classifies mismatches as whitespace, case, or genuine errors
+
+### Standalone CLI (`calculate_metrics.py`)
+
+```bash
+python calculate_metrics.py \
+  --results-dir results/<experiment_dir> \
+  --gold-standard /path/to/gold_standard.csv \
+  --gold-column-mapping /path/to/gold_column_mapping.json \
+  --verbose
+```
+
+Metrics are also automatically calculated at the end of `run_experiment.py` and `run_manual_experiment.py` if evaluation config is present.
+
+---
+
+## Missing Functionality
+
+The following features are **not yet implemented** and need development:
+
+1. **Experiment 2 and 3 Automation Configs**
+   - Currently only Experiment 1 has automated configs
+   - Need configs for two-table and ten-table harmonization
+
+2. **Result Aggregation**
+   - Scripts to aggregate results across multiple LLM runs
+   - Statistical comparison between models
+
+---
+
+## Troubleshooting
+
+### "ModuleNotFoundError: No module named 'bdikit_context.llm.anyllm'"
+
+**Root Cause:** Using the legacy `jupyter.sif` image which doesn't include any-llm-sdk.
+
+**Fix:** Build and use the new image:
+```bash
+srun -J apptainer_build_claude-code --time=02:00:00 --mem=32G --gres=tmpspace:100G bash
+./build_harmonia_apptainer.sh
+```
+
+The `exec_apptainer_harmonia.sh` script will auto-detect the new image if present.
+
+### "Agent says it doesn't have tools"
+**Root Cause:** The `bdikit_context` package entry point is not registered.
+
+**Fix:** Ensure `pyproject.toml` has:
+```toml
+[project.entry-points."beaker.contexts"]
+bdikit_context = "bdikit_context.context:BDIKitContext"
+```
+Then rebuild the Apptainer image.
+
+### "Context has no workflows: disabling tools"
+This message appears in Beaker logs but doesn't affect BDI-Kit tools. The tools are registered via the agent, not workflows.
+
+### "Model does not support tools"
+Ensure the model supports function calling. For Ollama, test with:
+```bash
+curl http://localhost:11434/api/chat -d '{
+  "model": "devstral:latest",
+  "messages": [{"role": "user", "content": "Hello"}],
+  "tools": [{"type": "function", "function": {"name": "test", "parameters": {}}}]
+}'
+```
+
+### Connection Errors
+- Verify Beaker server is running on expected port
+- Check token is being passed correctly
+- Ensure WebSocket upgrade is supported
+
+### Missing Columns in dou.csv
+The experiment prompts reference specific columns. Verify the CSV has:
+`Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age, Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm`
+
+---
+
+## File Outputs
+
+After a successful experiment run:
+
+- `results/<name>_<timestamp>_<run_id>/trace.json` - Full execution trace
+- `results/<name>_<timestamp>_<run_id>/conversation.md` - Readable conversation log
+- `results/<name>_<timestamp>_<run_id>/.experiment_id` - JSON metadata linking run_id, logs, config
+- `results/<name>_<timestamp>_<run_id>/harmonized_table.csv` - Harmonized output
+- `results/<name>_<timestamp>_<run_id>/metrics.json` - Evaluation metrics (if gold standard configured)
+- `results/<name>_<timestamp>_<run_id>/metrics_calculation.log` - Metrics calculation log (if run via calculate_metrics.py)
+- `results/<name>_<timestamp>_<run_id>/full_prompt_composition.json` - Structured prompt layers with content hashes (written on first LLM call)
+- `logs/<DD-MM-YYYY_HHMM>_<name>_<jobid>_<run_id>.out/.err` - SLURM job logs (automated, with run_id)
+- `logs/beaker_<YYYYMMDD_HHMMSS>.log` - Beaker server logs (manual mode)
+- `logs/ollama_<YYYYMMDD_HHMMSS>.log` - Ollama server logs (local LLM mode)
+
+---
+
+## Uniform Experiment Tracking (Run ID System)
+
+Every experiment run (automated or manual) is assigned a unique **run ID** — an 8-character
+lowercase hex string (e.g., `a1b2c3d4`) generated via `secrets.token_hex(4)`.
+
+### How it works
+
+**Automated mode (SBATCH):**
+
+1. The SBATCH template generates `RUN_ID` before log file redirection
+2. `RUN_ID` appears in log filenames: `logs/<timestamp>_<name>_<jobid>_<run_id>.out`
+3. `RUN_ID` is passed to `exec_apptainer_harmonia.sh` via `--run-id "$RUN_ID"`
+4. `exec_apptainer_harmonia.sh` creates results dir: `results/<name>_<timestamp>_<run_id>/`
+5. `run_experiment.py` reads `RUN_ID` from environment and includes it in its output directory
+
+**Manual mode (interactive):**
+
+1. `exec_apptainer_harmonia.sh` generates `RUN_ID` itself (no SBATCH template)
+2. Results dir includes run_id: `results/<name>_<timestamp>_<run_id>/`
+3. No SLURM logs exist; Beaker and Ollama logs are referenced in `.experiment_id`
+
+### `.experiment_id` file
+
+Created in every results directory, this JSON file links all artifacts:
+
+```json
+{
+  "run_id": "a1b2c3d4",
+  "experiment_name": "dou_harmonization_devstral",
+  "experiment_mode": "automated",
+  "config_file": "path/to/config.yaml",
+  "llm_provider": "anyllm:ollama",
+  "llm_model": "devstral:latest",
+  "timestamp": "20260211_143000",
+  "slurm_job_id": "46662631",
+  "log_files": {
+    "stdout": "logs/11-02-2026_1430_dou_harmonization_devstral_46662631_a1b2c3d4.out",
+    "stderr": "logs/11-02-2026_1430_dou_harmonization_devstral_46662631_a1b2c3d4.err"
+  }
+}
+```
+
+---
+
+## Prompt Composition Logging (`src/prompt_logging.py`)
+
+Captures the full composed prompt that the LLM sees, for diagnostics and cross-experiment comparison.
+
+### Two Outputs
+
+**Output A — Stdout (SLURM log inspection):**
+- `print_prompt_composition()` fires at context `__init__()` time, printing Layer 1 (system message / ReAct prelude), model-specific instructions, custom prelude, and prompt config env vars.
+- The auto-context (domain prompt) is printed separately on the first `auto_context()` call, since it's not rendered until then.
+
+**Output B — Structured JSON (`full_prompt_composition.json`):**
+- `register_prompt_json_logger()` monkey-patches `agent.execute()` with a one-shot wrapper.
+- On the first LLM call, it captures all messages from `ChatHistory.records()`, decomposes them into layers, computes SHA-256 content hashes, and writes `full_prompt_composition.json` to the results directory.
+- The wrapper self-removes after firing — no ongoing overhead.
+
+### JSON Structure
+
+```json
+{
+  "metadata": { "run_id": "a1b2c3d4", "experiment_name": "...", "model_class": "AnyLLMModel", "prompt_config": {} },
+  "layers": {
+    "system_message": { "content": "...", "content_hash": "...", "char_count": 1179, "custom_prelude_used": false },
+    "auto_context_message": { "content": "...", "content_hash": "...", "char_count": 3581 },
+    "model_prompt_instructions": { "content": "...", "is_empty": true }
+  },
+  "messages_sent_to_llm": [ { "type": "SystemMessage", "content": "...", "index": 0, "content_hash": "..." }, ... ],
+  "summary": { "total_messages": 2, "total_char_count": 4760, "uses_custom_prompts": false }
+}
+```
+
+### Environment Variables Required
+
+| Env Var | Set by | Read by | Purpose |
+|---------|--------|---------|---------|
+| `RESULTS_DIR` | `exec_apptainer_harmonia.sh` | `register_prompt_json_logger()` | Where to write `full_prompt_composition.json` |
+| `HARMONIA_RUN_ID` | `exec_apptainer_harmonia.sh` | `register_prompt_json_logger()` | Run ID for JSON metadata |
+| `HARMONIA_EXPERIMENT_NAME` | `exec_apptainer_harmonia.sh` | `register_prompt_json_logger()` | Experiment name for JSON metadata |
+
+### Cross-Experiment Comparison
+
+```bash
+# Compare system messages by hash
+jq '.layers.system_message.content_hash' results/*/full_prompt_composition.json
+
+# Diff domain prompts between two runs
+diff <(jq -r '.layers.auto_context_message.content' results/run_A/full_prompt_composition.json) \
+     <(jq -r '.layers.auto_context_message.content' results/run_B/full_prompt_composition.json)
+```
+
+---
+
+## Log and Trace Analysis Tool
+
+### CLI Tool (`code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py`)
+
+Analyzes experiment logs and traces to detect problems from a 16-class failure taxonomy.
+
+**Usage:**
+```bash
+# Analyze all experiments in default directories
+python read_and_analyze_logs_and_traces_cli.py
+
+# Analyze specific experiment by run_id
+python read_and_analyze_logs_and_traces_cli.py --run-id a1b2c3d4
+
+# Analyze specific experiment by name
+python read_and_analyze_logs_and_traces_cli.py --experiment dou_harmonization_devstral
+
+# Verbose per-turn analysis
+python read_and_analyze_logs_and_traces_cli.py --verbose
+
+# JSON output (Pydantic schema)
+python read_and_analyze_logs_and_traces_cli.py --json
+
+# Custom directories
+python read_and_analyze_logs_and_traces_cli.py --log-dir ./logs --results-dir ./results
+```
+
+**Detection methods:**
+
+- **Keyword matching:** Simple string/regex patterns in log files and trace.json
+- **Compound detection:** Multi-condition Python logic for complex failure modes (e.g., "all turns timed out" vs "some turns timed out with successful raw messages")
+
+### Error Taxonomy (`code_development_tools_agents/monitoring_and_evaluation/types_of_log_and_trace_problems.yaml`)
+
+Machine-readable taxonomy with 16 problem classes across 5 categories:
+
+| Category | Problems |
+| -------- | -------- |
+| 1. Infrastructure | 1A: Beaker Server Hung, 1B: 405 Notebook Save, 1C: ZMQ ReadTimeout |
+| 2. Model Config | 2A: Ollama Model Not Found, 2B: Tool Calling Not Supported, 2C: Ollama Runner Crash, 2D: OpenRouter Model Unavailable, 2E: OpenRouter Rate Limit |
+| 3. LLM Behavioral | 3A: LLM-Side Timeout, 3B: Not Using Tools, 3C: Hallucinated Output, 3D: WebSocket Size Exceeded, 3E: Context Window Exhaustion, 3F: Response Stream Truncated, 3G: Silent Empty Response |
+| 4. Data/Config | 4A: FileNotFoundError — Incorrect Data Path |
+| 5. Output | 5A: No Output Produced |
+
+Each class specifies detection keywords, regex patterns, severity, examples, and remediation steps.

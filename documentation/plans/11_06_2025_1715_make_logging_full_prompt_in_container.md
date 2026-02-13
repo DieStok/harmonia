@@ -720,3 +720,73 @@ Or simpler: call `context.auto_context()` directly since it's the source of trut
 - Python standard library only (`json`, `hashlib`, `os`, `datetime`, `pathlib`, `asyncio`)
 - `langchain_core.messages.BaseMessage` (already available in container)
 - No new pip packages required
+
+---
+
+## Amendment: New Considerations (13-02-2026)
+
+**Context:** Since this plan was written, the configurable prompts feature has been implemented (committed 13-02-2026 in `52db395`). This changes the implementation landscape in several ways.
+
+### A1. BDIKitContext.__init__() is now significantly larger
+
+The current `__init__()` already:
+1. Creates per-instance `PromptLoader` from `HARMONIA_PROMPTS_DIR`
+2. Calls `super().__init__()` (creates agent)
+3. Overrides ReAct prelude from `HARMONIA_REACT_PRELUDE`
+4. Calls `_override_tool_descriptions()` from `HARMONIA_TOOL_PROMPTS_DIR`
+5. Calls `_log_prompt_config()` (prints JSON of env var settings)
+6. In `auto_context()`: prints full system prompt on first call via `_system_prompt_logged` flag
+
+**Impact on prompt logging:** The prompt logging calls must go **after** all overrides (steps 1-4), so the logged prompt reflects the actual configured state. The existing `_log_prompt_config()` and the `_system_prompt_logged` hack in `auto_context()` should be **replaced** by the proper `print_prompt_composition()` and `register_prompt_json_logger()` calls.
+
+### A2. CodeContext now has an explicit `__init__()`
+
+The plan originally noted that `CodeContext` might not have `__init__()`. It now does (added during configurable prompts work), and it already imports `CodeAgent`. The prompt logging calls can simply be appended to the existing `__init__()`.
+
+### A3. Three additional env vars needed inside the container
+
+The exec script already has `RESULTS_DIR=/workspace/results` inside the container, and `RUN_ID` and `EXPERIMENT_NAME` exist as shell variables. The plan requires:
+- `HARMONIA_RESULTS_DIR=/workspace/results` (or reuse existing `RESULTS_DIR`)
+- `HARMONIA_RUN_ID=${RUN_ID}`
+- `HARMONIA_EXPERIMENT_NAME=${EXPERIMENT_NAME}`
+
+**Decision:** Reuse the existing `RESULTS_DIR` env var (already set to `/workspace/results` at line 862 of exec script) instead of creating a redundant `HARMONIA_RESULTS_DIR`. The register function should read `os.environ.get("RESULTS_DIR")`. For `RUN_ID` and `EXPERIMENT_NAME`, add new `--env` flags since these are not currently passed into the container.
+
+### A4. The async timing issue resolution
+
+The plan flagged that `print_prompt_composition()` at init time may see "Default context" instead of the rendered prompt. The current code already works around this differently — `auto_context()` prints the system prompt on its first call via the `_system_prompt_logged` flag.
+
+**Resolution for Output A:** Make `print_prompt_composition()` async. Call `await context.auto_context()` directly to get the rendered prompt, rather than reading from `chat_history.auto_context_message` which may not be populated yet. Schedule it via `asyncio.ensure_future()` from `__init__()`. However, since `__init__()` is sync and the event loop may not be running yet, the safer approach is:
+- Keep Output A (stdout) as a **sync** function that prints only the layers available at init time (system message, custom prelude, model instructions, prompt config env vars).
+- For the auto-context layer (domain prompt), rely on the existing first-call print already in `auto_context()`, but clean it up to be part of `print_prompt_composition()`.
+- Output B (JSON) fires on first `execute()` via the monkey-patch, at which point `records()` has all messages correctly assembled — this already handles the timing issue.
+
+**Simplest correct approach:** Split Output A into two parts:
+- Part 1 (sync, at init): Print system message (ReAct prelude), model instructions, custom prelude, prompt config env vars
+- Part 2 (at first auto_context call): Print the rendered domain prompt
+- Output B (at first execute): Write full JSON with all layers
+
+### A5. Configurable prompts information should be in the JSON
+
+The structured JSON should include:
+- Which `HARMONIA_*` env vars were set (prompt dirs, prelude paths)
+- Whether default or custom prompts were used for each layer
+- The content hashes of each prompt variant for A/B test identification
+
+This is already partially handled by the existing `_log_prompt_config()` output, but should be merged into the structured JSON.
+
+### A6. Updated implementation checklist
+
+1. [ ] Create `src/prompt_logging.py` (as specified in plan, with amendments from A3 and A5)
+2. [ ] Modify `src/bdikit_context/context.py`:
+   - Replace `_log_prompt_config()` with `print_prompt_composition()`
+   - Remove `_system_prompt_logged` flag from `auto_context()`
+   - Add `register_prompt_json_logger()` call at end of `__init__()`
+3. [ ] Modify `src/code_context/context.py`:
+   - Add `print_prompt_composition()` and `register_prompt_json_logger()` calls to existing `__init__()`
+4. [ ] Modify `exec_apptainer_harmonia.sh`:
+   - Add `--env HARMONIA_RUN_ID=${RUN_ID}` and `--env HARMONIA_EXPERIMENT_NAME=${EXPERIMENT_NAME}` after line 863
+   - `RESULTS_DIR` already set — reuse it
+5. [ ] Test: Verify prompt appears in SLURM `.out` log
+6. [ ] Test: Verify `full_prompt_composition.json` appears in results dir
+7. [ ] Test: Verify the one-shot JSON behavior
