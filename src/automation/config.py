@@ -55,6 +55,20 @@ class EvaluationConfig:
 
 
 @dataclass
+class PromptsConfig:
+    """Configuration for custom prompt overrides per experiment.
+
+    All fields are optional. When None, the default prompts are used.
+    Paths can be absolute or relative to prompts_base_dir.
+    """
+    prompts_base_dir: Optional[str] = None
+    system_prompt_dir: Optional[str] = None
+    react_prelude: Optional[str] = None
+    code_context_prompt: Optional[str] = None
+    tool_prompts_dir: Optional[str] = None
+
+
+@dataclass
 class ExperimentConfig:
     """Complete experiment configuration."""
     name: str
@@ -64,6 +78,7 @@ class ExperimentConfig:
     output: OutputConfig = field(default_factory=OutputConfig)
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
+    prompts: PromptsConfig = field(default_factory=PromptsConfig)
     # Manual mode: if True, this config is for manual experiments (no automated messages)
     manual_mode: bool = False
     # Optional reference to dataset metadata
@@ -78,6 +93,7 @@ class ExperimentConfig:
         output_data = data.get("output", {})
         decision_data = data.get("decision_handling", {})
         evaluation_data = data.get("evaluation", {})
+        prompts_data = data.get("prompts", {})
 
         llm = LLMConfig(
             provider=llm_data.get("provider", "openai"),
@@ -121,6 +137,8 @@ class ExperimentConfig:
         # Determine manual mode: explicit flag or no messages defined
         manual_mode = exp.get("manual_mode", len(messages) == 0)
 
+        prompts = PromptsConfig(**prompts_data) if prompts_data else PromptsConfig()
+
         return cls(
             name=exp.get("name", "unnamed_experiment"),
             description=exp.get("description", ""),
@@ -129,6 +147,7 @@ class ExperimentConfig:
             output=output,
             decision_handling=decision,
             evaluation=evaluation,
+            prompts=prompts,
             manual_mode=manual_mode,
             dataset_metadata=exp.get("dataset_metadata"),
         )

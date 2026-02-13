@@ -15,7 +15,7 @@
 #       when a local LLM provider is detected (ollama, anyllm:ollama, etc.)
 # =============================================================================
 
-#SBATCH --job-name=harmonia_dou_harmonization_olmo3
+#SBATCH --job-name=harmonia_dou_harmonization_glm-4.7-flash
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
 #SBATCH --time=04:00:00
@@ -37,13 +37,13 @@ export RUN_ID
 
 # Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
-LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_olmo3_${SLURM_JOB_ID}_${RUN_ID}.out"
-LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_olmo3_${SLURM_JOB_ID}_${RUN_ID}.err"
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.7-flash_${SLURM_JOB_ID}_${RUN_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.7-flash_${SLURM_JOB_ID}_${RUN_ID}.err"
 mkdir -p logs
 exec > "$LOG_OUT" 2> "$LOG_ERR"
 
 echo "=============================================="
-echo "Harmonia Experiment (GPU): dou_harmonization_olmo3"
+echo "Harmonia Experiment (GPU): dou_harmonization_glm-4.7-flash"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
@@ -77,14 +77,14 @@ mkdir -p logs
 echo ""
 echo "Starting Beaker server on port $PORT..."
 echo "LLM Provider: ollama"
-echo "LLM Model: olmo-3:32b-think"
+echo "LLM Model: glm-4.7-flash:q8_0"
 echo ""
 
 # Start Beaker server via exec script (handles Ollama automatically)
 ./exec_apptainer_harmonia.sh \
     --port $PORT \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml \
-    --job-name "dou_harmonization_olmo3_${SLURM_JOB_ID}" \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.7-flash.yaml \
+    --job-name "dou_harmonization_glm-4.7-flash_${SLURM_JOB_ID}" \
     --run-id "$RUN_ID" &
 
 SERVER_PID=$!
@@ -127,7 +127,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml"
+echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.7-flash.yaml"
 echo ""
 
 # Get token from env file
@@ -135,7 +135,7 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.7-flash.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
     --timeout 300

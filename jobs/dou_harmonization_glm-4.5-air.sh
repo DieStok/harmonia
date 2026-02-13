@@ -29,10 +29,14 @@
 
 set -e
 
-# Redirect all output to date-stamped log files
+# Generate unique run ID for linking logs to results
+RUN_ID=$(python3 -c "import secrets; print(secrets.token_hex(4))")
+export RUN_ID
+
+# Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
-LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}.out"
-LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}.err"
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}_${RUN_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}_${RUN_ID}.err"
 mkdir -p logs
 exec > "$LOG_OUT" 2> "$LOG_ERR"
 
@@ -41,6 +45,7 @@ echo "Harmonia Experiment: dou_harmonization_glm-4.5-air"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
+echo "Run ID: $RUN_ID"
 echo "Node: $(hostname)"
 echo "Date: $(date)"
 echo ""
@@ -76,7 +81,8 @@ echo ""
 ./exec_apptainer_harmonia.sh \
     --port $PORT \
     --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.5-air.yaml \
-    --job-name "dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}" &
+    --job-name "dou_harmonization_glm-4.5-air_${SLURM_JOB_ID}" \
+    --run-id "$RUN_ID" &
 
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"

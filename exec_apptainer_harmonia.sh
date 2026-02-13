@@ -862,6 +862,30 @@ APPTAINER_CMD="$APPTAINER_CMD --env DATA_DIR=/workspace/data"
 APPTAINER_CMD="$APPTAINER_CMD --env RESULTS_DIR=/workspace/results"
 APPTAINER_CMD="$APPTAINER_CMD --env WORKSPACE_DIR=/workspace"
 
+# Bind custom prompt directories into the container (if configured)
+PROMPTS_DIR=$(grep "^HARMONIA_PROMPTS_DIR=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$PROMPTS_DIR" ] && [ -d "$PROMPTS_DIR" ]; then
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${PROMPTS_DIR}:${PROMPTS_DIR}:ro"
+    echo "📝 Custom system prompt dir: ${PROMPTS_DIR}"
+fi
+REACT_PRELUDE=$(grep "^HARMONIA_REACT_PRELUDE=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$REACT_PRELUDE" ] && [ -f "$REACT_PRELUDE" ]; then
+    PRELUDE_DIR=$(dirname "$REACT_PRELUDE")
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${PRELUDE_DIR}:${PRELUDE_DIR}:ro"
+    echo "📝 Custom ReAct prelude: ${REACT_PRELUDE}"
+fi
+CODE_CONTEXT_PROMPT=$(grep "^HARMONIA_CODE_CONTEXT_PROMPT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$CODE_CONTEXT_PROMPT" ] && [ -f "$CODE_CONTEXT_PROMPT" ]; then
+    CODE_PROMPT_DIR=$(dirname "$CODE_CONTEXT_PROMPT")
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${CODE_PROMPT_DIR}:${CODE_PROMPT_DIR}:ro"
+    echo "📝 Custom code context prompt: ${CODE_CONTEXT_PROMPT}"
+fi
+TOOL_PROMPTS_DIR=$(grep "^HARMONIA_TOOL_PROMPTS_DIR=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$TOOL_PROMPTS_DIR" ] && [ -d "$TOOL_PROMPTS_DIR" ]; then
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${TOOL_PROMPTS_DIR}:${TOOL_PROMPTS_DIR}:ro"
+    echo "📝 Custom tool prompts dir: ${TOOL_PROMPTS_DIR}"
+fi
+
 # Add Ollama environment variables if using local LLM
 if [ -n "$LLM_BASE_URL" ]; then
     APPTAINER_CMD="$APPTAINER_CMD --env LLM_BASE_URL=${LLM_BASE_URL}"

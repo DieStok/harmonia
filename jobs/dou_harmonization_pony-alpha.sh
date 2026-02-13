@@ -1,29 +1,27 @@
 #!/bin/bash
 # =============================================================================
-# Harmonia Experiment SBATCH Template - GPU with Local LLM (Ollama)
+# Harmonia Experiment SBATCH Template - CPU (Cloud LLM providers)
 # =============================================================================
-# This template is used by generate_jobs.py to create GPU job scripts.
+# This template is used by generate_jobs.py to create individual job scripts.
 # Variables in {{double_braces}} are replaced by the generator.
 #
 # Usage:
-#   sbatch jobs/experiment_ollama.sh
+#   sbatch jobs/experiment_gpt4o.sh
 #
 # Or generate jobs first:
-#   python generate_jobs.py --config experiments/configs/dou_harmonization_nemotron.yaml --gpu
+#   python generate_jobs.py --config experiments/configs/dou_harmonization.yaml
 #
-# Note: Ollama server is automatically started by exec_apptainer_harmonia.sh
-#       when a local LLM provider is detected (ollama, anyllm:ollama, etc.)
+# Note: For local LLM providers (ollama, anyllm:ollama), use sbatch_template_gpu.sh
+#       or exec_apptainer_harmonia.sh will auto-start Ollama on CPU nodes too.
 # =============================================================================
 
-#SBATCH --job-name=harmonia_dou_harmonization_olmo3
+#SBATCH --job-name=harmonia_dou_harmonization_pony-alpha
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
-#SBATCH --time=04:00:00
-#SBATCH --mem=64G
-#SBATCH --cpus-per-task=8
-#SBATCH --gres=tmpspace:60G
-#SBATCH --partition=gpu
-#SBATCH --gpus-per-node=1
+#SBATCH --time=01:00:00
+#SBATCH --mem=8G
+#SBATCH --cpus-per-task=2
+#SBATCH --gres=tmpspace:1G
 
 # =============================================================================
 # Environment Setup
@@ -37,13 +35,13 @@ export RUN_ID
 
 # Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
-LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_olmo3_${SLURM_JOB_ID}_${RUN_ID}.out"
-LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_olmo3_${SLURM_JOB_ID}_${RUN_ID}.err"
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_pony-alpha_${SLURM_JOB_ID}_${RUN_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_pony-alpha_${SLURM_JOB_ID}_${RUN_ID}.err"
 mkdir -p logs
 exec > "$LOG_OUT" 2> "$LOG_ERR"
 
 echo "=============================================="
-echo "Harmonia Experiment (GPU): dou_harmonization_olmo3"
+echo "Harmonia Experiment: dou_harmonization_pony-alpha"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
@@ -57,8 +55,7 @@ cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoke
 
 # Dynamic port based on job ID to avoid conflicts
 PORT=$((8100 + (SLURM_JOB_ID % 100)))
-OLLAMA_PORT=$((11434 + 1 + (SLURM_JOB_ID % 200)))
-echo "Using Beaker port: $PORT, Ollama port: $OLLAMA_PORT"
+echo "Using port: $PORT"
 
 # Create logs directory
 mkdir -p logs
@@ -76,19 +73,19 @@ mkdir -p logs
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: ollama"
-echo "LLM Model: olmo-3:32b-think"
+echo "LLM Provider: openrouter"
+echo "LLM Model: openrouter/pony-alpha"
 echo ""
 
-# Start Beaker server via exec script (handles Ollama automatically)
+# Start Beaker server via exec script (handles Ollama automatically if needed)
 ./exec_apptainer_harmonia.sh \
     --port $PORT \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml \
-    --job-name "dou_harmonization_olmo3_${SLURM_JOB_ID}" \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml \
+    --job-name "dou_harmonization_pony-alpha_${SLURM_JOB_ID}" \
     --run-id "$RUN_ID" &
 
 SERVER_PID=$!
-echo "Beaker Server PID: $SERVER_PID"
+echo "Server PID: $SERVER_PID"
 
 # Function to cleanup on exit
 cleanup() {
@@ -103,12 +100,12 @@ cleanup() {
 trap cleanup EXIT
 
 # Wait for server to be ready
-echo "Waiting for Beaker server to start..."
-MAX_WAIT=300  # 5 minutes - allows time for Ollama model loading + Beaker startup
+echo "Waiting for server to start..."
+MAX_WAIT=90  # Increased timeout for potential model loading
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then
-        echo "Beaker server is ready!"
+        echo "Server is ready!"
         break
     fi
     sleep 2
@@ -117,7 +114,7 @@ while [ $WAITED -lt $MAX_WAIT ]; do
 done
 
 if [ $WAITED -ge $MAX_WAIT ]; then
-    echo "ERROR: Beaker server failed to start within $MAX_WAIT seconds"
+    echo "ERROR: Server failed to start within $MAX_WAIT seconds"
     exit 1
 fi
 
@@ -127,7 +124,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml"
+echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml"
 echo ""
 
 # Get token from env file
@@ -135,7 +132,7 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
     --timeout 300

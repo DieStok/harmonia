@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -134,6 +135,34 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
         context_length = llm_config.get('context_length')
         if context_length is not None:
             env_content = update_env_value(env_content, 'OLLAMA_CONTEXT_LENGTH', str(context_length))
+
+    # Handle prompts configuration
+    prompts_config = config.get('prompts', {})
+    if prompts_config:
+        base_dir = prompts_config.get('prompts_base_dir', '')
+        # Resolve relative to config file location
+        if base_dir and not os.path.isabs(base_dir):
+            base_dir = str((config_path.parent / base_dir).resolve())
+
+        system_dir = prompts_config.get('system_prompt_dir', '')
+        if system_dir:
+            full_system_dir = str(Path(base_dir) / system_dir) if base_dir else str((config_path.parent / system_dir).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_PROMPTS_DIR', full_system_dir)
+
+        react_prelude = prompts_config.get('react_prelude', '')
+        if react_prelude:
+            full_react = str(Path(base_dir) / react_prelude) if base_dir else str((config_path.parent / react_prelude).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_REACT_PRELUDE', full_react)
+
+        code_context_prompt = prompts_config.get('code_context_prompt', '')
+        if code_context_prompt:
+            full_code = str(Path(base_dir) / code_context_prompt) if base_dir else str((config_path.parent / code_context_prompt).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_CODE_CONTEXT_PROMPT', full_code)
+
+        tool_prompts_dir = prompts_config.get('tool_prompts_dir', '')
+        if tool_prompts_dir:
+            full_tools = str(Path(base_dir) / tool_prompts_dir) if base_dir else str((config_path.parent / tool_prompts_dir).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_TOOL_PROMPTS_DIR', full_tools)
 
     # Determine output path
     if output_dir is None:
