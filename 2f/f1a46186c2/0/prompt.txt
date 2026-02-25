@@ -1,0 +1,22 @@
+Given the most recent run logs here:
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/logs
+And the tool here: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py
+
+Please categorize what went wrong and report back to me. I am interested in a bullet point list of the different types of errors, and also specifically a more in-depth response and investigation on the subject of errors where context size was exceeded. Be thorough and comprehensive. 
+
+Report back with a clear message to me here.
+
+---
+
+Could you output this analysis into /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/miscellaneous/DATE_TIME_analysis_log_errors.md 
+
+and then edit /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/code_development_tools_agents/monitoring_and_evaluation/types_of_log_and_trace_problems.yaml to make sure it captures the specific categories of errors you have mentioned here that are not yet in there
+
+and then discuss with me further on a plan to fix the issues with context_size (issue 1 and 2 above) --> reiterate findings and make clear step-by-step approaches for fixing these issues, while thinking about how to implement this cleanly (there are many approaches for cutting context, like cutting out the middle or summarizing the entire window (compaction)), should we make a separate module for this or?
+Also: I thought Archytas auto-summarized. Is it just that the GDC schema is FULLY LOADED which is insane, and how does that work, and what could we do about it?
+
+First, make the two edits I ask, then lay out the plan and discuss with me WITHOUT editing further.
+
+---
+
+Before we move on: could you commit just the edited .yaml file and the analysis of errors.md file?
