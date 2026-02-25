@@ -85,6 +85,14 @@ From: python:3.11
     TMPDIR=/var/tmp uv pip install --system --no-cache "beaker_kernel>=1.14.0"
 
     # --------------------------------------------------------------------------
+    # Install litellm (unified LLM provider library, also used by bdi-kit)
+    # --------------------------------------------------------------------------
+    # Must be installed before bdikit_context because the hatch build hook
+    # imports all modules during build, and litellm_model.py imports litellm.
+    echo "Installing litellm..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache litellm
+
+    # --------------------------------------------------------------------------
     # Install additional dependencies for archytas
     # --------------------------------------------------------------------------
     # These are needed for message conversion and tool handling
