@@ -3,14 +3,24 @@
   "checkpoint_id": "191dc10cad24",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 4,
+  "checkpoints_count": 5,
   "files_touched": [
     ".gitignore",
+    "documentation/codebase_descriptions/how_this_codebase_works_25_02_2026.md",
     "documentation/full_conversations/27_01_2026_1409_92bb2de3.md",
     "documentation/full_conversations/README.md",
     "documentation/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md",
     "documentation/possible_features/25_02_2026_1942_platform_comparison_beaker_streamlit_openwebui_for_codeact_and_recursive_agents.md",
-    "experiments/experiment_1_harmonia_dou2020_gdc/prompts/codeact_prompts/v1_harmonization/prompt.txt"
+    "exec_apptainer_harmonia.sh",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/prompts/codeact_prompts/v1_harmonization/prompt.txt",
+    "generate_env.py",
+    "run_experiment.py",
+    "src/automation/client.py",
+    "src/automation/config.py",
+    "src/codeact_context/__init__.py",
+    "src/codeact_context/agent.py",
+    "src/codeact_context/context.py"
   ],
   "sessions": [
     {
@@ -26,13 +36,20 @@
       "context": "/19/1dc10cad24/1/context.md",
       "content_hash": "/19/1dc10cad24/1/content_hash.txt",
       "prompt": "/19/1dc10cad24/1/prompt.txt"
+    },
+    {
+      "metadata": "/19/1dc10cad24/2/metadata.json",
+      "transcript": "/19/1dc10cad24/2/full.jsonl",
+      "context": "/19/1dc10cad24/2/context.md",
+      "content_hash": "/19/1dc10cad24/2/content_hash.txt",
+      "prompt": "/19/1dc10cad24/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1228,
-    "cache_creation_tokens": 431999,
-    "cache_read_tokens": 13679344,
-    "output_tokens": 1593,
-    "api_call_count": 164
+    "input_tokens": 8780,
+    "cache_creation_tokens": 685222,
+    "cache_read_tokens": 20543927,
+    "output_tokens": 2348,
+    "api_call_count": 234
   }
 }
