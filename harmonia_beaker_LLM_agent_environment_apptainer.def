@@ -110,7 +110,7 @@ From: python:3.11
     # Verify installations
     # --------------------------------------------------------------------------
     # Set PYTHONPATH for verification (prompt_logging.py lives in /jupyter/src/)
-    export PYTHONPATH=/jupyter
+    export PYTHONPATH=/jupyter:/jupyter/src
 
     echo "=== Verifying bdikit_context installation ==="
     python3 -c "from bdikit_context.context import BDIKitContext; print('BDIKitContext imported successfully')"
@@ -176,7 +176,7 @@ EOF
     echo "=============================================="
 
 %environment
-    export PYTHONPATH=/jupyter
+    export PYTHONPATH=/jupyter:/jupyter/src
     # Ensure SSL certificates are available for API calls
     export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
     export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
