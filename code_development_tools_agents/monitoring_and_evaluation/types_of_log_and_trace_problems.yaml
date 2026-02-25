@@ -1,8 +1,8 @@
 # =============================================================================
 # Harmonia Experiment Failure Mode Taxonomy
 # =============================================================================
-# Schema version: 1.0
-# Date: 11 February 2026
+# Schema version: 1.1
+# Date: 25 February 2026 (added 2F: Model Pre-load Timeout, 3H: Ollama Silent Context Truncation)
 #
 # This file defines the problem classes that the CLI log/trace analysis tool
 # uses to categorize experiment failures. Each problem class has:
@@ -25,7 +25,7 @@
 # See also: documentation/processes/11_02_2026_interpreting_logs_and_traces.md
 # =============================================================================
 
-schema_version: "1.0"
+schema_version: "1.1"
 
 problem_classes:
 
@@ -271,6 +271,56 @@ problem_classes:
       - "Add rate limiting: implement configurable delay between turns (3-5s for free models at 20 req/min)"
       - "Implement retry with backoff: parse X-RateLimit-Reset header and wait before retrying"
       - "Use paid tier: paid OpenRouter plans have significantly higher rate limits"
+
+  - id: "2F"
+    category: "model_config"
+    name: "Model Pre-load Timeout (Beaker Never Started)"
+    description: |
+      The Ollama model pre-loading step in exec_apptainer_harmonia.sh exceeds the
+      MAX_WAIT timeout (default 300s). The pre-load curl to /api/generate blocks
+      while Ollama loads the model into GPU/CPU memory and runs a warm-up inference.
+      Beaker never starts because the script is still waiting on the pre-load.
+      The sbatch wrapper's readiness poll gives up and kills everything.
+
+      Three root causes observed:
+      1. Model saturates GPU VRAM (e.g., 24 GB model on 24 GB GPU) causing
+         partial CPU offload and extremely slow loading.
+      2. Very large model file (e.g., 31 GB Q8_0) takes too long to read from
+         NFS and load into GPU memory, even with sufficient VRAM.
+      3. GPU contention: two SLURM GPU jobs land on the same node/GPU, and the
+         first model to load consumes all VRAM, starving the second.
+
+      Distinguishing signature: SLURM .out log contains "Pre-loading model: <name>"
+      but never "Model preloaded successfully". No results directory is created.
+      No trace.json exists. The ollama log shows model loading started but never
+      completed.
+    severity: "critical"
+    detection:
+      log_keywords:
+        - "Pre-loading model"
+      log_regex:
+        - "Pre-loading model:.*"
+      trace_keywords: []
+      trace_regex: []
+      # COMPOUND LOGIC (not yet implemented):
+      #   1. Log contains "Pre-loading model:" but NOT "Model preloaded successfully"
+      #   2. No results directory exists for this run
+      #   3. No trace.json found
+    example:
+      source: "log"
+      snippet: |
+        GPU 0: Tesla V100-PCIE-16GB (UUID: GPU-...)
+        Starting Ollama server on port 11434 ...
+        Ollama server is ready
+        Pre-loading model: nemotron-3-nano:30b
+        [300 seconds pass, no further output]
+        Timeout waiting for Beaker to start
+    remediation:
+      - "Increase MAX_WAIT from 300s to 600s in sbatch template for larger models (30B+ or Q8_0)"
+      - "Match model size to GPU VRAM: avoid loading models that saturate available VRAM (leave 2-4 GB headroom)"
+      - "Prevent GPU contention: use SLURM --exclusive or --gres=gpu:1 to ensure single-tenant GPU allocation"
+      - "Pre-pull models to local scratch before job starts to avoid NFS bottleneck during loading"
+      - "Use smaller quantizations (Q4_K_M instead of Q8_0) for models that are borderline for the GPU"
 
   # ===========================================================================
   # Category 3: LLM Behavioral Failures
@@ -559,6 +609,47 @@ problem_classes:
       - "Fix the archytas/toki error handling layer to surface errors in agent_response instead of returning empty"
       - "Add response validation in run_experiment.py: abort or retry if agent_response is empty"
       - "Log empty responses as explicit warnings in the experiment output"
+
+  - id: "3H"
+    category: "llm_behavioral"
+    name: "Ollama Silent Context Truncation (num_ctx Mismatch)"
+    description: |
+      Ollama silently truncates the input prompt to its default num_ctx=4096
+      tokens because Beaker/Archytas does not pass the num_ctx parameter on
+      /api/chat calls. The OLLAMA_CONTEXT_LENGTH setting in .env is only applied
+      during the initial model pre-load (/api/generate), not during subsequent
+      chat requests.
+
+      This is a SILENT degradation — Ollama still produces output, but the model
+      loses earlier conversation history. The only evidence is a WARN-level log
+      line in the Ollama log file. The experiment appears to succeed but output
+      quality is degraded because the model lacks context from prior turns.
+
+      Severity ranges from minor (devstral overflows by ~300 tokens, losing a
+      small prefix) to catastrophic (qwen3-coder overflows by 688,358 tokens,
+      meaning 99.4% of the prompt is discarded).
+
+      Distinguishing signature: Ollama log contains "truncating input prompt"
+      with limit=4096 and prompt > 4096. The experiment continues normally
+      (no errors in trace.json or SLURM logs).
+    severity: "warning"
+    detection:
+      log_keywords:
+        - "truncating input prompt"
+      log_regex:
+        - "truncating input prompt.*limit=\\d+.*prompt=\\d+"
+      trace_keywords: []
+      trace_regex: []
+    example:
+      source: "log"
+      snippet: |
+        time=2026-02-10T21:08:41.096+01:00 level=WARN source=runner.go:153
+        msg="truncating input prompt" limit=4096 prompt=4200 keep=5 new=4096
+    remediation:
+      - "Pass num_ctx in every /api/chat call: modify the Archytas Ollama model adapter to include num_ctx in request options"
+      - "Set OLLAMA_NUM_CTX=64000 as an Ollama server environment variable (applies globally to all /api/chat calls)"
+      - "Bake num_ctx into the Modelfile: add 'PARAMETER num_ctx 64000' to each model's Modelfile"
+      - "Add Ollama log monitoring: parse Ollama logs for 'truncating input prompt' warnings and flag in experiment results"
 
   # ===========================================================================
   # Category 4: Data / Configuration Path Errors
