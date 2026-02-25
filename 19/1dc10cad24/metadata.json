@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "191dc10cad24",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "documentation/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md",
+    "documentation/possible_features/25_02_2026_1942_platform_comparison_beaker_streamlit_openwebui_for_codeact_and_recursive_agents.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/19/1dc10cad24/0/metadata.json",
+      "transcript": "/19/1dc10cad24/0/full.jsonl",
+      "context": "/19/1dc10cad24/0/context.md",
+      "content_hash": "/19/1dc10cad24/0/content_hash.txt",
+      "prompt": "/19/1dc10cad24/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 142,
+    "cache_creation_tokens": 323885,
+    "cache_read_tokens": 8803123,
+    "output_tokens": 997,
+    "api_call_count": 92
+  }
+}
