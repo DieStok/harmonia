@@ -109,6 +109,9 @@ From: python:3.11
     # --------------------------------------------------------------------------
     # Verify installations
     # --------------------------------------------------------------------------
+    # Set PYTHONPATH for verification (prompt_logging.py lives in /jupyter/src/)
+    export PYTHONPATH=/jupyter
+
     echo "=== Verifying bdikit_context installation ==="
     python3 -c "from bdikit_context.context import BDIKitContext; print('BDIKitContext imported successfully')"
     python3 -c "from bdikit_context.agent import BDIKitAgent; print('BDIKitAgent imported successfully')"
