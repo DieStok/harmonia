@@ -11,6 +11,16 @@ llm:
   base_url: http://localhost:11434
   temperature: 0.0
   context_length: 64000
+# bdi-kit internal LLM configuration for schema/value matching.
+# These default to the top-level llm.model if not specified.
+# Set explicitly here so each config documents which LLM bdi-kit uses internally.
+bdikit_models:
+  instance_matching_llm: olmo-3:32b-think
+  numeric_instance_matching_llm: olmo-3:32b-think
+  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
+  schema_matching_llm: olmo-3:32b-think
+  magneto_zero_shot_schema_matching_llm: olmo-3:32b-think
+  magneto_fine_tuned_schema_matching_llm: olmo-3:32b-think
 messages:
 - content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
     and subset it to the following columns:

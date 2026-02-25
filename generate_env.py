@@ -56,15 +56,22 @@ def get_provider_import_path(provider: str) -> str:
         'ollama': 'archytas.models.ollama.OllamaModel',
         'groq': 'archytas.models.groq.GroqModel',
         'gemini': 'archytas.models.gemini.GeminiModel',
-        # anyllm providers use a custom path
-        'anyllm:openrouter': 'bdikit_context.llm.anyllm.AnyLLMModel',
-        'anyllm:ollama': 'bdikit_context.llm.anyllm.AnyLLMModel',
-        'anyllm:openai': 'bdikit_context.llm.anyllm.AnyLLMModel',
-        'anyllm:anthropic': 'bdikit_context.llm.anyllm.AnyLLMModel',
-        'anyllm:groq': 'bdikit_context.llm.anyllm.AnyLLMModel',
-        'anyllm:gemini': 'bdikit_context.llm.anyllm.AnyLLMModel',
+        # litellm providers (preferred)
+        'litellm:openrouter': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'litellm:ollama': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'litellm:openai': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'litellm:anthropic': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'litellm:groq': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'litellm:gemini': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        # Backwards compatibility: anyllm: prefix maps to litellm
+        'anyllm:openrouter': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'anyllm:ollama': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'anyllm:openai': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'anyllm:anthropic': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'anyllm:groq': 'bdikit_context.llm.litellm_model.LiteLLMModel',
+        'anyllm:gemini': 'bdikit_context.llm.litellm_model.LiteLLMModel',
     }
-    return provider_map.get(provider, 'bdikit_context.llm.anyllm.AnyLLMModel')
+    return provider_map.get(provider, 'bdikit_context.llm.litellm_model.LiteLLMModel')
 
 
 def get_api_key_for_provider(provider: str, env_content: str) -> str:
@@ -163,6 +170,21 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
         if tool_prompts_dir:
             full_tools = str(Path(base_dir) / tool_prompts_dir) if base_dir else str((config_path.parent / tool_prompts_dir).resolve())
             env_content = update_env_value(env_content, 'HARMONIA_TOOL_PROMPTS_DIR', full_tools)
+
+    # Handle bdikit_models configuration (LLMs used by bdi-kit for schema/value matching)
+    bdikit_models = config.get('bdikit_models', {})
+    bdikit_model_vars = {
+        'instance_matching_llm': 'HARMONIA_LLM_FOR_INSTANCE_MATCHING',
+        'numeric_instance_matching_llm': 'HARMONIA_LLM_FOR_NUMERIC_INSTANCE_MATCHING',
+        'embedding_model_for_instance_matching': 'HARMONIA_EMBEDDING_MODEL_FOR_INSTANCE_MATCHING',
+        'schema_matching_llm': 'HARMONIA_LLM_FOR_SCHEMA_MATCHING',
+        'magneto_zero_shot_schema_matching_llm': 'HARMONIA_LLM_FOR_MAGNETO_ZERO_SHOT_SCHEMA_MATCHING',
+        'magneto_fine_tuned_schema_matching_llm': 'HARMONIA_LLM_FOR_MAGNETO_FINE_TUNED_SCHEMA_MATCHING',
+    }
+    for yaml_key, env_var in bdikit_model_vars.items():
+        value = bdikit_models.get(yaml_key)
+        if value:
+            env_content = update_env_value(env_content, env_var, value)
 
     # Determine output path
     if output_dir is None:

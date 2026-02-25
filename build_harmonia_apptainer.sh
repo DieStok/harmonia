@@ -4,7 +4,7 @@
 # =============================================================================
 #
 # This script builds the harmonia_beaker_LLM_agent_environment_apptainer.sif
-# container image with full any-llm-sdk support for unified LLM provider access.
+# container image with litellm support for unified LLM provider access.
 #
 # Usage:
 #   # Interactive build (recommended for first time/debugging)
@@ -177,8 +177,8 @@ du -sh $SANDBOX_DIR
 echo ""
 
 echo "Testing key imports in sandbox..."
-apptainer exec $SANDBOX_DIR python3 -c "from bdikit_context.llm.anyllm import AnyLLMModel; print('AnyLLMModel: OK')" || echo "FAILED: AnyLLMModel import"
-apptainer exec $SANDBOX_DIR python3 -c "from any_llm import AnyLLM; print('AnyLLM: OK')" || echo "FAILED: AnyLLM import"
+apptainer exec $SANDBOX_DIR python3 -c "from bdikit_context.llm.litellm_model import LiteLLMModel; print('LiteLLMModel: OK')" || echo "FAILED: LiteLLMModel import"
+apptainer exec $SANDBOX_DIR python3 -c "import litellm; print('litellm: OK')" || echo "FAILED: litellm import"
 apptainer exec $SANDBOX_DIR python3 -c "from bdikit_context.context import BDIKitContext; print('BDIKitContext: OK')" || echo "FAILED: BDIKitContext import"
 echo ""
 
@@ -196,8 +196,8 @@ echo "Testing SIF image..."
 
 apptainer exec $SIF_FILE /bin/sh -c "echo 'Shell works'"
 apptainer exec $SIF_FILE python --version && echo "Python works"
-apptainer exec $SIF_FILE python -c "from bdikit_context.llm.anyllm import AnyLLMModel; print('AnyLLMModel import: OK')"
-apptainer exec $SIF_FILE python -c "from any_llm import AnyLLM; print('AnyLLM import: OK')"
+apptainer exec $SIF_FILE python -c "from bdikit_context.llm.litellm_model import LiteLLMModel; print('LiteLLMModel import: OK')"
+apptainer exec $SIF_FILE python -c "import litellm; print('litellm import: OK')"
 
 echo ""
 echo "Final image size:"

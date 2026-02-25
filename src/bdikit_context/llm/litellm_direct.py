@@ -1,5 +1,5 @@
 """
-Direct LLM experiment runner using any-llm.
+Direct LLM experiment runner using litellm.
 
 This module provides a simple way to run LLM experiments without the
 Beaker/Archytas agent framework. Useful for:
@@ -7,15 +7,18 @@ Beaker/Archytas agent framework. Useful for:
 - Comparing LLM outputs across providers
 - Code-only agents (no predefined tool schemas)
 - Quick testing without Beaker server overhead
+
+Replaces the previous any-llm-based direct.py.
 """
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, AsyncIterator, Optional
 from datetime import datetime
 
-from any_llm import AnyLLM
-from any_llm.types.completion import ChatCompletion, ChatCompletionChunk
+import litellm
+
+from .litellm_model import LITELLM_PROVIDER_PREFIX
 
 
 @dataclass
@@ -40,12 +43,12 @@ class DirectLLMResult:
     completion_tokens: int = 0
     total_tokens: int = 0
     duration_seconds: float = 0.0
-    raw_response: Optional[ChatCompletion] = None
+    raw_response: Optional[Any] = None
 
 
-class DirectLLMRunner:
+class DirectLiteLLMRunner:
     """
-    Run LLM experiments directly using any-llm without Beaker overhead.
+    Run LLM experiments directly using litellm without Beaker overhead.
 
     This is useful for:
     - Simple prompt->response experiments
@@ -53,7 +56,7 @@ class DirectLLMRunner:
     - Code-only agents without predefined tools
 
     Example:
-        runner = DirectLLMRunner(
+        runner = DirectLiteLLMRunner(
             provider="ollama",
             model="devstral:latest",
             api_base="http://localhost:11434"
@@ -89,11 +92,14 @@ class DirectLLMRunner:
             max_tokens=max_tokens,
             system_prompt=system_prompt,
         )
-        self._client = AnyLLM.create(
-            provider,
-            api_key=api_key,
-            api_base=api_base,
-        )
+        self._litellm_model = self._build_model_string()
+
+    def _build_model_string(self) -> str:
+        """Build litellm model string from provider + model."""
+        prefix = LITELLM_PROVIDER_PREFIX.get(self.config.provider)
+        if prefix is None:
+            return self.config.model
+        return f"{prefix}/{self.config.model}"
 
     def _build_messages(
         self,
@@ -112,6 +118,21 @@ class DirectLLMRunner:
         messages.append({"role": "user", "content": prompt})
         return messages
 
+    def _build_completion_kwargs(self, **kwargs) -> dict:
+        """Build kwargs dict for litellm.acompletion."""
+        completion_kwargs = {
+            "model": self._litellm_model,
+            "temperature": kwargs.get("temperature", self.config.temperature),
+            "max_tokens": kwargs.get("max_tokens", self.config.max_tokens),
+        }
+
+        if self.config.api_key:
+            completion_kwargs["api_key"] = self.config.api_key
+        if self.config.api_base:
+            completion_kwargs["api_base"] = self.config.api_base
+
+        return completion_kwargs
+
     async def complete(
         self,
         prompt: str,
@@ -124,7 +145,7 @@ class DirectLLMRunner:
         Args:
             prompt: The user prompt
             conversation_history: Optional list of previous messages
-            **kwargs: Additional arguments passed to any-llm
+            **kwargs: Additional arguments (temperature, max_tokens)
 
         Returns:
             DirectLLMResult with the response
@@ -132,14 +153,11 @@ class DirectLLMRunner:
         start_time = datetime.now()
         messages = self._build_messages(prompt, conversation_history)
 
-        response = await self._client.acompletion(
-            model=self.config.model,
-            messages=messages,
-            temperature=kwargs.get("temperature", self.config.temperature),
-            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
-            stream=False,
-            **{k: v for k, v in kwargs.items() if k not in ("temperature", "max_tokens")}
-        )
+        completion_kwargs = self._build_completion_kwargs(**kwargs)
+        completion_kwargs["messages"] = messages
+        completion_kwargs["stream"] = False
+
+        response = await litellm.acompletion(**completion_kwargs)
 
         duration = (datetime.now() - start_time).total_seconds()
 
@@ -168,14 +186,11 @@ class DirectLLMRunner:
         """
         messages = self._build_messages(prompt, conversation_history)
 
-        response = await self._client.acompletion(
-            model=self.config.model,
-            messages=messages,
-            temperature=kwargs.get("temperature", self.config.temperature),
-            max_tokens=kwargs.get("max_tokens", self.config.max_tokens),
-            stream=True,
-            **{k: v for k, v in kwargs.items() if k not in ("temperature", "max_tokens")}
-        )
+        completion_kwargs = self._build_completion_kwargs(**kwargs)
+        completion_kwargs["messages"] = messages
+        completion_kwargs["stream"] = True
+
+        response = await litellm.acompletion(**completion_kwargs)
 
         async for chunk in response:
             if chunk.choices[0].delta.content:
@@ -200,7 +215,7 @@ class DirectLLMRunner:
 
         Args:
             prompts: List of user prompts to send in sequence
-            **kwargs: Additional arguments passed to any-llm
+            **kwargs: Additional arguments passed to complete()
 
         Returns:
             List of DirectLLMResult for each turn
@@ -237,7 +252,7 @@ async def quick_complete(
         )
         print(result)
     """
-    runner = DirectLLMRunner(provider=provider, model=model, **kwargs)
+    runner = DirectLiteLLMRunner(provider=provider, model=model, **kwargs)
     result = await runner.complete(prompt)
     return result.content
 

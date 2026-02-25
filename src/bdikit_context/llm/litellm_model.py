@@ -1,11 +1,15 @@
 """
-any-llm adapter for Archytas/Beaker integration.
+litellm adapter for Archytas/Beaker integration.
 
-This module provides an Archytas-compatible model that uses the any-llm library
-for LLM communication, enabling support for 30+ providers with a unified interface.
+This module provides an Archytas-compatible model that uses the litellm library
+for LLM communication, enabling support for 100+ providers with a unified interface.
+
+Replaces the previous any-llm adapter (anyllm.py) with a single dependency that
+is also used internally by bdi-kit for schema/value matching.
 
 Usage:
-    Set LLM_SERVICE_PROVIDER to "anyllm:ollama", "anyllm:openai", etc.
+    Set LLM_SERVICE_PROVIDER to "litellm:ollama", "litellm:openai", etc.
+    (or "anyllm:ollama" etc. for backwards compatibility)
     The adapter will be automatically loaded by Beaker via LLM_PROVIDER_IMPORT_PATH.
 """
 
@@ -23,8 +27,8 @@ from langchain_core.messages import (
     ToolCall as LangChainToolCall, ToolMessage
 )
 
-from any_llm import AnyLLM
-from any_llm.types.completion import ChatCompletion
+import litellm
+from litellm import acompletion, token_counter
 
 logger = logging.getLogger(__name__)
 
@@ -48,31 +52,30 @@ PROVIDER_API_KEY_ENV = {
     "fireworks": "FIREWORKS_API_KEY",
 }
 
-# Default context sizes for common providers/models
-CONTEXT_SIZES = {
-    "gpt-4": 128000,
-    "gpt-4o": 128000,
-    "gpt-4o-mini": 128000,
-    "gpt-3.5-turbo": 16385,
-    "claude-3-opus": 200000,
-    "claude-3-sonnet": 200000,
-    "claude-3-haiku": 200000,
-    "claude-sonnet-4-5": 200000,
-    "claude-opus-4": 200000,
-    "mistral-small": 32000,
-    "mistral-large": 128000,
-    "llama3": 8192,
-    "llama3.1": 128000,
-    "llama3.2": 128000,
-    "devstral": 128000,
-    "devstral-small": 128000,
-    "qwen": 32000,
-    "deepseek": 64000,
+# litellm provider prefix mapping
+# Maps Harmonia provider names to litellm model string prefixes
+# See: https://docs.litellm.ai/docs/providers
+LITELLM_PROVIDER_PREFIX = {
+    "ollama": "ollama_chat",    # ollama_chat/ for chat completions
+    "openai": None,             # No prefix needed for OpenAI
+    "openrouter": "openrouter",
+    "anthropic": "anthropic",
+    "azure": "azure",
+    "azureopenai": "azure",
+    "bedrock": "bedrock",
+    "gemini": "gemini",
+    "groq": "groq",
+    "mistral": "mistral",
+    "together": "together_ai",
+    "perplexity": "perplexity",
+    "cohere": "cohere_chat",
+    "deepseek": "deepseek",
+    "fireworks": "fireworks_ai",
 }
 
 
 def to_langchain_tool_call(tool_call: dict) -> LangChainToolCall:
-    """Convert any-llm/OpenAI tool call to LangChain format."""
+    """Convert litellm/OpenAI tool call to LangChain format."""
     return LangChainToolCall(
         name=tool_call['function']['name'],
         args=json.loads(tool_call['function']['arguments'] or '{}'),
@@ -81,8 +84,8 @@ def to_langchain_tool_call(tool_call: dict) -> LangChainToolCall:
     )
 
 
-def to_anyllm_tool_call(tool_call: LangChainToolCall) -> dict:
-    """Convert LangChain tool call to any-llm/OpenAI format."""
+def to_openai_tool_call(tool_call: LangChainToolCall) -> dict:
+    """Convert LangChain tool call to OpenAI format (used by litellm)."""
     return {
         "id": tool_call.get('id', ''),
         "type": "function",
@@ -93,13 +96,13 @@ def to_anyllm_tool_call(tool_call: LangChainToolCall) -> dict:
     }
 
 
-class ChatAnyLLM:
+class ChatLiteLLM:
     """
     Minimal adapter that emulates a LangChain-like chat model interface
-    over any-llm's unified API.
+    over litellm's unified API.
 
     This class provides the interface expected by Archytas (invoke, ainvoke,
-    bind_tools, get_num_tokens_from_messages) while using any-llm for the
+    bind_tools, get_num_tokens_from_messages) while using litellm for the
     actual LLM communication.
     """
 
@@ -122,15 +125,31 @@ class ChatAnyLLM:
         self._tools: Optional[Sequence[Any]] = None
         self._tool_schemas: Optional[list[dict]] = None
 
-        # Create any-llm client
-        logger.info(f"Creating any-llm client: provider={provider}, model={model}, api_base={api_base}")
-        self._client = AnyLLM.create(
-            provider,
-            api_key=api_key,
-            api_base=api_base,
-        )
+        # Construct litellm model string
+        self._litellm_model = self._build_model_string()
+        logger.info(f"Creating ChatLiteLLM: provider={provider}, model={model}, "
+                     f"litellm_model={self._litellm_model}, api_base={api_base}")
 
-    def bind_tools(self, tools: Sequence[Any]) -> "ChatAnyLLM":
+    def _build_model_string(self) -> str:
+        """
+        Build litellm model string from provider + model.
+
+        litellm uses a "provider/model" format. See:
+        https://docs.litellm.ai/docs/providers
+
+        Examples:
+            ollama + devstral:latest -> ollama_chat/devstral:latest
+            openai + gpt-4o -> gpt-4o
+            openrouter + mistralai/devstral -> openrouter/mistralai/devstral
+            anthropic + claude-sonnet-4-5-20250929 -> anthropic/claude-sonnet-4-5-20250929
+        """
+        prefix = LITELLM_PROVIDER_PREFIX.get(self.provider)
+        if prefix is None:
+            # No prefix needed (e.g., OpenAI)
+            return self.model
+        return f"{prefix}/{self.model}"
+
+    def bind_tools(self, tools: Sequence[Any]) -> "ChatLiteLLM":
         """Bind LangChain StructuredTools to the model for tool calling."""
         self._tools = tools
         self._tool_schemas = []
@@ -155,7 +174,7 @@ class ChatAnyLLM:
         return self
 
     def _convert_messages(self, messages: list[BaseMessage]) -> list[dict[str, Any]]:
-        """Convert LangChain messages to any-llm/OpenAI format."""
+        """Convert LangChain messages to OpenAI/litellm format."""
 
         def serialize_content(content: Any) -> str:
             if isinstance(content, str):
@@ -182,7 +201,7 @@ class ChatAnyLLM:
                     converted.append({
                         "role": "assistant",
                         "content": content,
-                        "tool_calls": [to_anyllm_tool_call(tc) for tc in tool_calls]
+                        "tool_calls": [to_openai_tool_call(tc) for tc in tool_calls]
                     })
                 else:
                     converted.append({"role": "assistant", "content": content})
@@ -201,8 +220,8 @@ class ChatAnyLLM:
 
         return converted
 
-    def _convert_response(self, response: ChatCompletion) -> AIMessage:
-        """Convert any-llm response to LangChain AIMessage."""
+    def _convert_response(self, response: litellm.ModelResponse) -> AIMessage:
+        """Convert litellm response to LangChain AIMessage."""
         choice = response.choices[0]
         message = choice.message
 
@@ -248,19 +267,33 @@ class ChatAnyLLM:
             return future.result()
 
     async def ainvoke(self, input: list[BaseMessage], *args, **kwargs) -> AIMessage:
-        """Async completion using any-llm."""
+        """Async completion using litellm."""
         messages = self._convert_messages(input)
 
-        logger.debug(f"Calling any-llm acompletion: model={self.model}, messages={len(messages)}")
+        logger.debug(f"Calling litellm acompletion: model={self._litellm_model}, messages={len(messages)}")
 
-        response = await self._client.acompletion(
-            model=self.model,
-            messages=messages,
-            tools=self._tool_schemas,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-            stream=False,
-        )
+        # Build kwargs for litellm.acompletion
+        completion_kwargs = {
+            "model": self._litellm_model,
+            "messages": messages,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
+            "stream": False,
+        }
+
+        # Only pass tools if we have them
+        if self._tool_schemas:
+            completion_kwargs["tools"] = self._tool_schemas
+
+        # Only pass api_key if we have one
+        if self.api_key:
+            completion_kwargs["api_key"] = self.api_key
+
+        # Only pass api_base if we have one
+        if self.api_base:
+            completion_kwargs["api_base"] = self.api_base
+
+        response = await acompletion(**completion_kwargs)
 
         result = self._convert_response(response)
         logger.debug(f"Response: content_len={len(result.content)}, tool_calls={len(result.tool_calls)}")
@@ -274,39 +307,43 @@ class ChatAnyLLM:
         tools: Optional[Sequence[Any]] = None
     ) -> int:
         """
-        Estimate token count.
+        Estimate token count using litellm's model-specific token counter.
 
-        Note: any-llm doesn't provide built-in token counting.
-        This uses a rough character-based estimate (~4 chars per token).
-        For more accurate counting, consider using tiktoken for OpenAI models.
+        Falls back to rough character-based estimate if litellm can't count
+        tokens for this model.
         """
-        total_chars = 0
-        for msg in messages:
-            if isinstance(msg.content, str):
-                total_chars += len(msg.content)
-            elif isinstance(msg.content, list):
-                for item in msg.content:
-                    if isinstance(item, dict) and 'text' in item:
-                        total_chars += len(item['text'])
+        try:
+            converted = self._convert_messages(messages)
+            return token_counter(model=self._litellm_model, messages=converted)
+        except Exception:
+            # Fallback: rough estimate (~4 chars per token)
+            total_chars = 0
+            for msg in messages:
+                if isinstance(msg.content, str):
+                    total_chars += len(msg.content)
+                elif isinstance(msg.content, list):
+                    for item in msg.content:
+                        if isinstance(item, dict) and 'text' in item:
+                            total_chars += len(item['text'])
 
-        if tools:
-            for tool in tools:
-                total_chars += len(str(getattr(tool, 'description', '')))
+            if tools:
+                for tool in tools:
+                    total_chars += len(str(getattr(tool, 'description', '')))
 
-        return total_chars // 4
+            return total_chars // 4
 
 
-class AnyLLMModel(BaseArchytasModel):
+class LiteLLMModel(BaseArchytasModel):
     """
-    Archytas model backend using any-llm library for unified LLM access.
+    Archytas model backend using litellm library for unified LLM access.
 
-    Supports 30+ providers including:
+    Supports 100+ providers including:
     - Local: Ollama, LMStudio, vLLM, LlamaFile
     - Cloud: OpenAI, Anthropic, Mistral, Groq, Together, Perplexity, DeepSeek
     - Gateway: OpenRouter, Azure, Bedrock, VertexAI
 
     Configuration via environment variables:
-    - LLM_SERVICE_PROVIDER: Provider name (e.g., "ollama", "openai", "anyllm:ollama")
+    - LLM_SERVICE_PROVIDER: Provider name (e.g., "ollama", "openai", "litellm:ollama")
     - LLM_SERVICE_MODEL: Model name (e.g., "devstral:latest", "gpt-4o")
     - LLM_BASE_URL: Custom API endpoint (for Ollama, proxies)
     - LLM_SERVICE_TOKEN: API key (or provider-specific env var)
@@ -314,7 +351,7 @@ class AnyLLMModel(BaseArchytasModel):
     - LLM_MAX_TOKENS: Max tokens (default 4096)
 
     Example .env configuration:
-        LLM_SERVICE_PROVIDER=anyllm:ollama
+        LLM_SERVICE_PROVIDER=litellm:ollama
         LLM_SERVICE_MODEL=devstral:latest
         LLM_BASE_URL=http://localhost:11434
     """
@@ -330,15 +367,17 @@ class AnyLLMModel(BaseArchytasModel):
 
     def auth(self, **kwargs) -> None:
         """Set up authentication from config/environment."""
-        # Determine provider - handle "anyllm:provider" format
+        # Determine provider - handle "litellm:provider" and "anyllm:provider" format
         raw_provider = (
             kwargs.get("provider")
             or getattr(self.config, "provider", None)
             or os.getenv("LLM_SERVICE_PROVIDER", self.DEFAULT_PROVIDER)
         )
 
-        # Strip "anyllm:" prefix if present
-        if raw_provider.lower().startswith("anyllm:"):
+        # Strip "litellm:" or "anyllm:" prefix if present
+        if raw_provider.lower().startswith("litellm:"):
+            self.provider = raw_provider.lower().split(":", 1)[1]
+        elif raw_provider.lower().startswith("anyllm:"):
             self.provider = raw_provider.lower().split(":", 1)[1]
         else:
             self.provider = raw_provider.lower()
@@ -385,12 +424,12 @@ class AnyLLMModel(BaseArchytasModel):
         )
 
         logger.info(
-            f"AnyLLMModel auth: provider={self.provider}, "
+            f"LiteLLMModel auth: provider={self.provider}, "
             f"api_base={self.api_base}, has_key={bool(self.api_key)}"
         )
 
-    def initialize_model(self, **kwargs) -> ChatAnyLLM:
-        """Create the ChatAnyLLM adapter."""
+    def initialize_model(self, **kwargs) -> ChatLiteLLM:
+        """Create the ChatLiteLLM adapter."""
         model_name = (
             getattr(self.config, "model_name", None)
             or os.getenv("LLM_SERVICE_MODEL")
@@ -398,11 +437,11 @@ class AnyLLMModel(BaseArchytasModel):
         )
 
         logger.info(
-            f"Initializing AnyLLMModel: provider={self.provider}, "
+            f"Initializing LiteLLMModel: provider={self.provider}, "
             f"model={model_name}, api_base={self.api_base}"
         )
 
-        return ChatAnyLLM(
+        return ChatLiteLLM(
             provider=self.provider,
             model=model_name,
             api_key=self.api_key if self.api_key else None,
@@ -416,7 +455,7 @@ class AnyLLMModel(BaseArchytasModel):
         messages: list[BaseMessage],
         tools: Optional[Sequence] = None,
     ) -> int:
-        """Estimate token count."""
+        """Estimate token count using litellm's model-specific counter."""
         try:
             return self._model.get_num_tokens_from_messages(
                 messages=messages,
@@ -427,16 +466,26 @@ class AnyLLMModel(BaseArchytasModel):
 
     @lru_cache()
     def contextsize(self, model_name: Optional[str] = None) -> int | None:
-        """Return context size for the model."""
+        """
+        Return context size for the model using litellm's model info.
+
+        litellm maintains a comprehensive database of model context sizes,
+        which is more accurate and complete than a hardcoded dict.
+        """
         name = model_name or self.model_name or ""
 
-        # Check known context sizes
-        for model_key, size in CONTEXT_SIZES.items():
-            if model_key in name.lower():
-                return size
+        # Build the litellm model string to look up context size
+        prefix = LITELLM_PROVIDER_PREFIX.get(self.provider)
+        if prefix is not None:
+            litellm_model = f"{prefix}/{name}"
+        else:
+            litellm_model = name
 
-        # Default fallback
-        logger.warning(
-            f"Unknown context size for model '{name}'. Using default 128000."
-        )
-        return 128000
+        try:
+            return litellm.get_max_tokens(litellm_model)
+        except Exception:
+            logger.warning(
+                f"Unknown context size for model '{name}' (litellm_model='{litellm_model}'). "
+                f"Using default 128000."
+            )
+            return 128000

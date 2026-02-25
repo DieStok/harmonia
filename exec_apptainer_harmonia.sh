@@ -251,6 +251,14 @@ LLM_MODEL=$(grep "^LLM_SERVICE_MODEL=" "$ENV_FILE" | cut -d '=' -f2)
 LLM_PROVIDER=${LLM_PROVIDER:-openai}
 LLM_MODEL=${LLM_MODEL:-gpt-4o}
 
+# Read bdi-kit LLM configuration from .env for display
+BDIKIT_LLM_INSTANCE=$(grep "^HARMONIA_LLM_FOR_INSTANCE_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+BDIKIT_LLM_NUMERIC=$(grep "^HARMONIA_LLM_FOR_NUMERIC_INSTANCE_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+BDIKIT_EMBEDDING=$(grep "^HARMONIA_EMBEDDING_MODEL_FOR_INSTANCE_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+BDIKIT_LLM_SCHEMA=$(grep "^HARMONIA_LLM_FOR_SCHEMA_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+BDIKIT_LLM_MAGNETO_ZS=$(grep "^HARMONIA_LLM_FOR_MAGNETO_ZERO_SHOT_SCHEMA_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+BDIKIT_LLM_MAGNETO_FT=$(grep "^HARMONIA_LLM_FOR_MAGNETO_FINE_TUNED_SCHEMA_MATCHING=" "$ENV_FILE" | cut -d '=' -f2)
+
 # Write .experiment_id metadata file into results directory
 # This links the run_id to the experiment's log files and configuration
 EXPERIMENT_MODE="manual"
@@ -288,6 +296,8 @@ cat > "${RESULTS_DIR}/.experiment_id" <<EXPEOF
   "timestamp_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
   "llm_provider": "${LLM_PROVIDER}",
   "llm_model": "${LLM_MODEL}",
+  "bdikit_llm_instance_matching": "${BDIKIT_LLM_INSTANCE:-$LLM_MODEL}",
+  "bdikit_llm_schema_matching": "${BDIKIT_LLM_SCHEMA:-$LLM_MODEL}",
   "hostname": "${HOSTNAME}",
   "beaker_port": ${PORT},
 ${LOG_FILES_JSON}
@@ -664,6 +674,20 @@ if [ -n "$OPENAI_KEY" ] && [ "$OPENAI_KEY" != "your_openai_api_key_here" ]; then
 fi
 if [ -n "$ANTHROPIC_KEY" ] && [ "$ANTHROPIC_KEY" != "your_anthropic_api_key_here" ]; then
     echo "     ANTHROPIC_API_KEY:      ${ANTHROPIC_KEY:0:20}..."
+fi
+# Display bdi-kit LLM configuration if any are set
+if [ -n "$BDIKIT_LLM_INSTANCE" ] || [ -n "$BDIKIT_LLM_SCHEMA" ]; then
+    echo ""
+    echo "BDI-Kit Internal LLM Configuration:"
+    [ -n "$BDIKIT_LLM_INSTANCE" ] && echo "   Instance matching LLM:          $BDIKIT_LLM_INSTANCE"
+    [ -n "$BDIKIT_LLM_NUMERIC" ] && echo "   Numeric instance matching LLM:   $BDIKIT_LLM_NUMERIC"
+    [ -n "$BDIKIT_EMBEDDING" ] && echo "   Embedding model:                 $BDIKIT_EMBEDDING"
+    [ -n "$BDIKIT_LLM_SCHEMA" ] && echo "   Schema matching LLM:             $BDIKIT_LLM_SCHEMA"
+    [ -n "$BDIKIT_LLM_MAGNETO_ZS" ] && echo "   Magneto zero-shot LLM:           $BDIKIT_LLM_MAGNETO_ZS"
+    [ -n "$BDIKIT_LLM_MAGNETO_FT" ] && echo "   Magneto fine-tuned LLM:          $BDIKIT_LLM_MAGNETO_FT"
+else
+    echo ""
+    echo "BDI-Kit Internal LLM Configuration: (defaults - using top-level LLM: $LLM_MODEL)"
 fi
 echo ""
 echo "📡 STEP 1: Set up SSH tunnel on your Mac"

@@ -26,6 +26,16 @@ llm:
   model: devstral:latest
   temperature: 0.0
 
+# bdi-kit internal LLM configuration for schema/value matching.
+# These default to the top-level llm.model if not specified.
+# Set explicitly here so each config documents which LLM bdi-kit uses internally.
+bdikit_models:
+  instance_matching_llm: devstral:latest
+  numeric_instance_matching_llm: devstral:latest
+  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
+  schema_matching_llm: devstral:latest
+  magneto_zero_shot_schema_matching_llm: devstral:latest
+  magneto_fine_tuned_schema_matching_llm: devstral:latest
 output:
   base_dir: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results"
 

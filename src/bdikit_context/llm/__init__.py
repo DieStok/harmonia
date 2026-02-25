@@ -3,12 +3,14 @@ LLM provider configuration for Harmonia.
 
 Sets up environment variables that Beaker/Archytas expects.
 
-Supports two modes:
+Supports three modes:
 1. Native Archytas providers (legacy): "openai", "ollama", etc.
-2. any-llm unified providers (new): "anyllm:openai", "anyllm:ollama", etc.
+2. litellm unified providers (preferred): "litellm:openai", "litellm:ollama", etc.
+3. any-llm prefix (backwards compatible): "anyllm:openai", "anyllm:ollama", etc.
+   (maps to litellm under the hood)
 
-The any-llm providers use the unified any-llm library for LLM communication,
-enabling support for 30+ providers with a consistent interface.
+The litellm providers use the litellm library for LLM communication,
+enabling support for 100+ providers with a consistent interface.
 """
 
 import os
@@ -28,21 +30,38 @@ PROVIDER_IMPORT_MAP = {
     "gemini": "archytas.models.gemini.GeminiModel",
     "groq": "archytas.models.groq.GroqModel",
 
-    # any-llm unified providers (new - use "anyllm:" prefix or just "anyllm")
-    "anyllm": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:openai": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:ollama": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:anthropic": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:openrouter": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:mistral": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:groq": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:together": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:perplexity": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:bedrock": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:azure": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:cohere": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:deepseek": "bdikit_context.llm.anyllm.AnyLLMModel",
-    "anyllm:fireworks": "bdikit_context.llm.anyllm.AnyLLMModel",
+    # litellm unified providers (preferred — use "litellm:" prefix)
+    "litellm": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:openai": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:ollama": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:anthropic": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:openrouter": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:mistral": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:groq": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:together": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:perplexity": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:bedrock": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:azure": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:cohere": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:deepseek": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:fireworks": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "litellm:gemini": "bdikit_context.llm.litellm_model.LiteLLMModel",
+
+    # Backwards compatibility: anyllm: prefix still works (maps to litellm)
+    "anyllm": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:openai": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:ollama": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:anthropic": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:openrouter": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:mistral": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:groq": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:together": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:perplexity": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:bedrock": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:azure": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:cohere": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:deepseek": "bdikit_context.llm.litellm_model.LiteLLMModel",
+    "anyllm:fireworks": "bdikit_context.llm.litellm_model.LiteLLMModel",
 }
 
 # Map provider names to their API key environment variable names
@@ -65,24 +84,26 @@ def configure_llm_environment():
     This function reads from Harmonia's config and sets the environment
     variables that Beaker expects for LLM provider configuration.
 
-    Supports both native Archytas providers and any-llm unified providers:
+    Supports native Archytas providers, litellm unified providers, and
+    backwards-compatible anyllm: prefixed providers:
     - Native: "openai", "ollama", etc. (uses archytas.models.*)
-    - any-llm: "anyllm:openai", "anyllm:ollama", etc. (uses bdikit_context.llm.anyllm)
+    - litellm: "litellm:openai", "litellm:ollama", etc. (uses bdikit_context.llm.litellm_model)
+    - anyllm: "anyllm:openai", "anyllm:ollama", etc. (backwards compatible, maps to litellm)
     """
     config = get_config()
     llm = config.llm
 
     provider_key = llm.provider.lower()
 
-    # Handle any-llm providers: extract actual provider for env vars
-    if provider_key.startswith("anyllm:"):
+    # Handle litellm: or anyllm: prefixed providers
+    if provider_key.startswith("litellm:") or provider_key.startswith("anyllm:"):
         actual_provider = provider_key.split(":", 1)[1]
         os.environ["LLM_SERVICE_PROVIDER"] = actual_provider
-        import_path = PROVIDER_IMPORT_MAP.get(provider_key) or PROVIDER_IMPORT_MAP.get("anyllm")
-    elif provider_key == "anyllm":
-        # Generic any-llm - provider will be determined by LLM_SERVICE_PROVIDER env var
+        import_path = PROVIDER_IMPORT_MAP.get(provider_key) or PROVIDER_IMPORT_MAP.get("litellm")
+    elif provider_key in ("litellm", "anyllm"):
+        # Generic litellm/anyllm - provider will be determined by LLM_SERVICE_PROVIDER env var
         actual_provider = os.getenv("LLM_SERVICE_PROVIDER", "openai")
-        import_path = PROVIDER_IMPORT_MAP.get("anyllm")
+        import_path = PROVIDER_IMPORT_MAP.get("litellm")
     else:
         actual_provider = provider_key
         import_path = PROVIDER_IMPORT_MAP.get(provider_key)
@@ -117,23 +138,23 @@ def get_provider_info() -> dict:
     config = get_config()
     provider_key = config.llm.provider.lower()
 
-    # Handle any-llm provider format
-    if provider_key.startswith("anyllm:"):
+    # Handle litellm: or anyllm: provider format
+    if provider_key.startswith("litellm:") or provider_key.startswith("anyllm:"):
         actual_provider = provider_key.split(":", 1)[1]
-        is_anyllm = True
-    elif provider_key == "anyllm":
+        is_litellm = True
+    elif provider_key in ("litellm", "anyllm"):
         actual_provider = os.getenv("LLM_SERVICE_PROVIDER", "openai")
-        is_anyllm = True
+        is_litellm = True
     else:
         actual_provider = provider_key
-        is_anyllm = False
+        is_litellm = False
 
     return {
         "provider": config.llm.provider,
         "actual_provider": actual_provider,
-        "is_anyllm": is_anyllm,
+        "is_litellm": is_litellm,
         "model": config.llm.model,
         "base_url": config.llm.base_url,
         "has_api_key": config.llm.api_key is not None,
-        "import_path": PROVIDER_IMPORT_MAP.get(provider_key) or PROVIDER_IMPORT_MAP.get("anyllm"),
+        "import_path": PROVIDER_IMPORT_MAP.get(provider_key) or PROVIDER_IMPORT_MAP.get("litellm"),
     }

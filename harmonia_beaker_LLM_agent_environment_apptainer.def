@@ -4,8 +4,8 @@
 # This definition builds an Apptainer image with:
 # - Beaker kernel for interactive notebooks
 # - BDI-Kit context for data harmonization
-# - any-llm-sdk for unified LLM provider access (30+ providers)
-# - Full support for anyllm:ollama, anyllm:openai, etc.
+# - litellm for unified LLM provider access (100+ providers)
+# - Full support for litellm:ollama, litellm:openai, etc.
 #
 # Build with:
 #   ./build_harmonia_apptainer.sh
@@ -85,19 +85,6 @@ From: python:3.11
     TMPDIR=/var/tmp uv pip install --system --no-cache "beaker_kernel>=1.14.0"
 
     # --------------------------------------------------------------------------
-    # Install any-llm-sdk with provider dependencies
-    # --------------------------------------------------------------------------
-    # any-llm-sdk provides unified access to 30+ LLM providers
-    # We install with ollama extra for local LLM support
-    echo "Installing any-llm-sdk with ollama provider..."
-    TMPDIR=/var/tmp uv pip install --system --no-cache "any-llm-sdk[ollama] @ git+https://github.com/mozilla-ai/any-llm.git"
-
-    # Verify any-llm installation
-    echo "=== Verifying any-llm installation ==="
-    python3 -c "from any_llm import AnyLLM; print('any_llm imported successfully')"
-    python3 -c "import ollama; print('ollama package imported successfully')"
-
-    # --------------------------------------------------------------------------
     # Install additional dependencies for archytas
     # --------------------------------------------------------------------------
     # These are needed for message conversion and tool handling
@@ -121,9 +108,12 @@ From: python:3.11
     echo "=== Verifying code_context installation ==="
     python3 -c "from code_context.context import CodeContext; print('CodeContext imported successfully')"
 
-    echo "=== Verifying bdikit_context.llm.anyllm installation ==="
-    python3 -c "from bdikit_context.llm.anyllm import AnyLLMModel; print('AnyLLMModel imported successfully')"
-    python3 -c "from bdikit_context.llm.anyllm import ChatAnyLLM; print('ChatAnyLLM imported successfully')"
+    echo "=== Verifying litellm installation ==="
+    python3 -c "import litellm; print(f'litellm {litellm.__version__} imported successfully')"
+
+    echo "=== Verifying bdikit_context litellm integration ==="
+    python3 -c "from bdikit_context.llm.litellm_model import LiteLLMModel; print('LiteLLMModel imported successfully')"
+    python3 -c "from bdikit_context.llm.litellm_model import ChatLiteLLM; print('ChatLiteLLM imported successfully')"
 
     # Verify entry points are registered
     echo "=== Verifying entry points ==="
@@ -167,7 +157,7 @@ EOF
     ls -la /jupyter/
 
     echo "=== Installed packages (key ones) ==="
-    python3 -c "import pkg_resources; pkgs = ['beaker-kernel', 'any-llm-sdk', 'bdikit-context', 'langchain-core', 'ollama']; [print(f'{p}: {pkg_resources.get_distribution(p).version}') for p in pkgs if any(d.key == p for d in pkg_resources.working_set)]" 2>/dev/null || true
+    python3 -c "import pkg_resources; pkgs = ['beaker-kernel', 'litellm', 'bdikit-context', 'langchain-core']; [print(f'{p}: {pkg_resources.get_distribution(p).version}') for p in pkgs if any(d.key == p for d in pkg_resources.working_set)]" 2>/dev/null || true
 
     echo ""
     echo "=============================================="
@@ -187,7 +177,7 @@ EOF
 %labels
     Author dstoker
     Version 1.0
-    Description Harmonia Beaker LLM Agent Environment with any-llm-sdk support
+    Description Harmonia Beaker LLM Agent Environment with litellm support
 
 %help
     Harmonia Beaker LLM Agent Environment
@@ -196,9 +186,9 @@ EOF
     This container provides:
     - Beaker kernel for interactive notebooks
     - BDI-Kit context for data harmonization to GDC schema
-    - any-llm-sdk for unified LLM provider access
+    - litellm for unified LLM provider access (100+ providers)
 
-    Supported LLM providers via anyllm:
+    Supported LLM providers via litellm:
     - Local: ollama, lmstudio, vllm, llamafile
     - Cloud: openai, anthropic, mistral, groq, together, perplexity, deepseek
     - Gateway: openrouter, azure, bedrock, vertexai

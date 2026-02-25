@@ -1,3 +1,5 @@
+import os
+
 from archytas.tool_utils import AgentRef, LoopControllerRef, is_tool, tool, toolset
 from beaker_kernel.lib.agent import BeakerAgent
 from beaker_kernel.lib.context import BeakerContext
@@ -19,6 +21,36 @@ VALID_TARGETS = ["gdc"]
 DEFAULT_TARGET = "gdc"
 
 DEFAULT_OUTPUT_FILE = "harmonized_table.csv"
+
+
+def _get_method_args_for_schema(method: str) -> dict:
+    """Build method_args dict for schema matching based on HARMONIA_* env vars."""
+    fallback = os.environ.get("LLM_SERVICE_MODEL", "openai/gpt-4o-mini")
+    if method == "llm":
+        model = os.environ.get("HARMONIA_LLM_FOR_SCHEMA_MATCHING", fallback)
+        return {"model_name": model}
+    elif method == "magneto_zs_llm":
+        model = os.environ.get("HARMONIA_LLM_FOR_MAGNETO_ZERO_SHOT_SCHEMA_MATCHING", fallback)
+        return {"reranker_model": model}
+    elif method == "magneto_ft_llm":
+        model = os.environ.get("HARMONIA_LLM_FOR_MAGNETO_FINE_TUNED_SCHEMA_MATCHING", fallback)
+        return {"reranker_model": model}
+    return {}
+
+
+def _get_method_args_for_values(method: str) -> dict:
+    """Build method_args dict for value matching based on HARMONIA_* env vars."""
+    fallback = os.environ.get("LLM_SERVICE_MODEL", "openai/gpt-4o-mini")
+    if method == "llm":
+        model = os.environ.get("HARMONIA_LLM_FOR_INSTANCE_MATCHING", fallback)
+        return {"model_name": model}
+    elif method == "llm_numeric":
+        model = os.environ.get("HARMONIA_LLM_FOR_NUMERIC_INSTANCE_MATCHING", fallback)
+        return {"model_name": model}
+    elif method == "embedding":
+        model = os.environ.get("HARMONIA_EMBEDDING_MODEL_FOR_INSTANCE_MATCHING", "bert-base-multilingual-cased")
+        return {"model_name": model}
+    return {}
 
 
 class BDIKitAgent(BeakerAgent):
@@ -63,12 +95,14 @@ class BDIKitAgent(BeakerAgent):
         if method not in VALID_SCHEMA_METHODS:
             return f"Error: Invalid method '{method}'. Valid methods are: {', '.join(VALID_SCHEMA_METHODS)}. Please try again with a valid method."
 
+        method_args = _get_method_args_for_schema(method)
         code = agent.context.get_code(
             "match_schema",
             {
                 "dataset": dataset,
                 "target": target,
                 "method": method,
+                "method_args": method_args,
             },
         )
         result = await agent.context.evaluate(
@@ -169,6 +203,7 @@ class BDIKitAgent(BeakerAgent):
         if ',' not in column_mapping:
             return f"Error: Invalid column_mapping format '{column_mapping}'. Expected format: 'source_column,target_column' (comma-separated)."
 
+        method_args = _get_method_args_for_values(method)
         code = agent.context.get_code(
             "match_values",
             {
@@ -176,6 +211,7 @@ class BDIKitAgent(BeakerAgent):
                 "column_mapping": tuple(column_mapping.split(',')),
                 "target": target,
                 "method": method,
+                "method_args": method_args,
             },
         )
         result = await agent.context.evaluate(
