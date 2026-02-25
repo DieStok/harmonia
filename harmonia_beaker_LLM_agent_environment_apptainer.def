@@ -120,7 +120,7 @@ From: python:3.11
     python3 -c "from code_context.context import CodeContext; print('CodeContext imported successfully')"
 
     echo "=== Verifying litellm installation ==="
-    python3 -c "import litellm; print(f'litellm {litellm.__version__} imported successfully')"
+    python3 -c "import litellm; print('litellm imported successfully')"
 
     echo "=== Verifying bdikit_context litellm integration ==="
     python3 -c "from bdikit_context.llm.litellm_model import LiteLLMModel; print('LiteLLMModel imported successfully')"
