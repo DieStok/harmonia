@@ -115,7 +115,7 @@ User / run_experiment.py (WebSocket client)
 
 **Two contexts (agent modes):**
 - `bdikit_context` — full data harmonization context with domain tools
-- `code_context` — minimal code-only context, no predefined tools (already CodeAct-compatible)
+- `code_context` — minimal ReAct context with only the generic `run_code` tool (NOT CodeAct — the LLM still uses structured JSON tool calls via Archytas, not natural code blocks)
 
 ### LLM-Beaker interaction protocol
 
@@ -381,12 +381,15 @@ This requires everything CodeAct needs, plus the ability to make outbound LLM AP
 - Jupyter-protocol compatible: state persistence built in
 - Contexts system for injecting domain-specific tools and data loaders
 - Supports undo/rollback to previous kernel states
-- `code_context` already exists as a minimal CodeAct-compatible context
-- [Archytas](https://github.com/jataware/archytas) ReAct framework directly integrated
+- `BeakerContext.execute()` provides the code execution primitive needed for CodeAct (Jupyter `execute_request` to the subkernel)
+- litellm already installed in the Apptainer container for direct LLM calls
 
 **Limitations:**
+
+- **Archytas enforces ReAct, not CodeAct**: The agent framework ([Archytas](https://github.com/jataware/archytas)) only handles structured JSON tool calls. If the LLM returns text without a tool call, Archytas tries to JSON-parse it and otherwise wraps it as `final_answer`. It does NOT parse code blocks from natural text. This means `code_context` today is ReAct+run_code, not CodeAct.
+- **`run_code` is a Beaker-provided Archytas `@tool()`**: Defined in `beaker_kernel/lib/subkernel.py`, it's automatically registered for every `BeakerAgent`. The LLM must produce `{"name": "run_code", "args": {"code": "..."}}` — not natural code in markdown fences.
+- Building true CodeAct requires a custom agent loop that bypasses Archytas entirely, calling litellm directly and extracting code blocks via regex. See the implementation plan: `documentation/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md`.
 - Primarily designed for interactive use, not headless automated experiments (though WebSocket API exists and is used by `run_experiment.py`)
-- Agent framework (Archytas) is ReAct-specific; adapting to pure CodeAct requires building a separate agent loop
 - Smaller community/ecosystem compared to OpenHands or E2B
 
 ---
@@ -438,7 +441,7 @@ This requires everything CodeAct needs, plus the ability to make outbound LLM AP
 | Capability | Beaker-dev (current) | Streamlit | OpenWebUI |
 |---|---|---|---|
 | **Persistent Python REPL** | Built-in (Jupyter subkernel) | No (must embed kernel) | Yes (Jupyter backend) |
-| **CodeAct agent loop** | `code_context` exists | Must build from scratch | Native Mode + `execute_code` |
+| **CodeAct agent loop** | Must build (bypass Archytas) | Must build from scratch | Native Mode + `execute_code` |
 | **Tool-calling agent** | Archytas `@tool()` | Build with LangChain/LangGraph | Native tool system (4 categories) |
 | **LLM-generated code execution** | Direct in subkernel | `exec()` hack (unsafe) | Jupyter or Open Terminal |
 | **Recursive LLM support** | Yes (litellm in subkernel) | Yes (you write the loop) | Yes (litellm in Jupyter backend) |
@@ -472,17 +475,22 @@ This requires everything CodeAct needs, plus the ability to make outbound LLM AP
 **Effort: Low (1-2 weeks)**
 
 What to build:
-- A `CodeActAgentLoop` class (~200-400 lines) that replaces Archytas for code-only experiments
-- System prompt instructing pure code execution
-- Parse code blocks from LLM output, send to subkernel via WebSocket, capture output, feed back as observation
-- Experiment configs that select between ReAct and CodeAct modes
+
+- A new `codeact_context` Beaker context with a `CodeActAgentLoop` class (~200-400 lines) that bypasses Archytas entirely
+- Direct litellm calls (no Archytas, no tool schemas)
+- Regex extraction of code blocks from LLM natural text responses
+- Execute extracted code via `BeakerContext.execute()` (same Jupyter protocol as `run_code` uses)
+- System prompt instructing pure code execution (no tool schemas, no ReAct prelude)
+- Config support for selecting context: `bdikit_context`, `code_context`, or `codeact_context`
+- Full implementation plan: `documentation/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md`
 
 What you keep:
+
 - Same Apptainer image, SLURM integration, per-job Ollama isolation
 - Same tracing infrastructure (`trace.json`, `conversation.md`, log analysis CLI)
 - Same evaluation pipeline (metrics)
 - Same data access patterns
-- `code_context` already exists as starting point
+- Same subkernel execution path (`BeakerContext.execute()`)
 
 **Advantage**: The only experimental variable is the agent paradigm — cleanest scientific design for comparing tool-calling vs code-only agents.
 
@@ -536,15 +544,15 @@ What you lose:
 
 **Rationale:**
 
-1. **`code_context` already exists** as a minimal code-only context where the LLM writes and executes Python with no predefined tools. This IS a CodeAct environment.
+1. **The execution infrastructure is already there**: Beaker's subkernel provides persistent state, library access, error feedback, output capture — everything CodeAct and recursive LLMs need. `BeakerContext.execute()` is the same code execution primitive regardless of whether the agent loop is Archytas ReAct or a custom CodeAct loop.
 
-2. **Fair experimental design**: Using the same execution environment (Beaker subkernel) for both tool-calling and code-only agents means the only variable is the agent strategy. Migrating to a different platform introduces confounding variables (different output formats, different tool interfaces, different error handling).
+2. **`code_context` is ReAct+run_code, not CodeAct** (corrected from earlier version of this document). The LLM uses Archytas' structured JSON tool-call format to invoke `run_code(code="...")`. True CodeAct requires a custom `CodeActAgentLoop` (~200-400 lines) that bypasses Archytas, calls litellm directly, and extracts code from markdown fences. See `documentation/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md` for the full implementation plan.
 
-3. **The REPL is already there**: Beaker's subkernel provides persistent state, library access, error feedback, output capture — everything CodeAct and recursive LLMs need. The subkernel can `import litellm` and make API calls, capturing results as Python objects.
+3. **Three experimental conditions, one execution environment**: Using Beaker's subkernel for all three conditions — (a) ReAct+domain tools (`bdikit_context`), (b) ReAct+run_code (`code_context`), (c) true CodeAct (new `codeact_context`) — means the only variable is the agent strategy. Migrating to a different platform introduces confounding variables.
 
-4. **Lowest engineering cost**: Build a `CodeActAgentLoop` (~200-400 lines) rather than migrating an entire platform. See [LlamaIndex's "CodeAct agent from scratch" tutorial](https://developers.llamaindex.ai/python/examples/agent/from_scratch_code_act_agent/) for reference implementation patterns.
+4. **Lowest engineering cost**: Build a `CodeActAgentLoop` rather than migrating an entire platform. See [LlamaIndex's "CodeAct agent from scratch" tutorial](https://developers.llamaindex.ai/python/examples/agent/from_scratch_code_act_agent/) for reference implementation patterns.
 
-5. **Same tracing infrastructure**: `trace.json` format and the log analysis CLI work for both agent modes without modification.
+5. **Same tracing infrastructure**: `trace.json` format and the log analysis CLI work for all agent modes without modification.
 
 ### For future consideration: OpenWebUI as UI upgrade
 

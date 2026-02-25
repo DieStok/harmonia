@@ -22,3 +22,6 @@ logs/
 
 # Experiment results (trace.json, conversation.md, harmonized output)
 results/
+
+# Archived Claude Code session transcripts and summaries
+documentation/full_conversations/
