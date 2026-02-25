@@ -1,0 +1,60 @@
+experiment:
+  name: dou_harmonization_codeact_devstral
+  description: >
+    Harmonize Dou et al. 2020 metadata to GDC schema using true CodeAct
+    (code-only, no tools, no Archytas). LLM writes Python code directly
+    in markdown fences. Uses Devstral Small via OpenRouter.
+  context: codeact_context
+
+llm:
+  provider: openrouter
+  model: mistralai/devstral-small-2505
+  temperature: 0.0
+
+prompts:
+  prompts_base_dir: ../../prompts
+  codeact_prompt: codeact_prompts/v1_harmonization/prompt.txt
+
+messages:
+- content: >
+    You have a CSV file called `dou.csv` in the current directory.
+    This contains metadata from the Dou et al. 2020 study.
+
+    Your task is to harmonize this metadata to the GDC (Genomic Data Commons) schema.
+    This means:
+    1. Load the CSV and inspect its columns and values
+    2. Subset to these columns: Country, Histologic_Grade_FIGO, Histologic_type,
+       FIGO_stage, BMI, Age, Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm
+    3. Map the column names to GDC-compatible column names
+    4. Map the values to GDC-acceptable values where applicable
+    5. Save the harmonized table as `dou_harmonized.csv`
+    6. Save the column mapping as `column_mapping.json`
+       (format: {"SourceCol": "gdc_col", ...}, null for unmapped columns)
+    7. Save the value mapping as `value_mapping.json`
+       (format: {"SourceCol": {"source_val": "gdc_val", ...}, ...},
+        use "__identity__" for columns where values were not changed)
+
+    Start by loading and inspecting the data.
+  wait_seconds: 600
+  decision_mode: auto_accept
+
+output:
+  base_dir: ./results
+  save_artifacts:
+  - dou_harmonized.csv
+  - column_mapping.json
+  - value_mapping.json
+
+decision_handling:
+  default_mode: auto_accept
+
+evaluation:
+  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
+  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
+  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
+  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
+  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
+  column_mapping_file: column_mapping.json
+  value_mapping_file: value_mapping.json
+  index_column: null
+  numeric_tolerance: null

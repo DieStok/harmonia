@@ -166,6 +166,16 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
             full_code = str(Path(base_dir) / code_context_prompt) if base_dir else str((config_path.parent / code_context_prompt).resolve())
             env_content = update_env_value(env_content, 'HARMONIA_CODE_CONTEXT_PROMPT', full_code)
 
+        codeact_prompt = prompts_config.get('codeact_prompt', '')
+        if codeact_prompt:
+            full_codeact = str(Path(base_dir) / codeact_prompt) if base_dir else str((config_path.parent / codeact_prompt).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_CODEACT_PROMPT', full_codeact)
+
+        codeact_summary_template = prompts_config.get('codeact_summary_template', '')
+        if codeact_summary_template:
+            full_summary = str(Path(base_dir) / codeact_summary_template) if base_dir else str((config_path.parent / codeact_summary_template).resolve())
+            env_content = update_env_value(env_content, 'HARMONIA_CODEACT_SUMMARY_TEMPLATE', full_summary)
+
         tool_prompts_dir = prompts_config.get('tool_prompts_dir', '')
         if tool_prompts_dir:
             full_tools = str(Path(base_dir) / tool_prompts_dir) if base_dir else str((config_path.parent / tool_prompts_dir).resolve())

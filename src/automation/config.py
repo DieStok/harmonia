@@ -65,6 +65,7 @@ class PromptsConfig:
     system_prompt_dir: Optional[str] = None
     react_prelude: Optional[str] = None
     code_context_prompt: Optional[str] = None
+    codeact_prompt: Optional[str] = None
     tool_prompts_dir: Optional[str] = None
 
 
@@ -83,6 +84,8 @@ class ExperimentConfig:
     manual_mode: bool = False
     # Optional reference to dataset metadata
     dataset_metadata: Optional[str] = None
+    # Beaker context to use: "bdikit_context", "code_context", or "codeact_context"
+    context: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig":
@@ -150,6 +153,7 @@ class ExperimentConfig:
             prompts=prompts,
             manual_mode=manual_mode,
             dataset_metadata=exp.get("dataset_metadata"),
+            context=exp.get("context"),
         )
 
 

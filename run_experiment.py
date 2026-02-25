@@ -130,8 +130,10 @@ async def main() -> int:
     )
 
     try:
-        await client.connect()
+        await client.connect(context_name=config.context)
         print(f"  Connected to kernel: {client.kernel_id}")
+        if config.context:
+            print(f"  Context: {config.context}")
 
         # Create runner
         runner = ExperimentRunner(

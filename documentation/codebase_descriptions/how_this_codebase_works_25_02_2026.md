@@ -36,6 +36,8 @@ This project runs **metadata harmonization agents** using (local) LLMs and the b
 - **Implemented:** Configurable prompts per experiment via YAML config `prompts` section (system prompt, ReAct prelude, tool descriptions, code context prompt)
 - **Implemented:** bdi-kit v0.9.0 with configurable LLM selection for schema/value matching via `bdikit_models` YAML section and `HARMONIA_LLM_*` env vars
 - **Implemented:** Unified LLM stack using litellm (replaces any-llm-sdk) for both top-level agent and bdi-kit internal calls
+- **Implemented:** True CodeAct context (`src/codeact_context/`) — bypasses Archytas ReAct entirely, LLM writes Python code in markdown fences, no tool schemas or structured tool calls
+- **Implemented:** Context window management for CodeAct (summarize or truncate strategies)
 
 ---
 
@@ -211,27 +213,37 @@ harmonia/
 │   │
 │   ├── prompt_logging.py      # Prompt composition logging (stdout + JSON)
 │   │
-│   └── bdikit_context/       # BDI-Kit Beaker context package
-│       ├── __init__.py       # Package init (configures LLM environment)
-│       ├── __about__.py      # Version info
-│       ├── context.py        # BeakerContext implementation
-│       ├── agent.py          # BDIKitAgent with tool definitions
-│       ├── config/           # Configuration management
-│       │   └── __init__.py   # LLMConfig, HarmoniaConfig, get_config(), reset_config()
-│       ├── llm/              # LLM provider system
-│       │   ├── __init__.py   # configure_llm_environment(), get_provider_info()
-│       │   ├── litellm_model.py  # ChatLiteLLM, LiteLLMModel (100+ providers via litellm)
-│       │   └── litellm_direct.py # DirectLiteLLMRunner for non-Beaker use
-│       ├── prompts/          # Prompt template system
-│       │   ├── __init__.py   # PromptLoader, get_prompt_loader()
-│       │   └── *.j2          # Jinja2 templates
-│       └── procedures/       # Code templates for BDI-Kit functions
-│           └── python3/
-│               ├── match_schema.py
-│               ├── match_values.py
-│               ├── top_matches.py
-│               ├── materialize_mapping.py
-│               └── get_gdc_acceptable_values.py
+│   ├── bdikit_context/       # BDI-Kit Beaker context package (ReAct + domain tools)
+│   │   ├── __init__.py       # Package init (configures LLM environment)
+│   │   ├── __about__.py      # Version info
+│   │   ├── context.py        # BeakerContext implementation
+│   │   ├── agent.py          # BDIKitAgent with tool definitions
+│   │   ├── config/           # Configuration management
+│   │   │   └── __init__.py   # LLMConfig, HarmoniaConfig, get_config(), reset_config()
+│   │   ├── llm/              # LLM provider system
+│   │   │   ├── __init__.py   # configure_llm_environment(), get_provider_info()
+│   │   │   ├── litellm_model.py  # ChatLiteLLM, LiteLLMModel (100+ providers via litellm)
+│   │   │   └── litellm_direct.py # DirectLiteLLMRunner for non-Beaker use
+│   │   ├── prompts/          # Prompt template system
+│   │   │   ├── __init__.py   # PromptLoader, get_prompt_loader()
+│   │   │   └── *.j2          # Jinja2 templates
+│   │   └── procedures/       # Code templates for BDI-Kit functions
+│   │       └── python3/
+│   │           ├── match_schema.py
+│   │           ├── match_values.py
+│   │           ├── top_matches.py
+│   │           ├── materialize_mapping.py
+│   │           └── get_gdc_acceptable_values.py
+│   │
+│   ├── code_context/          # Code-only Beaker context (ReAct + run_code tool)
+│   │   ├── __init__.py
+│   │   ├── context.py         # CodeContext (minimal BeakerContext)
+│   │   └── agent.py           # CodeAgent (minimal BeakerAgent)
+│   │
+│   └── codeact_context/       # True CodeAct context (bypasses Archytas entirely)
+│       ├── __init__.py
+│       ├── context.py         # CodeActContext (builds litellm model, manages loop)
+│       └── agent.py           # CodeActAgent (overrides react_async) + CodeActAgentLoop
 │
 ├── experiments/
 │   ├── experiment_1_harmonia_dou2020_gdc/
@@ -249,8 +261,10 @@ harmonia/
 │   │           ├── react_agent_prompts/
 │   │           │   ├── v1_default/prelude.txt
 │   │           │   └── v2_tool_focused/prelude.txt
-│   │           └── code_context_prompts/
-│   │               └── v1_default/prompt.txt
+│   │           ├── code_context_prompts/
+│   │           │   └── v1_default/prompt.txt
+│   │           └── codeact_prompts/
+│   │               └── v1_harmonization/prompt.txt
 │   ├── experiment_2_harmonia_2_metadata_tables_dou2020_dou2023/  # (placeholder)
 │   └── experiment_3_harmonia_10_metadata_tables/                  # (placeholder)
 │
@@ -369,7 +383,7 @@ class BeakerClient:
     @property
     def is_connected(self) -> bool
 
-    async def connect(self) -> None
+    async def connect(self, context_name: str = None) -> None  # context_name from config
     async def disconnect(self) -> None
 
     # Message handling
@@ -518,6 +532,7 @@ class PromptsConfig:
     system_prompt_dir: Optional[str] = None
     react_prelude: Optional[str] = None
     code_context_prompt: Optional[str] = None
+    codeact_prompt: Optional[str] = None       # Custom CodeAct system prompt
     tool_prompts_dir: Optional[str] = None
 
 @dataclass
@@ -528,11 +543,14 @@ class ExperimentConfig:
     messages: list[MessageConfig]
     output: OutputConfig = field(default_factory=OutputConfig)
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     prompts: PromptsConfig = field(default_factory=PromptsConfig)
     # Manual mode: if True, this config is for manual experiments (no automated messages)
     manual_mode: bool = False
     # Optional reference to dataset metadata YAML
     dataset_metadata: Optional[str] = None
+    # Beaker context to use: "bdikit_context", "code_context", or "codeact_context"
+    context: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig"
@@ -803,6 +821,104 @@ def get_prompt_loader(prompts_dir: Optional[Path] = None) -> PromptLoader
 
 ---
 
+### 2b. CodeAct Context (`src/codeact_context/`) — True CodeAct
+
+A third Beaker context that **bypasses Archytas entirely**. The LLM writes Python code directly in markdown fences (`\`\`\`python ... \`\`\``). Code is extracted via regex and executed in the Beaker subkernel. No tool schemas, no ReAct prelude, no structured tool calls.
+
+**Paradigm comparison:**
+
+| Paradigm | Context | Agent loop | LLM action format |
+|----------|---------|------------|-------------------|
+| ReAct + domain tools | `bdikit_context` | Archytas `ReActAgent.react_async()` | Structured JSON tool calls |
+| ReAct + run_code only | `code_context` | Archytas `ReActAgent.react_async()` | Structured JSON tool calls |
+| True CodeAct | `codeact_context` | Custom `CodeActAgentLoop` | Python code in markdown fences |
+
+#### `context.py` - CodeActContext
+
+```python
+class CodeActContext(BeakerContext):
+    SLUG = "codeact_context"
+    enabled_subkernels = ["python3"]
+
+    def __init__(self, beaker_kernel, config) -> None
+        # Passes CodeActAgent to super().__init__() (subkernel works normally)
+        # Builds litellm model string from LLM_SERVICE_PROVIDER + LLM_SERVICE_MODEL env vars
+        # Creates CodeActAgentLoop and attaches it to self.agent.codeact_loop
+        # Reads CODEACT_MAX_TURNS, CODEACT_CONTEXT_STRATEGY, HARMONIA_CODEACT_SUMMARY_TEMPLATE env vars
+
+    async def auto_context(self) -> str
+        # Reads HARMONIA_CODEACT_PROMPT env var (falls back to HARMONIA_CODE_CONTEXT_PROMPT)
+        # Returns CodeAct system prompt (no tool schemas, no ReAct prelude)
+```
+
+#### `agent.py` - CodeActAgent + CodeActAgentLoop
+
+**CodeActAgent** subclasses `BeakerAgent` and overrides `react_async()`:
+
+```python
+class CodeActAgent(BeakerAgent):
+    codeact_loop: Optional[CodeActAgentLoop] = None
+
+    async def react_async(self, query: str, react_context: dict = None) -> str
+        # Overrides Archytas react_async to run CodeActAgentLoop.run() instead
+        # Gets parent_header from react_context["message"].header
+        # Creates execute_fn wrapper around self.context.execute()
+```
+
+**CodeActAgentLoop** is the core LLM conversation loop (no Archytas dependency):
+
+```python
+class CodeActAgentLoop:
+    def __init__(
+        self,
+        model: str,              # litellm model string
+        system_prompt: str,
+        max_turns: int = 30,
+        temperature: float = 0.0,
+        context_strategy: str = "summarize",  # "summarize", "truncate", or "none"
+        summary_template: Optional[str] = None,
+        context_budget_fraction: float = 0.80,
+    ) -> None
+
+    def reset(self) -> None              # Clear conversation history
+    async def run(                       # Run the CodeAct loop for one user message
+        self,
+        user_message: str,
+        execute_fn,                      # async callable(code) -> dict
+        parent_header: dict,
+    ) -> str                             # Returns final LLM text (no code)
+```
+
+**Loop logic:**
+1. Append user message to history
+2. Call LLM via `litellm.acompletion()` with system prompt + history
+3. Extract code blocks via `CODE_BLOCK_PATTERN` regex
+4. If no code: return assistant text as final answer
+5. If code found: execute via `execute_fn(code)` → collect stdout/stderr/error from result dict
+6. Append execution output as `[Execution output]` user message
+7. Repeat from step 2 until max_turns
+
+**Context window management** (triggered when token count exceeds `context_budget_fraction * model_limit`):
+
+| Strategy | Env var value | Behavior |
+|----------|---------------|----------|
+| Summarize | `CODEACT_CONTEXT_STRATEGY=summarize` | Ask LLM to summarize history + kernel variables, replace history with summary |
+| Truncate | `CODEACT_CONTEXT_STRATEGY=truncate` | Keep first 20% and last 20% of messages, drop middle 60% |
+| None | `CODEACT_CONTEXT_STRATEGY=none` | No management, litellm will error on overflow |
+
+The summarize strategy uses `HARMONIA_CODEACT_SUMMARY_TEMPLATE` env var for a custom template, or falls back to a built-in default. It also introspects current kernel variables via a `globals()` listing before summarizing.
+
+#### Environment variables
+
+| Env Variable | Default | Purpose |
+|---|---|---|
+| `CODEACT_MAX_TURNS` | `30` | Maximum code-execute cycles per user message |
+| `CODEACT_CONTEXT_STRATEGY` | `summarize` | Context window management: "summarize", "truncate", or "none" |
+| `HARMONIA_CODEACT_PROMPT` | (none) | Path to custom CodeAct system prompt file |
+| `HARMONIA_CODEACT_SUMMARY_TEMPLATE` | (none) | Path to custom context window summarization template |
+
+---
+
 ### 3. Experiment Configuration
 
 Experiments are defined in YAML files in `experiments/experiment_*/configs/`.
@@ -853,7 +969,32 @@ prompts:
   system_prompt_dir: "system_prompt/v2_autonomous"            # Custom system prompt template dir
   react_prelude: "react_agent_prompts/v2_tool_focused/prelude.txt"  # Custom ReAct prelude
   code_context_prompt: "code_context_prompts/v1_default/prompt.txt"  # Custom code context prompt
+  codeact_prompt: "codeact_prompts/v1_harmonization/prompt.txt"    # Custom CodeAct prompt
   tool_prompts_dir: "bdikit_prompts/v2_detailed"              # Custom tool description templates
+```
+
+**CodeAct experiments** use `context: codeact_context` in the `experiment:` section:
+
+```yaml
+experiment:
+  name: dou_harmonization_codeact_devstral
+  description: "Harmonize using true CodeAct (no tools, no Archytas)"
+  context: codeact_context          # Selects the CodeAct context
+
+llm:
+  provider: openrouter
+  model: mistralai/devstral-small-2505
+  temperature: 0.0
+
+prompts:
+  prompts_base_dir: "../../prompts"
+  codeact_prompt: "codeact_prompts/v1_harmonization/prompt.txt"
+
+messages:
+  - content: |
+      You have dou.csv in the current directory. Harmonize it to GDC schema...
+    wait_seconds: 600
+    decision_mode: auto_accept
 ```
 
 #### Configurable Prompts
@@ -870,6 +1011,8 @@ YAML prompts section → generate_env.py → HARMONIA_* env vars in .env → exe
 | `HARMONIA_REACT_PRELUDE` | `react_prelude` | `BDIKitContext.__init__()` | Custom ReAct agent prelude text file |
 | `HARMONIA_TOOL_PROMPTS_DIR` | `tool_prompts_dir` | `BDIKitContext._override_tool_descriptions()` | Custom tool `.j2` template directory |
 | `HARMONIA_CODE_CONTEXT_PROMPT` | `code_context_prompt` | `CodeContext.auto_context()` | Custom code context prompt text file |
+| `HARMONIA_CODEACT_PROMPT` | `codeact_prompt` | `CodeActContext.auto_context()` | Custom CodeAct system prompt text file |
+| `HARMONIA_CODEACT_SUMMARY_TEMPLATE` | `codeact_summary_template` | `CodeActAgentLoop._summarize_history()` | Custom context window summarization template |
 
 #### Manual Experiments (`configs/manual/`)
 

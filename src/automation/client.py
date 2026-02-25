@@ -56,15 +56,20 @@ class BeakerClient:
         """Check if client is connected to server."""
         return self._connected and self.ws is not None and not self.ws.closed
 
-    async def connect(self) -> None:
-        """Connect to Beaker server and establish WebSocket connection."""
+    async def connect(self, context_name: str = None) -> None:
+        """Connect to Beaker server and establish WebSocket connection.
+
+        Args:
+            context_name: Optional context slug to use (e.g. "codeact_context").
+                If None, falls back to auto-detection (prefers bdikit_context).
+        """
         if self.session is None:
             self.session = aiohttp.ClientSession(
                 headers={"Authorization": f"token {self.token}"}
             )
 
         # Get or create a session with kernel
-        selected_context = await self._get_or_create_session()
+        selected_context = await self._get_or_create_session(context_name)
 
         # Connect WebSocket to kernel
         ws_url = self._get_websocket_url()

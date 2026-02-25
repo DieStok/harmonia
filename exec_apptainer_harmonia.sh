@@ -840,6 +840,15 @@ cat > "${RUNTIME_CONTEXTS_DIR}/code_context.json" << 'EOF'
 }
 EOF
 
+# Create codeact_context.json mapping (true CodeAct — bypasses Archytas)
+cat > "${RUNTIME_CONTEXTS_DIR}/codeact_context.json" << 'EOF'
+{
+    "slug": "codeact_context",
+    "package": "codeact_context.context",
+    "class_name": "CodeActContext"
+}
+EOF
+
 # Bind the runtime contexts to overlay the container's contexts dir
 APPTAINER_CMD="$APPTAINER_CMD --bind ${RUNTIME_CONTEXTS_DIR}:/usr/local/share/beaker/contexts:ro"
 
@@ -912,6 +921,18 @@ TOOL_PROMPTS_DIR=$(grep "^HARMONIA_TOOL_PROMPTS_DIR=" "$ENV_FILE" 2>/dev/null | 
 if [ -n "$TOOL_PROMPTS_DIR" ] && [ -d "$TOOL_PROMPTS_DIR" ]; then
     APPTAINER_CMD="$APPTAINER_CMD --bind ${TOOL_PROMPTS_DIR}:${TOOL_PROMPTS_DIR}:ro"
     echo "📝 Custom tool prompts dir: ${TOOL_PROMPTS_DIR}"
+fi
+CODEACT_PROMPT=$(grep "^HARMONIA_CODEACT_PROMPT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$CODEACT_PROMPT" ] && [ -f "$CODEACT_PROMPT" ]; then
+    CODEACT_PROMPT_DIR=$(dirname "$CODEACT_PROMPT")
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${CODEACT_PROMPT_DIR}:${CODEACT_PROMPT_DIR}:ro"
+    echo "📝 Custom CodeAct prompt: ${CODEACT_PROMPT}"
+fi
+CODEACT_SUMMARY_TEMPLATE=$(grep "^HARMONIA_CODEACT_SUMMARY_TEMPLATE=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+if [ -n "$CODEACT_SUMMARY_TEMPLATE" ] && [ -f "$CODEACT_SUMMARY_TEMPLATE" ]; then
+    SUMMARY_TEMPLATE_DIR=$(dirname "$CODEACT_SUMMARY_TEMPLATE")
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${SUMMARY_TEMPLATE_DIR}:${SUMMARY_TEMPLATE_DIR}:ro"
+    echo "📝 Custom CodeAct summary template: ${CODEACT_SUMMARY_TEMPLATE}"
 fi
 
 # Add Ollama environment variables if using local LLM
