@@ -1,0 +1,8 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Please implement this plan completely and then commit the changes with an informative commit message: harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/26_02_2026_1143_update_tool_prompts_new_version_bdikit_and_add_prompt_files_codecontextagent_and_codeactagent.md
+

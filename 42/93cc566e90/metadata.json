@@ -3,11 +3,26 @@
   "checkpoint_id": "4293cc566e90",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
+    "documentation/codebase_descriptions/how_this_codebase_works_26_02_2026.md",
     "documentation/plans/25_02_2026_1527_update_bdikit_and_add_proper_LLM_selection_for_schema_and_value_matching_tools.md",
     "documentation/plans/25_02_2026_1530_change_LLM_backend_to_liteLLM.md",
-    "documentation/plans/26_02_2026_1143_update_tool_prompts_new_version_bdikit_and_add_prompt_files_codecontextagent_and_codeactagent.md"
+    "documentation/plans/26_02_2026_1143_update_tool_prompts_new_version_bdikit_and_add_prompt_files_codecontextagent_and_codeactagent.md",
+    "src/bdikit_context/agent.py",
+    "src/bdikit_context/context.py",
+    "src/bdikit_context/procedures/python3/get_gdc_acceptable_values.py",
+    "src/bdikit_context/procedures/python3/rank_schema_matches.py",
+    "src/bdikit_context/prompts/system/main.j2",
+    "src/bdikit_context/prompts/tools/get_gdc_acceptable_values.j2",
+    "src/bdikit_context/prompts/tools/match_schema.j2",
+    "src/bdikit_context/prompts/tools/match_values.j2",
+    "src/bdikit_context/prompts/tools/rank_schema_matches.j2",
+    "src/code_context/context.py",
+    "src/code_context/prompts/v1/system.txt",
+    "src/codeact_context/context.py",
+    "src/codeact_context/prompts/v1/summary_template.txt",
+    "src/codeact_context/prompts/v1/system.txt"
   ],
   "sessions": [
     {
@@ -16,13 +31,20 @@
       "context": "/42/93cc566e90/0/context.md",
       "content_hash": "/42/93cc566e90/0/content_hash.txt",
       "prompt": "/42/93cc566e90/0/prompt.txt"
+    },
+    {
+      "metadata": "/42/93cc566e90/1/metadata.json",
+      "transcript": "/42/93cc566e90/1/full.jsonl",
+      "context": "/42/93cc566e90/1/context.md",
+      "content_hash": "/42/93cc566e90/1/content_hash.txt",
+      "prompt": "/42/93cc566e90/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 13893,
-    "cache_creation_tokens": 314364,
-    "cache_read_tokens": 6985814,
-    "output_tokens": 478,
-    "api_call_count": 67
+    "input_tokens": 14589,
+    "cache_creation_tokens": 400593,
+    "cache_read_tokens": 10142120,
+    "output_tokens": 894,
+    "api_call_count": 108
   }
 }
