@@ -1,15 +1,22 @@
 {# Tool description for match_values #}
-Returns the top 10 value matches between the values of the source and target columns.
+Finds the best value mappings between source values and target values for a given pair of matched columns.
 
-This is useful for evaluating value matches between a pair of columns (column mappings) returned by the match_schema function.
+For each unique value in the source column, finds the closest matching value in the target column's acceptable values.
+
+Available methods:
+- tfidf (default): TF-IDF based text similarity. Fast, works well for similar text values.
+- embedding: Embedding-based similarity using sentence transformers. Better for semantic similarity.
+- llm: LLM-based value matching. Best for complex semantic mappings but slower.
+- llm_numeric: LLM-based matching for numeric values. Derives transformation formulas.
+- edit_distance: Character-level edit distance. Best for near-identical strings with typos.
 
 Args:
     dataset (str): The name of the dataset variable.
-    column_mapping (tuple): The column and target names for which to find value matches. Format: "source_column,target_column"
-    target (str, optional): The target table or standard data vocabulary.
-    method (str, optional): The method used for mapping.
+    column_mapping (tuple): The source and target column names. Format: "source_column,target_column"
+    target (str, optional): The target table or standard data vocabulary. Defaults to "gdc".
+    method (str, optional): The value matching method. Defaults to "tfidf".
 
 Returns:
-    str: returns the value matches for the given column mapping
+    str: returns the value mappings for the given column pair
 
-Upon user's request, the output of match_values() can be fed to materialize_mapping() which materializes the final target using both schema and value mappings.
+The output of match_values() can be fed to materialize_mapping() to create the final harmonized table.

@@ -42,49 +42,36 @@ class CodeContext(BeakerContext):
         """
         Provide the system prompt for the LLM.
 
-        This is THE critical method that makes a context work.
-        Without this, the LLM has no instructions and communication fails.
-
-        If HARMONIA_CODE_CONTEXT_PROMPT env var is set and points to a file,
-        loads the prompt from that file instead of using the default.
+        Priority:
+        1. HARMONIA_CODE_CONTEXT_PROMPT env var (custom file path)
+        2. Built-in v1 prompt file (src/code_context/prompts/v1/system.txt)
+        3. Hardcoded fallback (should never be needed)
         """
         custom_prompt_path = os.environ.get("HARMONIA_CODE_CONTEXT_PROMPT")
         if custom_prompt_path and Path(custom_prompt_path).exists():
             prompt = Path(custom_prompt_path).read_text()
-            if not hasattr(self, '_auto_context_logged'):
-                print(f"\n{'=' * 80}")
-                print(f"AUTO-CONTEXT (domain prompt) — code_context [{len(prompt)} chars]:")
-                print(f"[from custom file: {custom_prompt_path}]")
-                print(f"{'=' * 80}")
-                print(prompt)
-                print(f"{'=' * 80}\n")
-                self._auto_context_logged = True
-            return prompt
-
-        prompt = f"""You are a Python code execution assistant running in a Jupyter-like environment.
-
-## Your Capabilities
-- You can write and execute Python code
-- You have access to a {self.subkernel.DISPLAY_NAME} kernel
-- Common data science libraries are available (pandas, numpy, etc.)
-
-## Environment
-- Working directory: Use `os.getcwd()` to check
-- Available directories can be listed with `os.listdir()`
-
-## Instructions
-1. When asked to do something, write Python code to accomplish it
-2. Execute the code to show results
-3. Be concise in explanations
-4. If you encounter errors, debug and fix them
-
-## Code Execution
-To execute code, use the code execution tool. The output will be shown to the user.
-"""
+            source = f"custom file: {custom_prompt_path}"
+        else:
+            # Load from built-in v1 prompt file
+            default_prompt_file = Path(__file__).parent / "prompts" / "v1" / "system.txt"
+            if default_prompt_file.exists():
+                prompt = default_prompt_file.read_text()
+                source = f"built-in: {default_prompt_file}"
+            else:
+                # Hardcoded fallback (should never be reached)
+                prompt = (
+                    "You are a Python code execution assistant running in a "
+                    "Jupyter-like environment.\n\n"
+                    "You can write and execute Python code. Common data science "
+                    "libraries are available (pandas, numpy, etc.).\n\n"
+                    "When asked to do something, write Python code to accomplish it."
+                )
+                source = "hardcoded fallback"
 
         if not hasattr(self, '_auto_context_logged'):
             print(f"\n{'=' * 80}")
-            print(f"AUTO-CONTEXT (domain prompt) — code_context [{len(prompt)} chars]:")
+            print(f"AUTO-CONTEXT (domain prompt) -- code_context [{len(prompt)} chars]:")
+            print(f"[source: {source}]")
             print(f"{'=' * 80}")
             print(prompt)
             print(f"{'=' * 80}\n")

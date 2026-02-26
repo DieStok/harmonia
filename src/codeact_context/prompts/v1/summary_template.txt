@@ -1,0 +1,9 @@
+You have been working on a data harmonization task. Your conversation history is getting long and needs to be summarized to continue.
+
+Please provide a concise summary of:
+1. What task you were given
+2. What steps you have completed so far
+3. What the current state of the work is (any errors, partial results, etc.)
+4. A list of all Python variables currently in the environment and their purpose
+
+Write ONLY the summary, no code blocks. Be specific about file names, column names, and any mappings you have discovered or created.

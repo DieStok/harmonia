@@ -1,10 +1,10 @@
 {# Tool description for get_gdc_acceptable_values #}
-Returns the acceptable values for a given column in the GDC (Genomic Data Commons) standard.
+Returns the acceptable values and their descriptions for a given attribute in the GDC (Genomic Data Commons) standard.
 
-This is useful for checking what values can be used as target values when mapping to the GDC schema.
+Use this to check what values are valid for a target attribute when correcting value mappings.
 
 Args:
-    column (str): The name of the variable/column in the GDC target schema.
+    attribute (str): The name of the attribute/column in the GDC target schema.
 
 Returns:
-    str: returns a list of acceptable values (and their descriptions) for the given column in the GDC standard
+    str: returns a list of acceptable values (and their descriptions) for the given attribute in the GDC standard

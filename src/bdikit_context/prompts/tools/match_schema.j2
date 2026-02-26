@@ -1,14 +1,23 @@
 {# Tool description for match_schema #}
-This function performs schema mapping between the source table and the given target schema.
+Performs schema matching between the source table and the given target schema. For each source column, finds the best-matching column in the target schema.
 
-The target is either a DataFrame or a string representing a standard data vocabulary supported by the library. Currently, only the GDC (Genomic Data Commons) standard vocabulary is supported.
+The target is either a DataFrame or a string representing a standard data vocabulary. Currently, only the GDC (Genomic Data Commons) standard vocabulary is supported.
+
+Available methods:
+- magneto_ft_bp (default): Fine-tuned Magneto model with bipartite reranker. Good general-purpose method.
+- magneto_zs_bp: Zero-shot Magneto with bipartite reranker.
+- magneto_ft_llm: Fine-tuned Magneto with LLM-based reranker. Uses an LLM for final ranking.
+- magneto_zs_llm: Zero-shot Magneto with LLM-based reranker.
+- llm: Pure LLM-based schema matching. Sends column names to an LLM for matching.
+- similarity_flooding, coma, cupid, distribution_based, jaccard_distance: Traditional schema matching algorithms.
+- two_phase: Two-phase approach combining top-k retrieval with one-to-one matching.
 
 Args:
     dataset (str): The name of the dataset variable.
-    target (str, optional): The target table or standard data vocabulary.
-    method (str, optional): The method used for mapping.
+    target (str, optional): The target table or standard data vocabulary. Defaults to "gdc".
+    method (str, optional): The schema matching method. Defaults to "magneto_ft_bp".
 
 Returns:
-    str: returns the matched columns
+    str: returns the matched columns with similarity scores
 
 You should show the user the result after this function runs.

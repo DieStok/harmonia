@@ -116,39 +116,44 @@ class BDIKitAgent(BeakerAgent):
 
 
     @tool()
-    async def top_matches(
+    async def rank_schema_matches(
         self,
         dataset: str,
-        columns: str,
+        attribute: str,
         agent: AgentRef,
         target: Optional[str] = None,
+        top_k: Optional[int] = None,
     ) -> str:
         """
-        Returns the top 10 schema matches between the source and target tables. This is useful
-        for evaluating alternative column mappings.
+        Returns the top-k schema matches between the source and target tables for a given attribute.
+        This is useful for evaluating alternative column mappings when the initial match_schema result seems incorrect.
 
         Args:
             dataset (str): The name of the dataset variable.
-            columns (str): The column to match.
+            attribute (str): The source attribute/column to find alternative matches for.
             target (str, optional): The target table or standard data vocabulary.
+            top_k (int, optional): Number of top matches to return. Defaults to 10.
 
         Returns:
-            str: returns the top 10 matches
+            str: returns the top-k alternative schema matches for the given attribute
         """
         # Apply defaults
         if target is None or target == "":
             target = DEFAULT_TARGET
+        if top_k is None:
+            top_k = 10
 
         # Validate target
         if target not in VALID_TARGETS:
             return f"Error: Invalid target '{target}'. Valid targets are: {', '.join(VALID_TARGETS)}. Please try again with a valid target."
 
         code = agent.context.get_code(
-            "top_matches",
+            "rank_schema_matches",
             {
                 "dataset": dataset,
-                "columns": columns,
-                "target": target
+                "attribute": attribute,
+                "target": target,
+                "top_k": top_k,
             },
         )
         result = await agent.context.evaluate(
@@ -319,24 +324,24 @@ class BDIKitAgent(BeakerAgent):
 
 
     @tool()
-    async def get_gdc_acceptable_values(self, column: str, agent: AgentRef) -> str:
+    async def get_gdc_acceptable_values(self, attribute: str, agent: AgentRef) -> str:
         """
-        Returns the acceptable values for a given column in the GDC standard.
+        Returns the acceptable values for a given attribute in the GDC standard.
 
         Args:
-            column (str): The name of the variable/column in the GDC target schema.
+            attribute (str): The name of the attribute/column in the GDC target schema.
 
         Returns:
-            str: returns a list of acceptable values (and their descriptions) for the given column in the GDC standard
+            str: returns a list of acceptable values (and their descriptions) for the given attribute in the GDC standard
         """
-        # Validate column is provided
-        if not column or column.strip() == "":
-            return "Error: Column name is required. Please provide a valid GDC column name."
+        # Validate attribute is provided
+        if not attribute or attribute.strip() == "":
+            return "Error: Attribute name is required. Please provide a valid GDC attribute name."
 
         code = agent.context.get_code(
             "get_gdc_acceptable_values",
             {
-                "column": column,
+                "attribute": attribute,
             },
         )
         result = await agent.context.evaluate(

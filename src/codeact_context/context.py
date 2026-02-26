@@ -53,11 +53,15 @@ class CodeActContext(BeakerContext):
         max_turns = int(os.environ.get("CODEACT_MAX_TURNS", "30"))
         context_strategy = os.environ.get("CODEACT_CONTEXT_STRATEGY", "summarize")
 
-        # Load custom summary template if configured
+        # Load summary template: env var override, then built-in v1 file, then code default
         summary_template = None
         summary_template_path = os.environ.get("HARMONIA_CODEACT_SUMMARY_TEMPLATE")
         if summary_template_path and Path(summary_template_path).exists():
             summary_template = Path(summary_template_path).read_text()
+        else:
+            default_summary_file = Path(__file__).parent / "prompts" / "v1" / "summary_template.txt"
+            if default_summary_file.exists():
+                summary_template = default_summary_file.read_text()
 
         # Build the CodeAct agent loop and attach it to the agent
         self.codeact_loop = CodeActAgentLoop(
@@ -78,9 +82,11 @@ class CodeActContext(BeakerContext):
         """
         Provide the system prompt for the LLM.
 
-        Supports custom prompts via HARMONIA_CODEACT_PROMPT env var.
-        Falls back to HARMONIA_CODE_CONTEXT_PROMPT for compatibility.
-        Falls back to a default CodeAct prompt.
+        Priority:
+        1. HARMONIA_CODEACT_PROMPT env var
+        2. HARMONIA_CODE_CONTEXT_PROMPT env var (backwards compatibility)
+        3. Built-in v1 prompt file (src/codeact_context/prompts/v1/system.txt)
+        4. Hardcoded fallback
         """
         custom_prompt_path = (
             os.environ.get("HARMONIA_CODEACT_PROMPT")
@@ -88,22 +94,29 @@ class CodeActContext(BeakerContext):
         )
         if custom_prompt_path and Path(custom_prompt_path).exists():
             prompt = Path(custom_prompt_path).read_text()
+            source = f"custom file: {custom_prompt_path}"
         else:
-            prompt = (
-                "You are a data scientist working in a Python environment with a "
-                "persistent Jupyter kernel.\n\n"
-                "You have access to pandas, numpy, and other data science libraries.\n\n"
-                "When you need to do something, write Python code in a ```python code block.\n"
-                "I will execute it and show you the output. You can then write more code "
-                "based on the results.\n\n"
-                "When you are done with the task and want to give a final answer, just "
-                "respond with text (no code block).\n\n"
-                "Important:\n"
-                "- Variables persist between code blocks (this is a persistent kernel session)\n"
-                "- Use print() to see output — bare expressions do not display\n"
-                "- If you get an error, read the traceback and fix your code\n"
-                "- Working directory: use os.getcwd() and os.listdir() to explore"
-            )
+            default_prompt_file = Path(__file__).parent / "prompts" / "v1" / "system.txt"
+            if default_prompt_file.exists():
+                prompt = default_prompt_file.read_text()
+                source = f"built-in: {default_prompt_file}"
+            else:
+                prompt = (
+                    "You are a data scientist working in a Python environment with a "
+                    "persistent Jupyter kernel.\n\n"
+                    "You have access to pandas, numpy, and other data science libraries.\n\n"
+                    "When you need to do something, write Python code in a ```python code block.\n"
+                    "I will execute it and show you the output. You can then write more code "
+                    "based on the results.\n\n"
+                    "When you are done with the task and want to give a final answer, just "
+                    "respond with text (no code block).\n\n"
+                    "Important:\n"
+                    "- Variables persist between code blocks (this is a persistent kernel session)\n"
+                    "- Use print() to see output — bare expressions do not display\n"
+                    "- If you get an error, read the traceback and fix your code\n"
+                    "- Working directory: use os.getcwd() and os.listdir() to explore"
+                )
+                source = "hardcoded fallback"
 
         # Update the agent loop's system prompt
         self.codeact_loop.system_prompt = prompt
@@ -111,8 +124,7 @@ class CodeActContext(BeakerContext):
         if not hasattr(self, '_auto_context_logged'):
             print(f"\n{'=' * 80}")
             print(f"AUTO-CONTEXT (domain prompt) -- codeact_context [{len(prompt)} chars]:")
-            if custom_prompt_path and Path(custom_prompt_path).exists():
-                print(f"[from custom file: {custom_prompt_path}]")
+            print(f"[source: {source}]")
             print(f"{'=' * 80}")
             print(prompt)
             print(f"{'=' * 80}\n")

@@ -91,11 +91,11 @@ class BDIKitContext(BeakerContext):
         """Generate the system prompt from templates."""
         # Define tools for template
         tools = [
-            {"name": "match_schema", "description": "Performs schema mapping between source and target tables"},
-            {"name": "top_matches", "description": "Returns top 10 alternative column mappings for evaluation"},
-            {"name": "match_values", "description": "Finds value matches between column pairs"},
+            {"name": "match_schema", "description": "Performs schema matching between source and target tables"},
+            {"name": "rank_schema_matches", "description": "Returns top-k alternative column mappings for a given attribute"},
+            {"name": "match_values", "description": "Finds value mappings between matched column pairs"},
             {"name": "materialize_mapping", "description": "Creates the final harmonized table"},
-            {"name": "get_gdc_acceptable_values", "description": "Lists acceptable values for GDC columns"},
+            {"name": "get_gdc_acceptable_values", "description": "Lists acceptable values for GDC attributes"},
         ]
 
         system_prompt = self.prompt_loader.get_system_prompt(

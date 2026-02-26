@@ -1,0 +1,15 @@
+{# Tool description for rank_schema_matches #}
+Returns the top-k alternative schema matches for a given source attribute.
+
+Use this when the initial match_schema result looks incorrect for a particular column. It returns ranked alternatives so you can pick the best semantic match.
+
+Args:
+    dataset (str): The name of the dataset variable.
+    attribute (str): The source attribute/column to find alternative matches for.
+    target (str, optional): The target table or standard data vocabulary. Defaults to "gdc".
+    top_k (int, optional): Number of top matches to return. Defaults to 10.
+
+Returns:
+    str: returns the top-k alternative schema matches ranked by similarity score
+
+You should show the user the alternatives and help them pick the most semantically appropriate match.
