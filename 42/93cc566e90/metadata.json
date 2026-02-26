@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "4293cc566e90",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "documentation/plans/25_02_2026_1527_update_bdikit_and_add_proper_LLM_selection_for_schema_and_value_matching_tools.md",
+    "documentation/plans/25_02_2026_1530_change_LLM_backend_to_liteLLM.md",
+    "documentation/plans/26_02_2026_1143_update_tool_prompts_new_version_bdikit_and_add_prompt_files_codecontextagent_and_codeactagent.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/42/93cc566e90/0/metadata.json",
+      "transcript": "/42/93cc566e90/0/full.jsonl",
+      "context": "/42/93cc566e90/0/context.md",
+      "content_hash": "/42/93cc566e90/0/content_hash.txt",
+      "prompt": "/42/93cc566e90/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 13893,
+    "cache_creation_tokens": 314364,
+    "cache_read_tokens": 6985814,
+    "output_tokens": 478,
+    "api_call_count": 67
+  }
+}

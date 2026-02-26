@@ -1,0 +1,110 @@
+Read the instructions here. Discuss with me what you plan to do and discuss edge cases, what my intentions are with the plan, or details you need. We will work interactively on this REDACTED.md
+
+---
+
+1. I am not sure. Investigate the code here: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/bdikit_context
+2. Correct.
+3. do rename to underscores yes
+4. The latest version of bdi-kit is 0.9. Before all else we need to update to the latest version. Could you check within a running container with the version is before we move on?
+5. New top-level section. It is the LLM that Harmonia's AI agent internally uses, which is different from the LLM agent that is doing the top-level analysis/user interaction. However, the default should be equal to the top-level LLM.
+6. fall-back to the experiment's main LLM_SERVICE_MODEL.
+
+For 4 we may need to do a bit more research. Can you trace the changes in bdi-kit over the versions, and compare its source code to what is installed in the container? Specifically, I cloned version 0.9 here: /hpc/compgen/projects/llm_GEO_project/bdi-kit but you said that in the container something else is installed. HEre is the file that builds the .sif from the .def. Please use this: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/build_harmonia_apptainer.sh and /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/harmonia_beaker_LLM_agent_environment_apptainer.def to determine completely how bdikit is installed in the container.
+
+Note: I made changes to bdikit-context above the earlier implementation, so we will have to compare how i) bdi-kit context is implemented in the latest version of bdikit (0.9), since it incorporates the LLM agent that first was standalone Harmonia; ii) what changes we made in the local version; iii) use this to inform the plan for updating and properly making the LLMs used for values within Harmonia settable in config files.
+
+---
+
+[Request interrupted by user]
+
+---
+
+You can execute a container by doing srun, and then executing this to run the container: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh 
+Do that, then continue.
+
+---
+
+Question 1:
+
+We will implement the full plan so everything works as needed. Rebuilding is fine as part of the plan. Whatever can be executed in parallel while the container is rebuilding should do so.
+
+Question 2:
+Yes, check this. Internally it should call the appropriate LLM matchers, so if that goes well it should work. Still chec this.
+
+Question 3: the LLM calls what it wants to call and it should work.
+
+Question 4:
+I guess pin to the v0.9 version for now.
+
+Then an extra point from my side: I originally implemented any-llm integration as an easy way of integrating many different LLMs. I see that Harmonia has chosen liteLLM instead. Given this comparison document: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/miscellaneous/anyllm_vs_litellm_comparison.docx and the current state of the codebase, would it make sense or be easy to switch to litellm instead?
+
+---
+
+Here is the document text:
+
+---
+
+Your two-phase matcher approach seems valid. I agree with making the switch to liteLLM only a separate plan. 
+
+So now I want you to:
+- write the full plan for the update of bdikit and configuration of what LLMs bdi-kit uses, with details of what we discussed and context that is needed for a fresh Claude instance getting to work on this problem (i.e. very clear step-by-step instructions and files to change) to REDACTED.md
+- write the full and detailed plan, including necessary context and all relevant files, for the switch to the liteLLM backend in REDACTED.md
+
+Report to me with any concerns after this is done.
+
+---
+
+can plan 2 be executed in parallel or do we need to wait for the new container to be built etc.?
+
+---
+
+I want you to write me a message that I can paste into a Claude instance that is working on plan 1, that tells it to execute plan 2's code changes after plan 1's code changes are done, then rebuild the container once.
+
+---
+
+I think the update to bdikit, which now has different methods etc. necessitates updating the tool prompts that Archytas sees.
+Specifically, could you analyze:
+- how bdikit now organizes tools in the updated version (can check here /hpc/compgen/projects/llm_GEO_project/bdi-kit or read the plan for updating to check this)
+- how that differs from the prompts in the folder
+
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/bdikit_context/prompts
+
+then discuss with me what changes need to be made. While you are at it, please also make sure to make a plan to make prompt folders in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/code_context and /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/codeact_context (now their prompts are just in the file if I don't set anything, I want specific, versioned prompts to point the environment variable towards when running experiments.)
+
+So:
+- check tool descriptions/prompts versus updated bdikit-version
+- check how to make prompts folders for the two other agent contexts
+
+Report your findings and discuss with me until we can get an implementation plan for changes to make
+
+---
+
+Continue from where you left off.
+
+---
+
+hello.
+
+---
+
+I want you to continue with that, yes. Report back to me.
+
+---
+
+Could you repeat what you just said? it seems to not be properly saving.
+
+---
+
+[Request interrupted by user]
+
+---
+
+For 1. make it rank_schema_matches what the agent sees as well. Better to have no old-style stuff anywhere.
+
+I want top keep the v1 v2 for now. I want you to indeed make all changes needed to get this to work, including bdikit main.j2, generate_env.py and the experiment configs where needed. Now write a full plan called DATETIME_update_tool_prompts_new_version_bdikit_and_add_prompt_files_codecontextagent_and_codeactagent.md in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans. Make it comprhensiove: a fresh Claude instance should have all the information needed to implement the fixes in all files needed.
+
+Respond to me when the plan is done.
+
+---
+
+Why keep this split, rather than showing the LLM the correct internals? if it decides to look at help or documentation it will get confusing error messages, right?
