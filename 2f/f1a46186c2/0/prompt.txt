@@ -20,3 +20,30 @@ First, make the two edits I ask, then lay out the plan and discuss with me WITHO
 ---
 
 Before we move on: could you commit just the edited .yaml file and the analysis of errors.md file?
+
+---
+
+Could you write the background of how context is managed between the beaker kernel and archytas (i.e. what each does, how that influences the context, and where you can possibly intervene) into a separate markdown file here /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/possible_features. Call it DATETIMESTAMP_context_management_Archytas_beaker.md. Make it comprehensive and have all the relevant function signatures and how they are called, and some diagrams with the logic. Please include some references to usual compaction/context management strategies as well in case I want to implement those. Do some searches, and link to both blog posts/frontier model documentation/github repos/(arxiv) papers. 
+
+Then, please make a clear plan for implementing 1. the fix for ollama context management and 2. the simple fix to make sure that beaker kernel does not send too large variables in context. Make a fix that can do all three options described below:
+
+Cap total serialized state size. Add a byte/token budget to FETCH_STATE_CODE. If the total serialized JSON exceeds, say, 50K characters, stop adding variables and append a "_truncation_warning": "State exceeded budget, 47 variables omitted".
+Exclude large variables. After serialization, measure each variable's JSON size and drop any single variable exceeding a threshold (e.g., 10K chars). Replace with a placeholder like "<large object: 847KB, type=dict>".
+Blacklist known offenders. If bdi objects are always huge, specifically exclude variables of certain types from serialization.
+
+by default, it should drop large variables of more than 20K chars but this should be configurable. Write this plan to REDACTED.md. Make sure this plan is completely comprhensive and self-contained such that a new claude instance can implement it, and have it contain instructions at the end to commit with an informative commit message once done. 
+
+After doing this ,surface any other questions or edge cases about the implementation plan that may have come up given the links you read for context management.
+
+---
+
+1. I do not know. Just set both.
+2. context length is already in the config.yamls, it just wasn't used properly. In the log of the run and stdout that exec_apptainer_harmonia.sh produces, can you include back-of-the-envelope calcualtions of memory needed to properly fit in memory, and if it is 20% less or more then give a clear WARNING
+3. patch it in the apptainer build definition. Make sure to include clear comments on what this is doing and why it is needed
+4. yes, let's do that. 
+5. this is a good point. is it possible to only include variables that were changed in the previous/current message and truncate the rest?
+6. Make it a percentage of the model's context window, 25% at most. Can this be an experimental config variable, and can archytas's summarization variables also be added to the experimental configs in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/experiment_1_harmonia_dou2020_gdc/configs
+7. Yes, please do so.
+8. add this as an optional at the end of the plan for now.
+
+More questions?
