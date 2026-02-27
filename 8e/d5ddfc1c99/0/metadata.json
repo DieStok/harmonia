@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "8ed5ddfc1c99",
+  "session_id": "e3fbfa73-1413-4731-9a58-bef90cc2768f",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T14:34:04.656082383Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_devstral-small.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.5-air.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.7-flash.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_nemotron-3-nano.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_qwen3-coder.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_step-3.5-flash.yaml"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "4dd51f2c-2433-45e0-93ec-67c520a48d8d",
+  "checkpoint_transcript_start": 1423,
+  "transcript_lines_at_start": 1423,
+  "token_usage": {
+    "input_tokens": 25,
+    "cache_creation_tokens": 128579,
+    "cache_read_tokens": 2230415,
+    "output_tokens": 20813,
+    "api_call_count": 19
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T14:34:00.04808647Z",
+    "agent_lines": 368,
+    "human_added": 0,
+    "human_modified": 1,
+    "human_removed": 3,
+    "total_committed": 369,
+    "agent_percentage": 99.7289972899729
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/e3fbfa73-1413-4731-9a58-bef90cc2768f.jsonl"
+}

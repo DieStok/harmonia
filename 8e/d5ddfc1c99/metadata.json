@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "8ed5ddfc1c99",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_anyllm_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_devstral-small.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_devstral.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.5-air.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_glm-4.7-flash.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_nemotron-3-nano.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_olmo3.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_qwen3-coder.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_step-3.5-flash.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/8e/d5ddfc1c99/0/metadata.json",
+      "transcript": "/8e/d5ddfc1c99/0/full.jsonl",
+      "context": "/8e/d5ddfc1c99/0/context.md",
+      "content_hash": "/8e/d5ddfc1c99/0/content_hash.txt",
+      "prompt": "/8e/d5ddfc1c99/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 25,
+    "cache_creation_tokens": 128579,
+    "cache_read_tokens": 2230415,
+    "output_tokens": 20813,
+    "api_call_count": 19
+  }
+}
