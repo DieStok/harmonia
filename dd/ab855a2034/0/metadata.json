@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "ddab855a2034",
+  "session_id": "df7a87df-ccac-491d-ba13-0f896d8e7a91",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T09:16:57.667019614Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md",
+    "documentation/plans/26_02_2026_1321_update_logging_context_management_and_tools.md",
+    "documentation/plans/26_02_2026_1322_finalize_context_management_fix.md",
+    "src/context_management/__init__.py",
+    "src/context_management/kernel_state_budget.py",
+    "src/context_management/test_kernel_state_budget.py"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "9f64abc0-f4b8-49da-9dc0-95653a642e22",
+  "token_usage": {
+    "input_tokens": 13191,
+    "cache_creation_tokens": 356883,
+    "cache_read_tokens": 7932813,
+    "output_tokens": 929,
+    "api_call_count": 87
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T09:16:52.130578601Z",
+    "agent_lines": 613,
+    "human_added": 561,
+    "human_modified": 2475,
+    "human_removed": 0,
+    "total_committed": 3649,
+    "agent_percentage": 16.79912304741025
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/df7a87df-ccac-491d-ba13-0f896d8e7a91.jsonl"
+}

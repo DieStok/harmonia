@@ -1,0 +1,797 @@
+given this plan REDACTED.md
+
+and this code from archytas that defines the summarizers it uses
+
+import asyncio
+import json
+import logging
+from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import TYPE_CHECKING, TypeAlias, Callable, Awaitable
+
+from jinja2 import Environment, Template, FileSystemLoader
+
+from .models.base import BaseArchytasModel
+
+prompt_path = Path(__file__).parent / "prompts"
+jinja_env = Environment(loader=FileSystemLoader(prompt_path))
+
+if TYPE_CHECKING:
+    from .agent import Agent
+    from .chat_history import ChatHistory, MessageRecord, SummaryRecord, RecordType, AutoContextMessage
+    from langchain_core.messages import ToolMessage, AIMessage, BaseMessage, HumanMessage, SystemMessage
+
+logger = logging.getLogger("beaker")
+
+
+MessageSummarizerFunction: TypeAlias = "Callable[[ToolMessage, ChatHistory, Agent, Optional[Model]], Awaitable[None]]"
+LoopSummarizerFunction: TypeAlias = "Callable[[list[MessageRecord], ChatHistory, Agent, bool Optional[Model]], Awaitable[None]]"
+HistorySummarizerFunction: TypeAlias = "Callable[[ChatHistory, Agent], Awaitable[None]]"
+
+MESSAGE_SUMMARIZATION_THRESHOLD: int = 1000
+MESSAGE_SUMMARIZATION_SNIPPET_SIZE: int = 1000
+
+
+async def get_summarizable_records(chat_history: "ChatHistory") -> "list[RecordType]":
+    from .chat_history import RecordType, SummaryRecord, SystemMessage, AutoContextMessage, AIMessage
+    all_records = await chat_history.records(auto_update_context=False)
+    summarizable_records: list[RecordType] = [
+        record for record in all_records
+        if record.message is not None
+        and (
+            isinstance(record, SummaryRecord)
+            or not isinstance(record.message, (SystemMessage, AutoContextMessage))
+        )
+    ]
+    return summarizable_records
+
+
+async def get_records_up_to_threshold(chat_history: "ChatHistory", model: BaseArchytasModel, token_threshold: int) -> "list[RecordType]":
+    from .chat_history import AIMessage
+    token_count = chat_history.base_tokens or 0
+    target_idx: int = -1
+    summarizable_records = await get_summarizable_records(chat_history)
+    for idx, record in enumerate(summarizable_records):
+        token_count += record.token_count
+        if token_count >= token_threshold:
+            break
+        target_idx = idx
+    else:
+        target_idx = -1
+
+    # Don't split AIMessages and their tool call
+    done = False
+    while target_idx >= 0 and not done:
+        target_record = summarizable_records[target_idx]
+        target_message = target_record.message
+        if isinstance(target_message, AIMessage) and target_message.tool_calls:
+            target_idx -= 1
+        else:
+            done = True
+
+    if target_idx >= 0:
+        return summarizable_records[:target_idx+1]
+    else:
+        return []
+
+
+async def get_records_up_to_loop(chat_history: "ChatHistory", model: BaseArchytasModel) -> "list[RecordType]":
+    all_records = await get_summarizable_records(chat_history)
+    loop_start_index = next((idx for idx, record in enumerate(all_records) if record.react_loop_id == chat_history.current_loop_id), None)
+    if loop_start_index is not None:
+        summarizable_records = all_records[:loop_start_index]
+    else:
+        summarizable_records = []
+    return summarizable_records
+
+
+async def default_loop_summarizer(
+    loop_records: "list[MessageRecord]",
+    chat_history: "ChatHistory",
+    agent: "Agent",
+    model: "BaseArchytasModel" = None,
+    token_threshold: int = 4000,
+    force_update: bool = False,
+):
+    from langchain_core.messages import ToolMessage
+    if model is None:
+        model = agent.model
+    coroutines = []
+    for record in loop_records:
+        if isinstance(record.message, ToolMessage) and (artifact := getattr(record.message, "artifact", None)):
+            message = record.message
+            tool_name = artifact.get("tool_name", None)
+            tool_fn = agent.tools[tool_name]
+            summarized: bool = artifact.get("summarized", False)
+            summarizer: MessageSummarizerFunction = getattr(tool_fn, "summarizer", None)
+            if summarizer and (force_update or not summarized):
+                coroutines.append(summarizer(message, chat_history, agent, model=model))
+    await asyncio.gather(*coroutines)
+
+
+async def default_history_summarizer(
+    chat_history: "ChatHistory",
+    agent: "Agent",
+    recordset: "list[MessageRecord[BaseMessage]|SummaryRecord]",
+    model: "BaseArchytasModel" = None,
+    force_update: bool = False,
+):
+    from .chat_history import MessageRecord, SummaryRecord, AIMessage, SystemMessage, HumanMessage, BaseMessage
+    logger.debug(f"Summarizing history {chat_history=}, {agent=}, {force_update=}")
+
+    if not recordset:
+        return
+
+    if model is None:
+        model = agent.model
+
+    records_to_summarize: list[MessageRecord[BaseMessage]] = []
+    summaries: list[SummaryRecord] = []
+    for record in recordset:
+        match record:
+            case SummaryRecord():
+                summaries.append(record)
+            case MessageRecord():
+                records_to_summarize.append(record)
+
+    uuids = [record.uuid for record in records_to_summarize]
+
+    jinja_globals = {
+        "isinstance": isinstance,
+        "MessageRecord": MessageRecord,
+        "AIMessage": AIMessage,
+        "SummaryRecord": SummaryRecord,
+        "BaseMessage": BaseMessage,
+    }
+    system_template = jinja_env.get_template(
+        name="summarization/default_history_summarization_system.jinja",
+        globals=jinja_globals,
+    )
+    user_template = jinja_env.get_template(
+        name="summarization/default_history_summarization_user.jinja",
+        globals=jinja_globals
+    )
+    system_prompt = system_template.render({"chat_history": chat_history})
+    user_prompt = user_template.render({
+        "records_to_summarize": records_to_summarize,
+        "summaries": summaries,
+    })
+
+    messages = [SystemMessage(content=system_prompt), HumanMessage(content=user_prompt)]
+    response = await model._model.ainvoke(
+        input=messages,
+    )
+    summary_text = response.content
+    usage_metadata = getattr(response, "usage_metadata", None)
+    summary_tokens = usage_metadata.get("output_tokens")
+
+    summary_record = SummaryRecord(
+        message=SystemMessage(
+            content=f"""\
+Below is a summary of {len(uuids)} messages with UUIDs of: {uuids}
+
+```summary
+{summary_text}
+```
+""",
+        ),
+        summarized_messages=set(uuids),
+        token_count=summary_tokens,
+    )
+    chat_history.summaries.append(summary_record)
+
+
+async def default_tool_summarizer(
+    message: "ToolMessage",
+    chat_history: "ChatHistory",
+    agent: "Agent",
+    model: "BaseArchytasModel" = None
+):
+    if model is None:
+        model = agent.model
+
+    message_length = len(message.content)
+    if message_length < MESSAGE_SUMMARIZATION_THRESHOLD:
+        # Message is already short
+        return
+
+    _, tool_call = chat_history.get_tool_caller(message.tool_call_id)
+
+    message.content = f"""\
+Summary of run:
+ID: {tool_call.get("id")}
+Name: {tool_call.get("name")}
+Arguments: {json.dumps(tool_call.get("args"))}
+Status: {message.status}
+The first {MESSAGE_SUMMARIZATION_SNIPPET_SIZE} characters of the tools output are:
+```
+{message.content[:MESSAGE_SUMMARIZATION_SNIPPET_SIZE]}
+```
+"""
+    message.artifact["summarized"] = True
+
+
+
+async def llm_message_summarizer(message: "ToolMessage", chat_history: "ChatHistory", agent: "Agent"):
+    from .chat_history import MessageRecord, AIMessage
+    calling_record: MessageRecord[AIMessage]
+    calling_record, tool_call = chat_history.get_tool_caller(message.tool_call_id)
+
+    prompt: str = """\
+You are a ReAct agent who has been conversing with the user.
+The full history is growing large, and tool outputs can be large, so you will be helping by summarizing the output of a tool call.
+Please format your output in a way that is concise, yet provides enough context in case you need to refer back to the tool call
+in the future.
+If you ever need the full output of the tool, there will be a tool available that will allow you to temporarily retrieve the full
+output for the period in which it is needed.
+"""
+    query_parts: list[str] = []
+    query_parts.append(
+        f"""\
+Below is the output of calling this tool:
+    ToolCallId: {tool_call.get('id')}
+    Name: {tool_call.get("name")}
+    Arguments: {json.dumps(tool_call.get("args"))}
+    Status: {message.status}.
+
+Please summarize the output for the purpose of future reference in the conversational history.
+""")
+    if calling_record.message.text:
+        query_parts.append(
+            f"""\
+To assist in the summarization, the your thought process when calling the tool was:
+```
+{calling_record.message.text}
+```
+""")
+    query_parts.append(
+        f"""\
+Here is the output generated by the tool:
+```
+{message.text}
+```
+""")
+    query = "\n".join(query_parts)
+    logger.warning(f"`````summarization prompt`````\n{prompt}\n````` end `````")
+
+
+    message.additional_kwargs["orig_content"] = message.content
+
+    summarized_text = await agent.oneshot(prompt=prompt, query=query)
+    logger.warning(summarized_text)
+    #TODO replace text
+
+    message.artifact["summarized"] = True
+
+And the archyutas repo here: /hpc/compgen/projects/llm_GEO_project/archytas
+
+Could you discuss other environment variables to set for Archytas other than just the summarization_threshold_pct? what other context management variables could we set/make configurable?
+
+---
+
+Continue from where you left off.
+
+---
+
+Could you repeat to me what was said in this conversation in a short summary?
+
+---
+
+Are there any messages here?
+
+---
+
+Could you summarize for me the deep dive you did into other variables to control archytas summarization behaviours and such? I am experiencing an error where I do not see our previouys messages in this chat.
+
+---
+
+Could you make a full plan that covers the thrust of your analysis (functions you've found, things that are configurable and hence should be configured in experiment config (in a new Archytas: section perhaps) and things that should be configured, and make a breakdown of all the implementation steps, files to touch, etc.?
+
+Please first report a blow-by-blow to me here and ask me clarifying questions.
+
+---
+
+One more thing: what version of Archytas is actually installed in the harmonia container, and how does that differ from the newest? Perhaps some of these concerns are already addressed in newer versions? please investigate this to get the full picture.
+
+---
+
+[Request interrupted by user]
+
+---
+
+Could you stop investigating and give me the current results?
+
+I saw you found the version. Archytas is only at 1.6.6 on github and beaker-dev is currently using 1.6.5 if I am not mistaken so it seems like it is pretty up to date. Correct?
+
+---
+
+For B: from the deep dive: then how is the model started? execute_apptainer_harmonia.sh provisions an ollama instance for local models, so how would this actually work? Similarly for A. For remote models via openrouter or litellm it would be fine, but for local models perhaps not? 
+
+Ah, I see: Practical hybrid: Use Option C for the Archytas side (lazy model creation from env var config dict), but add an Ollama model pre-pull step in exec_apptainer_harmonia.sh that also pre-loads the summarization model if configured. This gives us lazy Python instantiation + warm GPU cache.
+
+But then what is the final most future-proof approach to doing this? I would also like a fallback where if nothing is set then by default the same model is used for summarization and to run the agent loop. 
+
+Please check recent commits to see if any part of the context management plan has already been implemented. Then share the result with me.
+
+---
+
+Yes. Please make a plan /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/DATETIME_new_context_management_implementation_plan.md. Have it mention that it supersedes the old plan. Make this plan complete and thorough: a fresh Claude Opus 4.6 instance should have everything it needs to implement these changes.
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **Opening**: User shared a plan file (`25_02_2026_2238_fix_context_issues.md`) and Archytas summarizer code, asking about other environment variables to configure for Archytas context management beyond `summarization_threshold_pct`.
+
+2. **Deep exploration phase**: I explored the Archytas codebase extensively, reading `models/base.py`, `chat_history.py`, `agent.py`, `react.py`, `summarizers.py`, `models/ollama.py`, `models/anthropic.py`, and summarization Jinja templates. I identified all configurable parameters across ModelConfig, ChatHistory, Agent, ReActAgent, and hardcoded constants.
+
+3. **First analysis**: I provided a comprehensive breakdown of all configurable levers, hardcoded constants, and recommended additions to `ContextManagementConfig`.
+
+4. **User asked about messages**: User asked "Are there any messages here?" — I interpreted this as asking about print/log messages in the Archytas codebase and listed all debug/info messages.
+
+5. **User clarified context loss**: User said they were experiencing an error where they didn't see previous messages in the chat, and asked for a summary of the deep dive. I provided a condensed summary of all findings.
+
+6. **User requested full plan**: Asked me to create a full plan covering the analysis, with a blow-by-blow report and clarifying questions first.
+
+7. **Exploration phase 2**: I explored experiment config YAMLs, `config.py`, `generate_env.py`, Beaker's `config.py`, `agent.py`, and the full config pipeline. Key finding: `summarization_threshold_pct` exists in Beaker's `LLM_Service_Provider` dataclass but is NOT in the static provider dict defaults, so it never reaches Archytas.
+
+8. **Blow-by-blow presentation**: I presented the complete findings and asked 4 clarifying questions via AskUserQuestion.
+
+9. **User answers to Q1-Q4**:
+   - YAML location: Under `context_management:` with `python_kernel:` and `archytas:` subsections
+   - Injection method: Hybrid (model config via env, agent via Beaker patch)
+   - Archytas changes: Modify Archytas directly (recommended)
+   - Summary model: Yes, add it
+   
+10. **Second round of questions**: I asked 4 more questions.
+
+11. **User answers to Q5-Q8**:
+   - Summary model: "give me more details on benefits, drawbacks of each + code paths"
+   - Context window override: New ModelConfig field (recommended)
+   - Threshold flow: Both (fix Beaker + env var fallback)
+   - Plan format: "First give me more information"
+
+12. **Deep dive on summarization model**: I presented Options A (Beaker creates both), B (Archytas lazy), C (config dict), with full analysis. Recommended practical hybrid: Option C + Ollama pre-pull.
+
+13. **User asked about Archytas version**: Asked to check what version is installed in the container vs newest, whether concerns are already addressed.
+
+14. **Version investigation**: Found Archytas 1.6.6 everywhere (PyPI, local clone, container), identical to upstream. No local fork modifications. Checked GitHub issues (#28, #6, #53) — all open, none addressing our concerns. Beaker at 1.14.0, also current.
+
+15. **User confirmed version findings**: "Archytas is only at 1.6.6 and beaker-dev is currently using 1.6.5 if I am not mistaken so it seems like it is pretty up to date. Correct?"
+
+16. **User asked about Ollama summarization model logistics**: Asked about how local models would work with Options A and B given that exec_apptainer_harmonia.sh provisions Ollama. Also asked about future-proof approach and fallback behavior. Asked me to check recent commits for any implemented parts.
+
+17. **Implementation status check**: Confirmed ZERO parts of the context management plan have been implemented. No `OLLAMA_NUM_CTX`, no VRAM estimation, no `src/context_management/`, no `HARMONIA_STATE_*`, no `ContextManagementConfig`.
+
+18. **User requested plan creation**: Asked for a complete, thorough plan at a specific path with datetime in filename.
+
+19. **Plan writing**: I gathered remaining details (exec script sections, Apptainer def, .env.template, experiment YAMLs) and wrote a 1,247-line plan document.
+
+Key files read/explored:
+- Archytas: models/base.py, models/ollama.py, models/anthropic.py, summarizers.py, chat_history.py, agent.py, react.py, prompts/summarization/*.jinja
+- Beaker: lib/config.py, lib/agent.py
+- Harmonia: src/automation/config.py, generate_env.py, exec_apptainer_harmonia.sh, .env.template, harmonia_beaker_LLM_agent_environment_apptainer.def, experiment YAMLs
+- Documentation: 25_02_2026_2238_fix_context_issues.md
+
+Key architectural decisions made:
+1. YAML: `context_management:` with `python_kernel:` and `archytas:` subsections
+2. Hybrid injection: model config via env→ModelConfig, agent settings via Beaker patch→ReActAgent kwargs
+3. Modify Archytas directly for hardcoded constants
+4. Lazy summarization model creation from JSON env var + Ollama pre-pull
+5. Fix Beaker provider dict + add env var fallback in Archytas for threshold_pct
+6. New `context_window_override` field on ModelConfig
+
+The plan was successfully written and the user has not yet responded to it.
+
+Summary:
+1. Primary Request and Intent:
+   The user asked for a comprehensive analysis of all configurable context management parameters in the Archytas LLM agent framework, followed by creation of a detailed implementation plan. The sequence was:
+   - Initial question: What other environment variables/settings exist in Archytas for context management beyond `summarization_threshold_pct`?
+   - Evolving into: Create a full implementation plan that covers all discoverable Archytas configuration levers, identifies what's broken/missing, and specifies exact code changes across three codebases (Archytas, Beaker, Harmonia).
+   - Final explicit request: "Please make a plan at `documentation/plans/DATETIME_new_context_management_implementation_plan.md`. Have it mention that it supersedes the old plan. Make this plan complete and thorough: a fresh Claude Opus 4.6 instance should have everything it needs to implement these changes."
+
+2. Key Technical Concepts:
+   - **Config pipeline**: Experiment YAML → `generate_env.py` → `.env` file → `exec_apptainer_harmonia.sh` → Apptainer `--env-file` → Beaker `Config.from_config_file()` → `Config.get_model()` → `ModelConfig` → Archytas model class
+   - **Archytas summarization**: `BaseArchytasModel.summarization_threshold` property with priority chain: explicit threshold > ratio > pct > DEFAULT_SUMMARIZATION_RATIO (0.5)
+   - **Beaker model instantiation**: `Config.get_model()` deep-copies `providers[provider]` dict, adds `model_name`/`api_key`, dynamically imports and instantiates model class via `importlib`
+   - **`ModelConfig` with `extra='allow'`**: Pydantic model that accepts arbitrary extra fields, allowing additional keys to flow through
+   - **`LLM_Service_Provider` dataclass**: Defines `summarization_threshold_pct` (default: 20%) but the static `providers` dict entries DON'T include it — key bug
+   - **Ollama `contextsize()` returning `None`**: When API doesn't report context length, `summarization_threshold` returns `None`, `needs_summarization()` returns `False` — summarization silently disabled
+   - **Lazy summarization model**: JSON env var `ARCHYTAS_SUMMARIZATION_MODEL_CONFIG` with `import_path` + `model_name`, lazily instantiated on first summarization call, with Ollama pre-pull in exec script
+   - **Apptainer container**: Installs `beaker_kernel>=1.14.0` from PyPI which pulls `archytas>=1.6.5`. Local changes require modified `.def` to install from local paths.
+
+3. Files and Code Sections:
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/models/base.py`**
+     - Core file defining `ModelConfig` and `BaseArchytasModel`. Contains the `summarization_threshold` property (lines 128-144) and `contextsize()` base method (lines 168-172).
+     - Plan specifies: add `context_window_override: int | None = None` to `ModelConfig`, modify `contextsize()` to check override + env var before returning None, add env var fallback for `summarization_threshold_pct`.
+     - Key current code:
+     ```python
+     class ModelConfig(PydanticModel, extra='allow'):
+         model_name: str
+         model_config = ConfigDict(extra="allow", protected_namespaces=())
+         api_key: str | None = None
+         summarization_ratio: float | None = None
+         summarization_threshold: int | None = None
+         summarization_threshold_pct: int | None = None
+     ```
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/models/ollama.py`**
+     - `OllamaModel.contextsize()` queries Ollama API, returns `None` on KeyError. Plan specifies: check `context_window_override` and env var before API query.
+     ```python
+     @lru_cache()
+     def contextsize(self, model_name: str | None = None) -> int | None:
+         if model_name is None:
+             model_name = self.model_name
+         show_response = self.model._client.show(self.model_name)
+         model_info = show_response.modelinfo
+         try:
+             model_arch = model_info["general.architecture"]
+             context_length = model_info[f"{model_arch}.context_length"]
+             return int(context_length)
+         except KeyError:
+             print("No context length in model info")
+             return None
+     ```
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/summarizers.py`**
+     - Contains hardcoded constants `MESSAGE_SUMMARIZATION_THRESHOLD = 1000` and `MESSAGE_SUMMARIZATION_SNIPPET_SIZE = 1000` (lines 27-28). Contains `default_history_summarizer`, `default_loop_summarizer`, `default_tool_summarizer`.
+     - Plan specifies: read constants from env vars, add `_get_summarization_model()` for lazy model creation, modify summarizers to use it.
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/chat_history.py`**
+     - `ChatHistory.__init__()` (lines 146-181): accepts `model`, `loop_summarizer`, `history_summarizer`. `needs_summarization()` (lines 231-240) returns False if threshold is None. `summarize_history()` (lines 265-315) creates async task with `model=agent.model`.
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/agent.py`**
+     - `Agent.__init__()` (lines 78-120): creates `ChatHistory(messages)` without passing `model`. `execute()` (lines 270-320) prints token estimates, calls model.ainvoke.
+
+   - **`/hpc/compgen/projects/llm_GEO_project/archytas/archytas/react.py`**
+     - `ReActAgent.__init__()` (lines 174-235): accepts `max_errors=3`, `max_react_steps=None` (defaults to infinity). Contains the main ReAct loop with `ContextWindowExceededError` handling (lines 517-529).
+
+   - **`/hpc/compgen/projects/llm_GEO_project/beaker-kernel/beaker_kernel/lib/config.py`**
+     - `LLM_Service_Provider` (lines 175-200): has `summarization_threshold_pct` field (default: 20).
+     - Static `providers` dict (lines 276-307): only has `import_path`, `default_model_name`, `api_key` — MISSING `summarization_threshold_pct`.
+     - `Config.get_model()` (lines 433-480): deep-copies provider, adds overrides, calls `cls(config_obj)`.
+     - Plan specifies: add `summarization_threshold_pct: 20` to all provider entries, add env var passthrough for `ARCHYTAS_CONTEXT_WINDOW_OVERRIDE` and `ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT`.
+
+   - **`/hpc/compgen/projects/llm_GEO_project/beaker-kernel/beaker_kernel/lib/agent.py`**
+     - `BeakerAgent.__init__()`: calls `super().__init__()` (ReActAgent) but does NOT pass `max_react_steps` or `max_errors`.
+     - Plan specifies: read `ARCHYTAS_MAX_REACT_STEPS` and `ARCHYTAS_MAX_ERRORS` from env, pass via `**kwargs`.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/src/automation/config.py`**
+     - Current `ExperimentConfig` with `from_dict()` parsing. No `context_management` section.
+     - Plan specifies: add `PythonKernelContextConfig`, `ArchytasContextConfig`, `ContextManagementConfig` dataclasses.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/generate_env.py`**
+     - Transforms YAML → .env. Currently emits `LLM_SERVICE_*`, `OLLAMA_*`, `HARMONIA_*` vars. Does NOT emit any summarization or context management vars.
+     - Plan specifies: add block to emit `ARCHYTAS_*` and `HARMONIA_STATE_*` vars, build `ARCHYTAS_SUMMARIZATION_MODEL_CONFIG` JSON.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh`**
+     - Lines 618-622: exports `OLLAMA_CONTEXT_LENGTH` only (not `OLLAMA_NUM_CTX`).
+     - Lines 514-537: pre-loads one Ollama model via `/api/generate`.
+     - Line 892: passes `--env-file ${ENV_FILE}` to Apptainer.
+     - Plan specifies: export both `OLLAMA_NUM_CTX` and `OLLAMA_CONTEXT_LENGTH`, calculate absolute state budget, pre-pull summarization model.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/.env.template`**
+     - Current documentation of available env vars. No context management vars.
+     - Plan specifies: add full section documenting all new `ARCHYTAS_*` and `HARMONIA_STATE_*` vars.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/harmonia_beaker_LLM_agent_environment_apptainer.def`**
+     - Installs `beaker_kernel>=1.14.0` from PyPI (which pulls archytas>=1.6.5). No FETCH_STATE_CODE patches.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/25_02_2026_2238_fix_context_issues.md`**
+     - Previous plan with Fix 1 (Ollama num_ctx) and Fix 2 (FETCH_STATE_CODE budget). The new plan supersedes the `context_management:` YAML structure from this plan.
+
+   - **`harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md`**
+     - Newly created 1,247-line plan document covering all changes.
+
+4. Errors and Fixes:
+   - No code implementation errors occurred (this was a research/planning session, not implementation).
+   - File path issue: `src/automation/generate_env.py` doesn't exist — the actual path is `generate_env.py` at the repo root. Resolved by using Glob to find the correct path.
+   - User experienced context loss mid-conversation ("I am experiencing an error where I do not see our previous messages in this chat") — I provided a condensed summary of findings so far.
+
+5. Problem Solving:
+   - **Discovered 6 specific problems (P1-P6)** in the Archytas/Beaker/Harmonia context management pipeline, each with root cause analysis and exact code locations.
+   - **Mapped the complete config pipeline** from YAML to Archytas model constructor, identifying where each parameter is transformed or lost.
+   - **Resolved the summarization model design** by analyzing three architecture options (Beaker creates, Archytas lazy, config dict) and recommending a hybrid: JSON env var config with lazy Archytas instantiation + Ollama pre-pull in exec script.
+   - **Confirmed no upstream fixes exist**: Archytas 1.6.6 is latest, local clone is identical to upstream, all relevant GitHub issues (#28, #6, #53) are open with no PRs.
+   - **Confirmed zero implementation** of the previous plan's changes.
+
+6. All User Messages:
+   - "given this plan [path] and this code from archytas that defines the summarizers it uses [code]... Could you discuss other environment variables to set for Archytas other than just the summarization_threshold_pct? what other context management variables could we set/make configurable?"
+   - "Are there any messages here?"
+   - "Could you summarize for me the deep dive you did into other variables to control archytas summarization behaviours and such? I am experiencing an error where I do not see our previous messages in this chat."
+   - "Could you make a full plan that covers the thrust of your analysis (functions you've found, things that are configurable and hence should be configured in experiment config (in a new Archytas: section perhaps) and things that should be configured, and make a breakdown of all the implementation steps, files to touch, etc.? Please first report a blow-by-blow to me here and ask me clarifying questions."
+   - Q1 answers: "under context_management, but subdivide that again into python_kernel and archytas. Make sure that whatever reads context_management gets refactored!"
+   - Q2 answers: "Hybrid: model config via env, agent via Beaker patch"
+   - Q3 answers: "Modify Archytas (Recommended)"
+   - Q4 answers: "Yes, add summarization_model config"
+   - Q5 answers: "On this issue you need to give me more details to make a proper choice. It seems to be quite convoluted. Please give me more details on benefits, drawbacks of each + code paths."
+   - Q6 answers: "New ModelConfig field (Recommended)"
+   - Q7 answers: "Both: fix Beaker + env var fallback"
+   - Q8 answers: "First give me more information. Then we will discuss this."
+   - "One more thing: what version of Archytas is actually installed in the harmonia container, and how does that differ from the newest? Perhaps some of these concerns are already addressed in newer versions? please investigate this to get the full picture."
+   - "I saw you found the version. Archytas is only at 1.6.6 and beaker-dev is currently using 1.6.5 if I am not mistaken so it seems like it is pretty up to date. Correct?"
+   - "For B: from the deep dive: then how is the model started? execute_apptainer_harmonia.sh provisions an ollama instance for local models, so how would this actually work? Similarly for A. For remote models via openrouter or litellm it would be fine, but for local models perhaps not? Ah, I see: Practical hybrid... But then what is the final most future-proof approach to doing this? I would also like a fallback where if nothing is set then by default the same model is used for summarization and to run the agent loop. Please check recent commits to see if any part of the context management plan has already been implemented. Then share the result with me."
+   - "Could you stop investigating and give me the current results? I saw you found the version. Archytas is only at 1.6.6 on github and beaker-dev is currently using 1.6.5 if I am not mistaken so it seems like it is pretty up to date. Correct?"
+   - "Yes. Please make a plan [path with DATETIME]. Have it mention that it supersedes the old plan. Make this plan complete and thorough: a fresh Claude Opus 4.6 instance should have everything it needs to implement these changes."
+
+7. Pending Tasks:
+   - The plan document has been written but NOT yet reviewed/approved by the user.
+   - No implementation has started — all 14 steps in the plan are pending.
+   - Per CLAUDE.md: after code changes, the codebase description should be updated. No code changes have been made yet.
+
+8. Current Work:
+   The plan document was just written at `harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md` (1,247 lines). It covers:
+   - 6 problems identified (P1-P6) with exact file/line references
+   - Architecture overview with data flow diagrams
+   - YAML configuration design with `context_management.python_kernel` and `context_management.archytas` subsections
+   - 12 specific code changes across Archytas (4), Beaker (2), Harmonia (5+)
+   - 14-step implementation order with dependencies
+   - Verification checklist and commit instructions
+   - Appendix with complete env var reference (14 vars) and relationship to previous plan
+
+   The user's last explicit action was requesting this plan be created, which is now complete. They have not yet reviewed it.
+
+9. Optional Next Step:
+   Wait for user to review the plan document. The user may want to discuss, modify, or approve the plan before implementation begins. No implementation should start without user confirmation, as this was a planning/research session. The user explicitly said "first report a blow-by-blow to me here and ask me clarifying questions" before the plan, indicating a preference for collaborative decision-making before action.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/cog/dstoker/.REDACTED.jsonl
+
+---
+
+To keep track specifically of context management, or make it clearer which layer of the infrastructure is doing what (Archytas, Beaker kernel, instantiated agent) could you discuss with me approaches to improve the logging outputs? For instance, in this folder REDACTED we have a conversation.md and trace.json. Given the plan you just created and the new context management, should we change the logging in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/automation/logger.py and/or /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/prompt_logging.py
+
+Let's investigate this in the light of:
+- how are things currently logged. Make a short but clear overview of what is logged and where.
+- what could we log about the context/archytas summarizer specifically?
+- what could we log about the beaker kernel specifically?
+- what changes made in the plan require new logging or different. logging?
+
+Note that we are in the business of running experiments on how LLM-assisted metadata normalization actually performs, and so I need to be able to: i) calculate metrics about performance but also ii) make a taxonomy of the failure modes/behaviours observed that cause certain model+harness combinations to underperform. 
+
+Please first think about proper telemetry/traceability approaches, what is currently emitted, and what should ideally be emitted. Then give me a summary of what is currently done, and what could be added, from high, to medium to low priority. Propose different options and their benefits or drawbacks. Be thorough and specific so that a junior engineer without much onboarding to this codebase gets the analysis.
+
+---
+
+Could you make a clear implementation plan for a fresh Claude instance that captures all nuance for the High and medium priority changes?
+Put it in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/DATETIME_update_logging_context_management_and_tools.md
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. **Context from previous conversation (summarized):** The user and I had an extensive prior conversation about Archytas context management. We explored the Archytas codebase deeply, identified 6 problems (P1-P6), made architectural decisions about YAML config structure, injection methods, and summarization model approaches. A comprehensive implementation plan was written at `documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md`. Key decisions included: `context_management:` YAML section with `python_kernel:` and `archytas:` subsections, hybrid injection (model config via env, agent via Beaker patch), modify Archytas directly, lazy summarization model from JSON env var.
+
+2. **User's request in this conversation:** The user asked about improving logging outputs for context management telemetry. They wanted to investigate:
+   - How things are currently logged (overview)
+   - What could be logged about context/archytas summarizer
+   - What could be logged about beaker kernel
+   - What changes from the context management plan require new/different logging
+   - They need to: i) calculate metrics and ii) make a taxonomy of failure modes
+
+3. **My investigation phase:** I read several key files in parallel:
+   - `src/automation/logger.py` - TraceLogger and ConversationLogger classes
+   - `src/prompt_logging.py` - Prompt composition logging (print_prompt_composition, register_prompt_json_logger)
+   - `results/dou_harmonization_anyllm_devstral_20260210_181550/conversation.md` - Example conversation output
+   - `results/.../trace.json` - Example trace structure
+
+4. **I launched 3 parallel Task agents:**
+   - Explore Archytas logging patterns - found all logging/print statements across agent.py, react.py, chat_history.py, summarizers.py, models/
+   - Explore Beaker logging patterns - found WebSocket message types, agent lifecycle logging, tool execution
+   - Explore Harmonia monitoring code - found runner.py, manual_runner.py, client.py trace collection, log analysis tool structure
+
+5. **Key discoveries:**
+   - Beaker already sends `chat_history` WebSocket messages with rich context metrics (token counts, context window, summarization threshold) after every turn
+   - Harmonia's client.py ignores these messages completely
+   - Tool_calls extraction has a bug: checks for `msg_type == "thought"` but Beaker sends `"llm_thought"`
+   - Summarization events go to Python logging/print (SLURM stdout), not structured output
+   - Experiment config is not saved in results directories
+
+6. **Analysis presented to user:** I gave a comprehensive analysis covering:
+   - Layer-by-layer breakdown of current logging (Archytas, Beaker, Harmonia)
+   - What's missing for each diagnostic need
+   - Priority-ranked improvements (H1-H3 high, M1-M4 medium, L1-L3 low)
+   - Decision matrix with effort, dependencies, impact
+
+7. **User's follow-up request:** "Could you make a clear implementation plan for a fresh Claude instance that captures all nuance for the High and medium priority changes?"
+   - Path: `documentation/plans/DATETIME_update_logging_context_management_and_tools.md`
+
+8. **Plan writing phase:** I read additional files needed for precise references:
+   - `src/automation/runner.py` - Full ExperimentRunner class
+   - `src/automation/manual_runner.py` - Full ManualExperimentRunner class  
+   - `src/automation/client.py` - Full BeakerClient class (including send_message, _receive_until_complete)
+   - `types_of_log_and_trace_problems.yaml` - Full failure mode taxonomy (13 categories)
+   - Beaker kernel.py:293-326 - send_chat_history() method
+   - Archytas chat_history.py:84-143 - OutboundChatHistory, OutboundModel, MessageRecord, SummaryRecord dataclasses
+   - Beaker kernel.py:620-639 - llm_request completion flow
+
+9. **Plan written:** Successfully wrote the plan at `26_02_2026_1321_update_logging_context_management_and_tools.md`
+
+Key technical findings that inform the plan:
+- `chat_history` msg is sent AFTER `llm_response` (kernel.py:639), but `_receive_until_complete()` breaks on `llm_response` (client.py:376). Need to modify to continue briefly after completion.
+- The `OutboundChatHistory` dataclass includes: token_estimate, context_window (from contextsize()), summarization_threshold, message_token_count, summary_token_count, overhead_token_count, tool_token_usage_estimate
+- All trace raw_messages show `llm_thought` msg_type, but client.py:325 checks for `"thought"` - confirmed this is a bug
+- No errors encountered during this session - purely research and documentation work
+
+Now let me compile all the details for the summary.
+
+Summary:
+1. Primary Request and Intent:
+   
+   This conversation continues from a prior session where a comprehensive context management implementation plan was created at `documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md`. That plan covers 14 implementation steps across Archytas, Beaker, and Harmonia codebases.
+
+   In this session, the user asked for a detailed investigation of logging/telemetry improvements needed alongside the context management plan. Specifically:
+   - How things are currently logged across all layers (Archytas, Beaker, Harmonia)
+   - What could be logged about context/archytas summarizer behavior
+   - What could be logged about the Beaker kernel specifically
+   - What changes from the context management plan require new or different logging
+   - The user's goal: calculate metrics about harmonization performance AND make a taxonomy of failure modes/behaviors that cause model+harness combinations to underperform
+
+   After the analysis was presented, the user explicitly requested: "Could you make a clear implementation plan for a fresh Claude instance that captures all nuance for the High and medium priority changes?" at path `documentation/plans/DATETIME_update_logging_context_management_and_tools.md`.
+
+2. Key Technical Concepts:
+   - **Three-layer logging architecture:** Archytas (agent framework, Python logging/print to SLURM stdout) → Beaker kernel (WebSocket messages to UI/client) → Harmonia (trace.json + conversation.md in results directory)
+   - **Beaker's `chat_history` WebSocket message:** Sent after every `llm_request` via `kernel.py:293-326`, contains `OutboundChatHistory` with per-turn token counts, context window size, summarization threshold — but Harmonia's client ignores it
+   - **`OutboundChatHistory` dataclass** (Archytas `chat_history.py:114-123`): `token_estimate`, `context_window`, `summarization_threshold`, `message_token_count`, `summary_token_count`, `overhead_token_count`, `tool_token_usage_estimate`
+   - **tool_calls extraction bug:** `client.py:325` and `manual_runner.py:214` check `msg_type == "thought"` but Beaker sends `msg_type == "llm_thought"` — tool_calls is always `[]` in all trace.json files
+   - **`_receive_until_complete()` break timing:** Breaks on `llm_response` or `status:idle` (client.py:376-382), but `chat_history` is sent AFTER these (kernel.py:639) — requires modification to capture trailing messages
+   - **Failure mode taxonomy:** 13 categories in `types_of_log_and_trace_problems.yaml` (1A-5A), with compound detection logic in the CLI analysis tool
+   - **Experiment provenance gap:** Results directories don't contain the experiment config YAML that produced them
+
+3. Files and Code Sections:
+
+   - **`src/automation/logger.py`** (Read fully)
+     - Contains `TurnRecord` dataclass (lines 13-22) and `ExperimentTrace` dataclass (lines 26-37) — these are the core schema for trace.json
+     - `TraceLogger` class writes trace.json; `ConversationLogger` writes conversation.md
+     - Important: `TurnRecord` currently has no `context_metrics` field — M1 adds one
+     - `ExperimentTrace.to_dict()` (lines 39-58) — needs `context_management_config` field added
+     ```python
+     @dataclass
+     class TurnRecord:
+         turn: int
+         user_message: str
+         agent_response: str
+         response_type: str
+         tool_calls: list[dict] = field(default_factory=list)
+         duration_seconds: float = 0.0
+         raw_messages: list[dict] = field(default_factory=list)
+         timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+     ```
+
+   - **`src/automation/client.py`** (Read fully, 554 lines)
+     - `AgentResponse` dataclass (lines 18-25) — needs `context_snapshot: Optional[dict] = None` field
+     - `send_message()` (lines 276-343) — main message collection loop. **BUG at line 325:** checks `msg_type == "thought"` instead of `"llm_thought"`
+     - `_receive_until_complete()` (lines 345-383) — breaks on `llm_response`, `error`, `execute_reply`, or `status:idle`. Chat_history arrives AFTER these signals, so it's never captured
+     ```python
+     # BUG at line 325:
+     elif msg_type == "thought":        # WRONG: Beaker sends "llm_thought"
+         thought = content.get("thought", "")
+         if "Action:" in thought:
+             tool_calls.append({"thought": thought})
+     ```
+
+   - **`src/automation/runner.py`** (Read fully, 348 lines)
+     - `ExperimentRunner` class — orchestrates automated experiments
+     - `_run_turn()` (lines 150-196) passes `response.tool_calls` and `response.raw_messages` to `trace_logger.log_turn()` — needs to also pass `response.context_snapshot`
+     - `run()` method (lines 59-148) — needs config saving (H3) and context_management_config (M1)
+     - No `_save_experiment_config()` method exists yet — H3 adds one
+
+   - **`src/automation/manual_runner.py`** (Read fully, 404 lines)
+     - `ManualExperimentRunner` — passively monitors WebSocket traffic
+     - `_handle_message()` (lines 188-302) — same `msg_type == "thought"` bug at line 214
+     - Pending requests dict (lines 199-206) needs `"context_snapshot": None` field added
+     - Same fix pattern as client.py for both H1 and H2
+
+   - **`src/prompt_logging.py`** (Read fully, 326 lines)
+     - `print_prompt_composition()` — prints prompt layers to stdout (SLURM log)
+     - `register_prompt_json_logger()` — one-shot monkey-patch on agent.execute() that writes `full_prompt_composition.json`
+     - Captures prompt env vars, model class name, content hashes — but no context management vars
+     - Not directly modified by this plan, but context management env vars could be added to the prompt_config dict
+
+   - **Beaker `kernel.py:293-326`** — `send_chat_history()` method
+     - Called after every `llm_request` (line 639), `execute_request` (675), `clear_history_request` (733), `undo_request` (744)
+     - Constructs `OutboundChatHistory` with token counts from Archytas's `ChatHistory` and model info from `contextsize()`
+     ```python
+     output = OutboundChatHistory(
+         records=[{...per record with token_count...}],
+         system_message=chat_history.system_message.message.text,
+         tool_token_usage_estimate=chat_history.tool_token_estimate,
+         model=OutboundModel(
+             provider=model.__class__.__name__,
+             model_name=model.model_name,
+             context_window=model.contextsize()
+         ),
+         message_token_count=sum(...),
+         summary_token_count=sum(...),
+         overhead_token_count=chat_history.token_overhead,
+         summarization_threshold=model.summarization_threshold,
+         token_estimate=chat_history._token_estimate or await chat_history.token_estimate(model),
+     )
+     ```
+
+   - **Archytas `chat_history.py:84-143`** — Data structures
+     ```python
+     @dataclass
+     class OutboundModel:
+         provider: str
+         model_name: str
+         context_window: Optional[int]
+
+     @dataclass
+     class OutboundChatHistory:
+         records: list[RecordType]
+         system_message: Optional[MessageRecord[SystemMessage]]
+         tool_token_usage_estimate: Optional[int]
+         model: OutboundModel
+         token_estimate: Optional[int]
+         message_token_count: Optional[int]
+         summary_token_count: Optional[int]
+         overhead_token_count: Optional[int]
+         summarization_threshold: Optional[int]
+     ```
+
+   - **`types_of_log_and_trace_problems.yaml`** (Read fully, 732 lines)
+     - Schema version 1.1, 13 problem classes (1A-5A)
+     - Categories: infrastructure (1A-1C), model_config (2A-2F), llm_behavioral (3A-3H), data_path (4A), output (5A)
+     - Uses compound detection logic for several (1A, 3A, 3B, 3C, 3G, 5A)
+     - Plan M4 adds category 6 (context_management) with 6A-6D
+
+   - **Example trace.json** at `results/dou_harmonization_anyllm_devstral_20260210_181550/`
+     - Confirmed msg_types present: `beaker__execute_input`, `beaker__execute_reply`, `llm_reply`, `llm_response`, `llm_thought`, `status`, `stream`
+     - `chat_history` is NOT present (confirming it's not captured)
+     - `tool_calls` is `[]` for all turns (confirming the bug)
+     - Turn 2 has `llm_thought` in raw_messages with `tool_name=match_values` but tool_calls is empty
+
+   - **Plan document created:** `documentation/plans/26_02_2026_1321_update_logging_context_management_and_tools.md`
+     - Companion to the context management plan
+     - 7 changes: H1 (capture chat_history), H2 (fix tool_calls bug), H3 (save config), M1 (context_metrics in trace), M2 (structured summarization logging), M3 (event hooks), M4 (new failure categories)
+     - Includes implementation order, verification checklist, appendices with schemas
+
+4. Errors and fixes:
+   - No implementation errors occurred in this session (purely research and documentation)
+   - **Discovered bugs (not yet fixed, documented in plan):**
+     - `client.py:325` and `manual_runner.py:214` — `msg_type == "thought"` should be `"llm_thought"`
+     - `_receive_until_complete()` breaks before `chat_history` arrives — needs post-completion window
+
+5. Problem Solving:
+   - Identified that Beaker already computes and transmits rich context management telemetry (`chat_history` WebSocket message) but Harmonia doesn't capture it — this is the single biggest win (H1)
+   - Confirmed tool_calls extraction is universally broken by checking multiple trace.json files: `dou_harmonization_anyllm_devstral_20260210_181550` (tool_calls always []) and `dou_harmonization_anyllm_devstral_20260211_155251_d0b5043b` (turns with llm_thought messages in raw_messages but tool_calls=0)
+   - Identified the timing issue with `chat_history` capture: it's sent at kernel.py:639 (after llm_response), but the client's receive loop breaks on llm_response (client.py:376). Proposed Option A (continue reading briefly after completion) as the solution
+   - Mapped all 18+ WebSocket msg_types to their handling status in both client.py and manual_runner.py
+
+6. All user messages:
+   - "To keep track specifically of context management, or make it clearer which layer of the infrastructure is doing what (Archytas, Beaker kernel, instantiated agent) could you discuss with me approaches to improve the logging outputs? For instance, in this folder [...] we have a conversation.md and trace.json. Given the plan you just created and the new context management, should we change the logging in [...]/logger.py and/or [...]/prompt_logging.py. Let's investigate this in the light of: how are things currently logged [...] what could we log about the context/archytas summarizer specifically [...] what could we log about the beaker kernel specifically [...] what changes made in the plan require new logging or different logging. Note that we are in the business of running experiments [...] I need to be able to: i) calculate metrics about performance but also ii) make a taxonomy of the failure modes/behaviours observed [...] Please first think about proper telemetry/traceability approaches, what is currently emitted, and what should ideally be emitted. Then give me a summary of what is currently done, and what could be added, from high, to medium to low priority. Propose different options and their benefits or drawbacks. Be thorough and specific so that a junior engineer without much onboarding to this codebase gets the analysis."
+   - "Could you make a clear implementation plan for a fresh Claude instance that captures all nuance for the High and medium priority changes? Put it in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/DATETIME_update_logging_context_management_and_tools.md"
+
+7. Pending Tasks:
+   - **No explicit pending tasks.** The plan document was completed and a summary provided. The user has not yet reviewed or approved the plan, nor requested implementation.
+   - The plan itself describes implementation in 4 phases, but implementation has not been requested.
+   - Per CLAUDE.md: after code changes, the codebase description should be updated — but no code changes have been made yet (only documentation).
+
+8. Current Work:
+   The implementation plan was successfully written at `documentation/plans/26_02_2026_1321_update_logging_context_management_and_tools.md` (a companion to the earlier context management plan). I provided a summary of the plan's 7 changes (H1-H3, M1-M4) organized in 4 phases. The plan is complete and was the user's last explicit request.
+
+9. Optional Next Step:
+   Wait for the user to review the plan document. The user may want to discuss, modify, or approve the plan before any implementation begins. Both plans (context management + logging) are written but neither has been implemented. The user's workflow pattern from the prior session was: detailed analysis → clarifying questions → plan creation → review before implementation.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/cog/dstoker/.REDACTED.jsonl
+
+---
+
+Finally, given this information:
+https://portkey.ai/blog/the-complete-guide-to-llm-observability/
+https://newsletter.pragmaticengineer.com/p/evals
+https://neptune.ai/blog/llm-observability
+
+What is still missing from the logging? This is now a conceptual discussion:
+- what does current logging cover
+- what does it not
+- what would we ideally add, in a graded manner. High, medium, and low priority.
+
+Note: this is not a production system, but I do need good insights and views on what happens and what goes wrong. Reason about this and tell me: what you learn from these sources, what conceptual landmarks there are in what, why, and how to trace and log, and what could be useful in this isntance specifically.
