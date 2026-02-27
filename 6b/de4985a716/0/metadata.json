@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "6bde4985a716",
+  "session_id": "5158ff4f-8e39-4f65-99a2-f19c2f8bd539",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T15:11:08.701975264Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_devstral-small.yaml",
+    "jobs/dou_harmonization_devstral-small.sh",
+    "sbatch_template_gpu.sh"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "831fa16b-3eeb-46d7-8e90-3405d9ceb09e",
+  "checkpoint_transcript_start": 9,
+  "transcript_lines_at_start": 9,
+  "token_usage": {
+    "input_tokens": 107,
+    "cache_creation_tokens": 48695,
+    "cache_read_tokens": 2499156,
+    "output_tokens": 12746,
+    "api_call_count": 41
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T15:11:01.396934144Z",
+    "agent_lines": 28,
+    "human_added": 486,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 518,
+    "agent_percentage": 5.405405405405405
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/5158ff4f-8e39-4f65-99a2-f19c2f8bd539.jsonl"
+}
