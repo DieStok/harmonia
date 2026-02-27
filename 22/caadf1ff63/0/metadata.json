@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "22caadf1ff63",
+  "session_id": "b42abc58-8e47-42ef-9ec6-6eb8098ef463",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T15:35:02.101349134Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "build_harmonia_apptainer.sh"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "ef8586be-1960-43fe-afee-82a5847967ff",
+  "token_usage": {
+    "input_tokens": 35,
+    "cache_creation_tokens": 22219,
+    "cache_read_tokens": 566090,
+    "output_tokens": 2995,
+    "api_call_count": 19
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T15:34:59.573067802Z",
+    "agent_lines": 0,
+    "human_added": 5,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 6,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/b42abc58-8e47-42ef-9ec6-6eb8098ef463.jsonl"
+}

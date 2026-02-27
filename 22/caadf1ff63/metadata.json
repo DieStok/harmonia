@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "22caadf1ff63",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "build_harmonia_apptainer.sh"
+  ],
+  "sessions": [
+    {
+      "metadata": "/22/caadf1ff63/0/metadata.json",
+      "transcript": "/22/caadf1ff63/0/full.jsonl",
+      "context": "/22/caadf1ff63/0/context.md",
+      "content_hash": "/22/caadf1ff63/0/content_hash.txt",
+      "prompt": "/22/caadf1ff63/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 35,
+    "cache_creation_tokens": 22219,
+    "cache_read_tokens": 566090,
+    "output_tokens": 2995,
+    "api_call_count": 19
+  }
+}
