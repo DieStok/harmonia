@@ -21,7 +21,7 @@
 #SBATCH --time=04:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=tmpspace:60G
+#SBATCH --gres=tmpspace:50G
 #SBATCH --partition=gpu
 #SBATCH --gpus-per-node=1
 
@@ -104,7 +104,7 @@ trap cleanup EXIT
 
 # Wait for server to be ready
 echo "Waiting for Beaker server to start..."
-MAX_WAIT=300  # 5 minutes - allows time for Ollama model loading + Beaker startup
+MAX_WAIT=900  # 15 minutes - allows time for Ollama model loading + Beaker startup (30B+ models need 5-10min)
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then
