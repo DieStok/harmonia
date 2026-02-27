@@ -18,7 +18,7 @@
 #SBATCH --job-name=harmonia_dou_harmonization_glm-4.5-air
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mem=8G
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=tmpspace:1G

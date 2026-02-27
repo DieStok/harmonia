@@ -15,10 +15,10 @@
 #       or exec_apptainer_harmonia.sh will auto-start Ollama on CPU nodes too.
 # =============================================================================
 
-#SBATCH --job-name=harmonia_dou_harmonization_pony-alpha
+#SBATCH --job-name=harmonia_dou_harmonization_step-3.5-flash
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --mem=8G
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=tmpspace:1G
@@ -35,13 +35,13 @@ export RUN_ID
 
 # Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
-LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_pony-alpha_${SLURM_JOB_ID}_${RUN_ID}.out"
-LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_pony-alpha_${SLURM_JOB_ID}_${RUN_ID}.err"
+LOG_OUT="logs/${LOG_TIMESTAMP}_dou_harmonization_step-3.5-flash_${SLURM_JOB_ID}_${RUN_ID}.out"
+LOG_ERR="logs/${LOG_TIMESTAMP}_dou_harmonization_step-3.5-flash_${SLURM_JOB_ID}_${RUN_ID}.err"
 mkdir -p logs
 exec > "$LOG_OUT" 2> "$LOG_ERR"
 
 echo "=============================================="
-echo "Harmonia Experiment: dou_harmonization_pony-alpha"
+echo "Harmonia Experiment: dou_harmonization_step-3.5-flash"
 echo "=============================================="
 echo ""
 echo "Job ID: $SLURM_JOB_ID"
@@ -74,14 +74,14 @@ mkdir -p logs
 echo ""
 echo "Starting Beaker server on port $PORT..."
 echo "LLM Provider: openrouter"
-echo "LLM Model: openrouter/pony-alpha"
+echo "LLM Model: stepfun/step-3.5-flash:free"
 echo ""
 
 # Start Beaker server via exec script (handles Ollama automatically if needed)
 ./exec_apptainer_harmonia.sh \
     --port $PORT \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml \
-    --job-name "dou_harmonization_pony-alpha_${SLURM_JOB_ID}" \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_step-3.5-flash.yaml \
+    --job-name "dou_harmonization_step-3.5-flash_${SLURM_JOB_ID}" \
     --run-id "$RUN_ID" &
 
 SERVER_PID=$!
@@ -124,7 +124,7 @@ fi
 
 echo ""
 echo "Running experiment..."
-echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml"
+echo "Config: experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_step-3.5-flash.yaml"
 echo ""
 
 # Get token from env file
@@ -132,7 +132,7 @@ TOKEN=$(grep "^JUPYTER_TOKEN=" .env | cut -d '=' -f2)
 
 # Run the experiment
 python run_experiment.py \
-    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml \
+    --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_step-3.5-flash.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
     --timeout 300
