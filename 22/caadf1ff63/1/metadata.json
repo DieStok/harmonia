@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "22caadf1ff63",
+  "session_id": "5158ff4f-8e39-4f65-99a2-f19c2f8bd539",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T15:35:34.634750678Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "exec_apptainer_harmonia.sh",
+    "jobs/dou_harmonization_devstral-small.sh",
+    "jobs/dou_harmonization_devstral.sh",
+    "sbatch_template_gpu.sh"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "453c1e35-b0fe-4da3-a2bc-d326c8b91ced",
+  "checkpoint_transcript_start": 456,
+  "transcript_lines_at_start": 456,
+  "token_usage": {
+    "input_tokens": 44,
+    "cache_creation_tokens": 39814,
+    "cache_read_tokens": 3698194,
+    "output_tokens": 9081,
+    "api_call_count": 36
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T15:35:33.756454007Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 8,
+    "human_removed": 2,
+    "total_committed": 0,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/5158ff4f-8e39-4f65-99a2-f19c2f8bd539.jsonl"
+}
