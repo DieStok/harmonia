@@ -21,9 +21,8 @@
 #SBATCH --time=04:00:00
 #SBATCH --mem=64G
 #SBATCH --cpus-per-task=8
-#SBATCH --gres=tmpspace:50G
+#SBATCH --gres=gpu:quadro_rtx_6000:1,tmpspace:50G
 #SBATCH --partition=gpu
-#SBATCH --gpus-per-node=1
 
 # =============================================================================
 # Environment Setup

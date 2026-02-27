@@ -246,6 +246,9 @@ HOST_SSL_CERT=$(grep "^SSL_CERT_FILE=" "$ENV_FILE" | cut -d '=' -f2)
 # Read LLM configuration from .env for display
 LLM_PROVIDER=$(grep "^LLM_SERVICE_PROVIDER=" "$ENV_FILE" | cut -d '=' -f2)
 LLM_MODEL=$(grep "^LLM_SERVICE_MODEL=" "$ENV_FILE" | cut -d '=' -f2)
+# Read OLLAMA_CONTEXT_LENGTH early so it is available for pre-load and VRAM estimation
+# (was previously read only at line ~785, after the pre-load block had already run)
+OLLAMA_CONTEXT_LENGTH=$(grep "^OLLAMA_CONTEXT_LENGTH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 
 # Set defaults if not specified
 LLM_PROVIDER=${LLM_PROVIDER:-openai}
@@ -782,7 +785,7 @@ echo "   Ollama Port:              ${OLLAMA_PORT}"
 LLM_IMPORT_PATH=$(grep "^LLM_PROVIDER_IMPORT_PATH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 LLM_TEMPERATURE=$(grep "^LLM_TEMPERATURE=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 LLM_MAX_TOKENS=$(grep "^LLM_MAX_TOKENS=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
-OLLAMA_CONTEXT_LENGTH=$(grep "^OLLAMA_CONTEXT_LENGTH=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+# OLLAMA_CONTEXT_LENGTH already read early (line ~247) so it is available at pre-load time
 OPENROUTER_KEY=$(grep "^OPENROUTER_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 OPENAI_KEY=$(grep "^OPENAI_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 ANTHROPIC_KEY=$(grep "^ANTHROPIC_API_KEY=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)

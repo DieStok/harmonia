@@ -21,9 +21,8 @@
 #SBATCH --time={{time_limit}}
 #SBATCH --mem={{memory}}
 #SBATCH --cpus-per-task={{cpus}}
-#SBATCH --gres=tmpspace:{{tmpspace}}G
+#SBATCH --gres=gpu:quadro_rtx_6000:1,tmpspace:{{tmpspace}}G
 #SBATCH --partition=gpu
-#SBATCH --gpus-per-node=1
 
 # =============================================================================
 # Environment Setup
