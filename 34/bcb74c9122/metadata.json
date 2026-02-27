@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "34bcb74c9122",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_pony-alpha.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/34/bcb74c9122/0/metadata.json",
+      "transcript": "/34/bcb74c9122/0/full.jsonl",
+      "context": "/34/bcb74c9122/0/context.md",
+      "content_hash": "/34/bcb74c9122/0/content_hash.txt",
+      "prompt": "/34/bcb74c9122/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 10314,
+    "cache_read_tokens": 43254,
+    "output_tokens": 1907,
+    "api_call_count": 2
+  }
+}
