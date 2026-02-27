@@ -3,11 +3,16 @@
   "checkpoint_id": "ddab855a2034",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 4,
   "files_touched": [
+    ".env.template",
+    "documentation/codebase_descriptions/how_this_codebase_works_26_02_2026.md",
     "documentation/plans/26_02_2026_1243_new_context_management_implementation_plan.md",
     "documentation/plans/26_02_2026_1321_update_logging_context_management_and_tools.md",
     "documentation/plans/26_02_2026_1322_finalize_context_management_fix.md",
+    "exec_apptainer_harmonia.sh",
+    "generate_env.py",
+    "src/automation/config.py",
     "src/context_management/__init__.py",
     "src/context_management/kernel_state_budget.py",
     "src/context_management/test_kernel_state_budget.py"
@@ -19,13 +24,20 @@
       "context": "/dd/ab855a2034/0/context.md",
       "content_hash": "/dd/ab855a2034/0/content_hash.txt",
       "prompt": "/dd/ab855a2034/0/prompt.txt"
+    },
+    {
+      "metadata": "/dd/ab855a2034/1/metadata.json",
+      "transcript": "/dd/ab855a2034/1/full.jsonl",
+      "context": "/dd/ab855a2034/1/context.md",
+      "content_hash": "/dd/ab855a2034/1/content_hash.txt",
+      "prompt": "/dd/ab855a2034/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 13191,
-    "cache_creation_tokens": 356883,
-    "cache_read_tokens": 7932813,
-    "output_tokens": 929,
-    "api_call_count": 87
+    "input_tokens": 13340,
+    "cache_creation_tokens": 694230,
+    "cache_read_tokens": 22151289,
+    "output_tokens": 5266,
+    "api_call_count": 223
   }
 }
