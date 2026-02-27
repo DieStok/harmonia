@@ -18,6 +18,35 @@ bdikit_models:
   schema_matching_llm: devstral:latest
   magneto_zero_shot_schema_matching_llm: devstral:latest
   magneto_fine_tuned_schema_matching_llm: devstral:latest
+context_management:
+  python_kernel:
+    max_variable_size: 20000
+    state_budget_pct: 25
+  archytas:
+    summarization_threshold_pct: 50
+    context_window_override: 64000  # Must match llm.context_length
+    max_react_steps: 30
+output:
+  base_dir: ./results
+  save_artifacts:
+  - dou_harmonized.csv
+  - column_mapping.json
+  - value_mapping.json
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    choose.*alternative: Please proceed with the recommended option
+    multiple.*options: Pick the first option
+evaluation:
+  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
+  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
+  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
+  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
+  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
+  column_mapping_file: column_mapping.json
+  value_mapping_file: value_mapping.json
+  index_column: null
+  numeric_tolerance: null
 messages:
 - content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
     and subset it to the following columns:

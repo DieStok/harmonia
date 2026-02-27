@@ -2,23 +2,48 @@
 # are logged by OpenRouter and may be used for model improvement.
 # See: https://openrouter.ai/docs/privacy
 experiment:
-  name: dou_harmonization_pony-alpha
-  description: Harmonize dou.csv to GDC schema using similarity method (Pony-Alpha
+  name: dou_harmonization_step-3.5-flash
+  description: Harmonize dou.csv to GDC schema using similarity method (Step-3.5-Flash
     via OpenRouter)
 llm:
   provider: openrouter
-  model: openrouter/pony-alpha
+  model: stepfun/step-3.5-flash:free
   temperature: 0.0
 # bdi-kit internal LLM configuration for schema/value matching.
 # These default to the top-level llm.model if not specified.
 # Set explicitly here so each config documents which LLM bdi-kit uses internally.
 bdikit_models:
-  instance_matching_llm: openrouter/pony-alpha
-  numeric_instance_matching_llm: openrouter/pony-alpha
+  instance_matching_llm: stepfun/step-3.5-flash:free
+  numeric_instance_matching_llm: stepfun/step-3.5-flash:free
   # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
-  schema_matching_llm: openrouter/pony-alpha
-  magneto_zero_shot_schema_matching_llm: openrouter/pony-alpha
-  magneto_fine_tuned_schema_matching_llm: openrouter/pony-alpha
+  schema_matching_llm: stepfun/step-3.5-flash:free
+  magneto_zero_shot_schema_matching_llm: stepfun/step-3.5-flash:free
+  magneto_fine_tuned_schema_matching_llm: stepfun/step-3.5-flash:free
+context_management:
+  archytas:
+    summarization_threshold_pct: 50
+    max_react_steps: 30
+output:
+  base_dir: ./results
+  save_artifacts:
+  - dou_harmonized.csv
+  - column_mapping.json
+  - value_mapping.json
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    choose.*alternative: Please proceed with the recommended option
+    multiple.*options: Pick the first option
+evaluation:
+  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
+  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
+  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
+  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
+  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
+  column_mapping_file: column_mapping.json
+  value_mapping_file: value_mapping.json
+  index_column: null
+  numeric_tolerance: null
 messages:
 - content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
     and subset it to the following columns:
@@ -95,28 +120,3 @@ messages:
 
     '
   wait_seconds: 120
-output:
-  base_dir: ./results
-  save_artifacts:
-  - dou_harmonized.csv
-  - column_mapping.json
-  - value_mapping.json
-decision_handling:
-  default_mode: auto_accept
-  predefined_responses:
-    choose.*alternative: Please proceed with the recommended option
-    multiple.*options: Pick the first option
-evaluation:
-  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
-  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
-  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
-  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
-  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
-  column_mapping_file: column_mapping.json
-  value_mapping_file: value_mapping.json
-  index_column: null
-  numeric_tolerance: null
-context_management:
-  archytas:
-    summarization_threshold_pct: 50
-    max_react_steps: 30
