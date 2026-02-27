@@ -291,29 +291,42 @@ with open(SUBKERNEL_PATH, 'r') as f:
 #   """
 # We insert our budget code before the final bare `_result` that returns the value.
 
-# Strategy: find FETCH_STATE_CODE string, find its last `_result\n"""` ending
-fetch_start = content.find('FETCH_STATE_CODE')
-if fetch_start == -1:
+# Strategy: locate FETCH_STATE_CODE triple-quoted string precisely, then find
+# the final bare `_result` return expression within it only.
+import re
+fetch_decl = content.find('FETCH_STATE_CODE')
+if fetch_decl == -1:
     print("ERROR: FETCH_STATE_CODE not found in file")
     sys.exit(1)
 
-# Find the closing triple-quote of FETCH_STATE_CODE after the start
-# The pattern is: bare _result on its own line, followed by closing """
-import re
-# Match the last `_result\n"""` within FETCH_STATE_CODE
-# We need to replace just the final `_result\n"""` with our budget code + `_result\n"""`
-pattern = r'(_result\n""")'
-matches = list(re.finditer(pattern, content[fetch_start:]))
-if not matches:
-    print("ERROR: Could not find _result ending pattern in FETCH_STATE_CODE")
+# Find the opening """ of the FETCH_STATE_CODE string value
+open_quote = content.find('"""', fetch_decl)
+if open_quote == -1:
+    print("ERROR: Could not find opening triple-quote of FETCH_STATE_CODE")
+    sys.exit(1)
+open_quote += 3  # skip past the opening """
+
+# Find the closing """ of the FETCH_STATE_CODE string (first """ after the open)
+close_quote = content.find('"""', open_quote)
+if close_quote == -1:
+    print("ERROR: Could not find closing triple-quote of FETCH_STATE_CODE")
     sys.exit(1)
 
-# Use the last match (the actual return expression, not the json.loads assignment)
-last_match = matches[-1]
-abs_start = fetch_start + last_match.start()
-abs_end = fetch_start + last_match.end()
+# Now search ONLY within the FETCH_STATE_CODE string body for `_result\n"""`
+# (which appears as `_result\n` just before the closing `"""`)
+fetch_body = content[open_quote:close_quote]
+pattern = r'(_result\n)'
+matches = list(re.finditer(pattern, fetch_body))
+if not matches:
+    print("ERROR: Could not find bare _result return in FETCH_STATE_CODE body")
+    sys.exit(1)
 
-patched = content[:abs_start] + BUDGET_CODE + '\n_result\n"""' + content[abs_end:]
+# Use the last match — the final bare `_result` expression (the return value)
+last_match = matches[-1]
+abs_start = open_quote + last_match.start()
+abs_end = open_quote + last_match.end()
+
+patched = content[:abs_start] + BUDGET_CODE + '\n_result\n' + content[abs_end:]
 
 with open(SUBKERNEL_PATH, 'w') as f:
     f.write(patched)
