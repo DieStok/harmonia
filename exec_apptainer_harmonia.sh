@@ -320,6 +320,86 @@ is_local_llm_provider() {
     esac
 }
 
+# Function to estimate VRAM usage after model loading.
+# Uses nvidia-smi for GPU memory info and OLLAMA_CONTEXT_LENGTH for KV cache estimate.
+# Called after model pre-load to provide visibility into whether the model + KV cache
+# will fit in GPU VRAM at full context length.
+# See: documentation/plans/25_02_2026_2238_fix_context_issues.md (Fix 1b)
+estimate_vram_usage() {
+    local NUM_CTX="$1"
+
+    # Get GPU VRAM in MiB from nvidia-smi
+    local GPU_VRAM_MIB
+    GPU_VRAM_MIB=$(nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null | head -1)
+    if [ -z "$GPU_VRAM_MIB" ]; then
+        echo "   (VRAM estimation skipped: nvidia-smi not available)"
+        return
+    fi
+
+    # Get current GPU memory used in MiB (model already loaded at this point)
+    local GPU_USED_MIB
+    GPU_USED_MIB=$(nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1)
+
+    # Estimate KV cache for the full context window (conservative: ~0.25 GB per 1K tokens)
+    local KV_CACHE_GB
+    KV_CACHE_GB=$(echo "scale=1; ($NUM_CTX / 1024) * 0.25" | bc 2>/dev/null || echo "0")
+
+    local GPU_VRAM_GB
+    GPU_VRAM_GB=$(echo "scale=1; $GPU_VRAM_MIB / 1024" | bc 2>/dev/null || echo "0")
+    local GPU_USED_GB
+    GPU_USED_GB=$(echo "scale=1; $GPU_USED_MIB / 1024" | bc 2>/dev/null || echo "0")
+    local GPU_FREE_GB
+    GPU_FREE_GB=$(echo "scale=1; ($GPU_VRAM_MIB - $GPU_USED_MIB) / 1024" | bc 2>/dev/null || echo "0")
+    local USAGE_PCT
+    USAGE_PCT=$(echo "scale=0; ($GPU_USED_MIB * 100) / $GPU_VRAM_MIB" | bc 2>/dev/null || echo "0")
+
+    # Estimate total VRAM after KV cache allocation at full context
+    local ESTIMATED_TOTAL_GB
+    ESTIMATED_TOTAL_GB=$(echo "scale=1; $GPU_USED_GB + $KV_CACHE_GB" | bc 2>/dev/null || echo "0")
+    local ESTIMATED_PCT
+    ESTIMATED_PCT=$(echo "scale=0; ($ESTIMATED_TOTAL_GB * 1024 * 100) / $GPU_VRAM_MIB" | bc 2>/dev/null || echo "0")
+
+    echo ""
+    echo "   === VRAM Estimation ==="
+    echo "   GPU VRAM total:          ~${GPU_VRAM_GB} GB"
+    echo "   GPU VRAM used (current): ~${GPU_USED_GB} GB (${USAGE_PCT}%)"
+    echo "   GPU VRAM free:           ~${GPU_FREE_GB} GB"
+    echo "   KV cache (ctx=${NUM_CTX}):    ~${KV_CACHE_GB} GB (est. at full context)"
+    echo "   Est. peak usage:         ~${ESTIMATED_TOTAL_GB} GB (~${ESTIMATED_PCT}%)"
+
+    if [ "$ESTIMATED_PCT" -ge 100 ] 2>/dev/null; then
+        echo ""
+        echo "   WARNING: Estimated peak VRAM (~${ESTIMATED_TOTAL_GB} GB) EXCEEDS GPU VRAM (~${GPU_VRAM_GB} GB)!"
+        echo "   Model will likely be partially offloaded to CPU RAM, causing very slow inference."
+        echo "   Consider: smaller quantization, larger GPU, or lower context_length in config YAML."
+    elif [ "$ESTIMATED_PCT" -ge 80 ] 2>/dev/null; then
+        echo ""
+        echo "   WARNING: Estimated peak VRAM (~${ESTIMATED_TOTAL_GB} GB) is ~${ESTIMATED_PCT}% of GPU VRAM."
+        echo "   This may cause instability or partial CPU offloading under load."
+    else
+        echo "   OK: VRAM headroom looks adequate."
+    fi
+    echo "   ========================"
+    echo ""
+
+    # Also log to Ollama log file
+    if [ -n "$OLLAMA_LOG_FILE" ]; then
+        {
+            echo "[$(date)] VRAM Estimation:"
+            echo "  GPU total: ${GPU_VRAM_GB} GB, used: ${GPU_USED_GB} GB (${USAGE_PCT}%)"
+            echo "  KV cache est (ctx=${NUM_CTX}): ${KV_CACHE_GB} GB"
+            echo "  Peak est: ${ESTIMATED_TOTAL_GB} GB (${ESTIMATED_PCT}%)"
+            if [ "$ESTIMATED_PCT" -ge 100 ] 2>/dev/null; then
+                echo "  WARNING: Estimated peak EXCEEDS GPU VRAM!"
+            elif [ "$ESTIMATED_PCT" -ge 80 ] 2>/dev/null; then
+                echo "  WARNING: Estimated peak is ${ESTIMATED_PCT}% of GPU VRAM"
+            else
+                echo "  OK: VRAM headroom adequate"
+            fi
+        } >> "${OLLAMA_LOG_FILE}"
+    fi
+}
+
 # Function to start Ollama server
 start_ollama_server() {
     # Generate log file name based on job name or timestamp
@@ -559,6 +639,11 @@ except:
                 echo "   ✓ Model is 100% GPU offloaded"
             fi
         fi
+
+        # VRAM estimation: show GPU memory usage and estimate peak with full KV cache
+        if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
+            estimate_vram_usage "$OLLAMA_CONTEXT_LENGTH"
+        fi
     fi
 
     # Start background process to tail ollama serve log to our log file
@@ -615,10 +700,29 @@ stop_ollama_server() {
     fi
 }
 
-# Export OLLAMA_CONTEXT_LENGTH if set (controls Ollama's context window allocation)
+# Export OLLAMA_CONTEXT_LENGTH and OLLAMA_NUM_CTX if set.
+# Both env vars are set because the exact name varies across Ollama versions.
+# Without this, Ollama defaults to num_ctx=4096 on /api/chat calls and silently truncates.
 if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
     export OLLAMA_CONTEXT_LENGTH
+    export OLLAMA_NUM_CTX="${OLLAMA_CONTEXT_LENGTH}"
     echo "   OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH}"
+    echo "   OLLAMA_NUM_CTX:        ${OLLAMA_CONTEXT_LENGTH} (server-level default for /api/chat)"
+fi
+
+# Read context management env vars from .env for display and budget calculation
+HARMONIA_STATE_BUDGET_PCT=$(grep "^HARMONIA_STATE_BUDGET_PCT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT=$(grep "^ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+ARCHYTAS_SUMMARIZATION_MODEL_CONFIG=$(grep "^ARCHYTAS_SUMMARIZATION_MODEL_CONFIG=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2-)
+
+# Calculate absolute state budget from percentage if context_length is known
+if [ -n "$OLLAMA_CONTEXT_LENGTH" ] && [ -n "$HARMONIA_STATE_BUDGET_PCT" ]; then
+    CHARS_PER_TOKEN=4
+    CONTEXT_CHARS=$((OLLAMA_CONTEXT_LENGTH * CHARS_PER_TOKEN))
+    HARMONIA_STATE_TOTAL_BUDGET=$((CONTEXT_CHARS * HARMONIA_STATE_BUDGET_PCT / 100))
+    echo "   State budget: ${HARMONIA_STATE_BUDGET_PCT}% of ${OLLAMA_CONTEXT_LENGTH} tokens ~ ${HARMONIA_STATE_TOTAL_BUDGET} chars"
+    # Write back to .env so it's available in the container
+    echo "HARMONIA_STATE_TOTAL_BUDGET=${HARMONIA_STATE_TOTAL_BUDGET}" >> "$ENV_FILE"
 fi
 
 # Start Ollama if needed
@@ -626,6 +730,30 @@ if is_local_llm_provider "$LLM_PROVIDER"; then
     if ! start_ollama_server; then
         echo "ERROR: Failed to start Ollama server"
         exit 1
+    fi
+fi
+
+# Pre-pull summarization model if configured and it's an Ollama model
+if [ -n "$ARCHYTAS_SUMMARIZATION_MODEL_CONFIG" ]; then
+    # Extract model name from JSON config
+    SUMM_MODEL=$(echo "$ARCHYTAS_SUMMARIZATION_MODEL_CONFIG" | python3 -c "
+import sys, json
+try:
+    config = json.loads(sys.stdin.read())
+    if 'ollama' in config.get('import_path', '').lower():
+        print(config.get('model_name', ''))
+except: pass
+" 2>/dev/null)
+
+    if [ -n "$SUMM_MODEL" ] && [ "$SUMM_MODEL" != "$LLM_MODEL" ]; then
+        echo ""
+        echo "   Pre-pulling summarization model: ${SUMM_MODEL}..."
+        if ollama pull "$SUMM_MODEL" >> "${OLLAMA_LOG_FILE}" 2>&1; then
+            echo "   Summarization model pulled successfully"
+        else
+            echo "   Warning: Failed to pull summarization model ${SUMM_MODEL}"
+            echo "     Summarization will fall back to primary model"
+        fi
     fi
 fi
 

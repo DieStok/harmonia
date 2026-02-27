@@ -38,6 +38,9 @@ This project runs **metadata harmonization agents** using (local) LLMs and the b
 - **Implemented:** Unified LLM stack using litellm (replaces any-llm-sdk) for both top-level agent and bdi-kit internal calls
 - **Implemented:** True CodeAct context (`src/codeact_context/`) — bypasses Archytas ReAct entirely, LLM writes Python code in markdown fences, no tool schemas or structured tool calls
 - **Implemented:** Context window management for CodeAct (summarize or truncate strategies)
+- **Implemented:** Comprehensive context management for Archytas ReAct via `context_management:` YAML section — configurable summarization thresholds, context window override (critical for Ollama), max ReAct steps, tool output truncation, and optional separate summarization model. Changes span Archytas (`models/base.py`, `models/ollama.py`, `summarizers.py`), Beaker (`lib/config.py`, `lib/agent.py`), and Harmonia (`config.py`, `generate_env.py`, `exec_apptainer_harmonia.sh`, `.env.template`, experiment YAMLs).
+- **Implemented:** VRAM estimation logging in `exec_apptainer_harmonia.sh` via `estimate_vram_usage()` — uses `nvidia-smi` after model pre-load to report actual GPU memory used, estimated KV cache at full context length, and warns if peak usage will exceed 80% or 100% of available VRAM.
+- **Implemented:** Kernel state budget enforcement (`src/context_management/`) — prevents FETCH_STATE_CODE from sending ~1M-token GDC schema state to the LLM. Implements type blacklisting, variable whitelisting, per-variable size caps, total budget cap, and delta tracking (unchanged vars sent as compact summaries). Applied via Apptainer `.def` patch to `beaker_kernel/subkernels/python.py` at container build time; parameters controlled by `HARMONIA_STATE_*` env vars from experiment YAML. Failure mode 6A added to error taxonomy for observability.
 
 ---
 
@@ -543,6 +546,32 @@ class PromptsConfig:
     tool_prompts_dir: Optional[str] = None
 
 @dataclass
+class PythonKernelContextConfig:
+    """Configuration for kernel state budget enforcement (FETCH_STATE_CODE patch)."""
+    max_variable_size: int = 20_000
+    state_budget_pct: int = 25
+    type_blacklist: list[str]   # default: SchemaGraph, SimilarityFloodingMatcher, ...
+    var_whitelist: list[str]    # default: df, df_harmonized, result, ...
+
+@dataclass
+class ArchytasContextConfig:
+    """Configuration for Archytas agent/model context management."""
+    summarization_threshold_pct: int = 50
+    context_window_override: Optional[int] = None  # Force context window size (critical for Ollama)
+    max_tokens: Optional[int] = None
+    tool_output_summarization_threshold: int = 1000
+    tool_output_snippet_size: int = 1000
+    max_react_steps: Optional[int] = 30
+    max_errors: int = 3
+    summarization_model: Optional[str] = None       # Separate model for summarization
+    summarization_model_provider: Optional[str] = None
+
+@dataclass
+class ContextManagementConfig:
+    python_kernel: PythonKernelContextConfig
+    archytas: ArchytasContextConfig
+
+@dataclass
 class ExperimentConfig:
     name: str
     description: str
@@ -552,6 +581,7 @@ class ExperimentConfig:
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     prompts: PromptsConfig = field(default_factory=PromptsConfig)
+    context_management: ContextManagementConfig = field(default_factory=ContextManagementConfig)
     # Manual mode: if True, this config is for manual experiments (no automated messages)
     manual_mode: bool = False
     # Optional reference to dataset metadata YAML
@@ -954,6 +984,15 @@ bdikit_models:
   magneto_zero_shot_schema_matching_llm: devstral:latest
   magneto_fine_tuned_schema_matching_llm: devstral:latest
 
+context_management:
+  python_kernel:
+    max_variable_size: 20000     # Max chars per variable in kernel state
+    state_budget_pct: 25         # Total state budget as % of context window
+  archytas:
+    summarization_threshold_pct: 50   # When to trigger history summarization (% of context)
+    context_window_override: 64000    # Force context window size (critical for Ollama)
+    max_react_steps: 30               # Max ReAct loop iterations per query
+
 messages:
   - content: |
       Load the file dou.csv as a dataframe...
@@ -1088,6 +1127,25 @@ python generate_env.py --config config.yaml --base-env /path/to/.env --output-di
 **Prompt env vars:** When a `prompts` section exists in the YAML config, `generate_env.py` resolves paths (relative to config file via `prompts_base_dir`) and writes `HARMONIA_PROMPTS_DIR`, `HARMONIA_REACT_PRELUDE`, `HARMONIA_CODE_CONTEXT_PROMPT`, `HARMONIA_TOOL_PROMPTS_DIR` to the `.env` file.
 
 For Ollama providers, also writes `OLLAMA_CONTEXT_LENGTH` if `context_length` is set in the YAML config.
+
+**Context management env vars:** When a `context_management` section exists in the YAML config, `generate_env.py` emits:
+
+| Env Variable | YAML Path | Read by |
+|---|---|---|
+| `ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT` | `context_management.archytas.summarization_threshold_pct` | Beaker `config.py` → ModelConfig; Archytas `base.py` (fallback) |
+| `ARCHYTAS_CONTEXT_WINDOW_OVERRIDE` | `context_management.archytas.context_window_override` | Beaker `config.py` → ModelConfig; Archytas `base.py` + `ollama.py` |
+| `ARCHYTAS_TOOL_SUMMARIZATION_THRESHOLD` | `context_management.archytas.tool_output_summarization_threshold` | Archytas `summarizers.py` |
+| `ARCHYTAS_TOOL_SNIPPET_SIZE` | `context_management.archytas.tool_output_snippet_size` | Archytas `summarizers.py` |
+| `ARCHYTAS_MAX_REACT_STEPS` | `context_management.archytas.max_react_steps` | Beaker `agent.py` → ReActAgent kwargs |
+| `ARCHYTAS_MAX_ERRORS` | `context_management.archytas.max_errors` | Beaker `agent.py` → ReActAgent kwargs |
+| `ARCHYTAS_SUMMARIZATION_MODEL_CONFIG` | Built from `summarization_model` + `summarization_model_provider` | Archytas `summarizers.py` (lazy model creation) |
+| `HARMONIA_STATE_MAX_VAR_SIZE` | `context_management.python_kernel.max_variable_size` | FETCH_STATE_CODE patch |
+| `HARMONIA_STATE_BUDGET_PCT` | `context_management.python_kernel.state_budget_pct` | `exec_apptainer_harmonia.sh` (budget calc) |
+| `HARMONIA_STATE_TOTAL_BUDGET` | Calculated by exec script from PCT × context_length | FETCH_STATE_CODE patch |
+| `HARMONIA_STATE_TYPE_BLACKLIST` | `context_management.python_kernel.type_blacklist` (comma-separated) | FETCH_STATE_CODE patch |
+| `HARMONIA_STATE_VAR_WHITELIST` | `context_management.python_kernel.var_whitelist` (comma-separated) | FETCH_STATE_CODE patch |
+
+The `exec_apptainer_harmonia.sh` script also exports `OLLAMA_NUM_CTX` alongside `OLLAMA_CONTEXT_LENGTH` (Ollama uses both depending on version), calculates `HARMONIA_STATE_TOTAL_BUDGET` from percentage × context_length, and pre-pulls Ollama summarization models if configured.
 
 ---
 

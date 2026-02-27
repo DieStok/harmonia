@@ -1,8 +1,8 @@
 # =============================================================================
 # Harmonia Experiment Failure Mode Taxonomy
 # =============================================================================
-# Schema version: 1.1
-# Date: 25 February 2026 (added 2F: Model Pre-load Timeout, 3H: Ollama Silent Context Truncation)
+# Schema version: 1.2
+# Date: 26 February 2026 (added 6A: Kernel State Budget Enforced)
 #
 # This file defines the problem classes that the CLI log/trace analysis tool
 # uses to categorize experiment failures. Each problem class has:
@@ -25,7 +25,7 @@
 # See also: documentation/processes/11_02_2026_interpreting_logs_and_traces.md
 # =============================================================================
 
-schema_version: "1.1"
+schema_version: "1.2"
 
 problem_classes:
 
@@ -729,3 +729,52 @@ problem_classes:
       - "Fix upstream issues first: this is almost always a downstream effect of another failure"
       - "Add output verification: after final turn, check if expected output files exist; log NO_OUTPUT_PRODUCED status"
       - "Add save results fallback: if LLM produced intermediate results in memory, add automated save step"
+
+  # ===========================================================================
+  # Category 6: Diagnostic / Informational
+  # ===========================================================================
+
+  - id: "6A"
+    category: "diagnostic"
+    name: "Kernel State Budget Enforced"
+    description: |
+      The kernel state budget enforcement dropped one or more variables
+      from the serialized state sent to the LLM. This is informational —
+      it means the budget system is working as intended and prevented a
+      potential context window explosion.
+
+      The _budget_metadata object in the auto-context shows what was dropped
+      and why. Common scenarios:
+        - BDI schema objects (SchemaGraph, SimilarityFloodingMatcher) blacklisted
+        - Large intermediate variables dropped due to per-variable size cap
+        - Variables dropped because total budget was exceeded
+        - Unchanged variables sent as compact summaries (delta tracking)
+
+      If important variables were dropped, they should be added to the
+      var_whitelist in the experiment YAML's context_management section.
+    severity: "info"
+    detection:
+      log_keywords: []
+      log_regex: []
+      trace_keywords:
+        - "_budget_metadata"
+        - "dropped_count"
+      trace_regex:
+        - "\"dropped_count\":\\s*[1-9]"
+    example:
+      source: "trace"
+      snippet: |
+        {
+          "_budget_metadata": {
+            "dropped_count": 3,
+            "unchanged_count": 5,
+            "budget_total": 64000,
+            "max_var_size": 20000,
+            "final_size_chars": 42150
+          }
+        }
+    remediation:
+      - "Informational only: the budget system prevented a context explosion"
+      - "If important variables were dropped, add them to var_whitelist in experiment YAML context_management.python_kernel section"
+      - "If too many variables are dropped, increase state_budget_pct or max_variable_size in context_management.python_kernel"
+      - "Use the log analysis CLI tool with --verbose to see which specific variables were affected"

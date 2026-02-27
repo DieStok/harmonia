@@ -106,6 +106,215 @@ From: python:3.11
     echo "Building and installing bdikit_context (with --no-build-isolation to use system packages)..."
     TMPDIR=/var/tmp pip install --no-cache-dir --no-build-isolation .
 
+    # ==========================================================================
+    # HARMONIA PATCH: Kernel State Budget Enforcement for FETCH_STATE_CODE
+    # ==========================================================================
+    # Problem: Beaker's FETCH_STATE_CODE serializes the ENTIRE Python kernel
+    # namespace to JSON and sends it to the LLM as context. When BDI loads the
+    # GDC schema vocabulary (~1M tokens), this exceeds any model's context window.
+    #
+    # Solution: Append budget enforcement logic to the end of FETCH_STATE_CODE.
+    # The patch runs after the original serialization and applies:
+    #   1. Type blacklisting (exclude known large BDI types)
+    #   2. Variable whitelisting (always keep important result variables)
+    #   3. Delta tracking (only send changed variables in full)
+    #   4. Per-variable size cap (configurable, default 20K chars)
+    #   5. Total budget cap (configurable, default 25% of context window)
+    #
+    # Budget parameters are read from environment variables at kernel startup,
+    # allowing per-experiment configuration via the experiment YAML.
+    #
+    # See: documentation/plans/25_02_2026_2238_fix_context_issues.md (Fix 2)
+    # See: types_of_log_and_trace_problems.yaml (problems 3E, 3H, 6A)
+    # ==========================================================================
+
+    echo "=== Patching FETCH_STATE_CODE with budget enforcement ==="
+
+    # Find the beaker_kernel subkernels/python.py file
+    BEAKER_PYTHON_SUBKERNEL=$(python3 -c "import beaker_kernel.subkernels.python as m; print(m.__file__)" 2>/dev/null)
+
+    if [ -z "$BEAKER_PYTHON_SUBKERNEL" ]; then
+        echo "WARNING: Cannot locate beaker_kernel subkernel python.py - skipping FETCH_STATE_CODE patch"
+    elif ! grep -q "FETCH_STATE_CODE" "$BEAKER_PYTHON_SUBKERNEL"; then
+        echo "WARNING: FETCH_STATE_CODE not found in $BEAKER_PYTHON_SUBKERNEL - skipping patch"
+    else
+        # Create the patch script
+        cat > /tmp/patch_fetch_state_code.py << 'PATCH_EOF'
+"""
+Patch FETCH_STATE_CODE in beaker_kernel to add budget enforcement.
+This runs at container build time (Apptainer %post).
+"""
+import sys
+
+# Find the actual file path
+try:
+    import beaker_kernel.subkernels.python as mod
+    SUBKERNEL_PATH = mod.__file__
+except ImportError:
+    print("ERROR: Cannot import beaker_kernel.subkernels.python")
+    sys.exit(1)
+
+# The budget enforcement code to append to FETCH_STATE_CODE.
+# This code runs INSIDE the Jupyter kernel after the original state serialization.
+# It operates on `_result` which is the dict built by the original FETCH_STATE_CODE.
+BUDGET_CODE = '''
+# === HARMONIA: Kernel State Budget Enforcement ===
+# Prevents context window explosions from large kernel state serialization.
+import os as _os
+
+_BUDGET_MAX_VAR_SIZE = int(_os.environ.get("HARMONIA_STATE_MAX_VAR_SIZE", "20000"))
+_BUDGET_TOTAL = int(_os.environ.get("HARMONIA_STATE_TOTAL_BUDGET", "50000"))
+_BUDGET_TYPE_BLACKLIST = [s.strip() for s in _os.environ.get(
+    "HARMONIA_STATE_TYPE_BLACKLIST",
+    "SchemaGraph,SimilarityFloodingMatcher,ColumnMappingSpec,ValueMappingSpec"
+).split(",") if s.strip()]
+_BUDGET_VAR_WHITELIST = [s.strip() for s in _os.environ.get(
+    "HARMONIA_STATE_VAR_WHITELIST",
+    "df,df_harmonized,df_subset,result,results,output,harmonized,mapping,column_mapping,value_mapping"
+).split(",") if s.strip()]
+
+# Delta tracking: store previous state hashes in builtins for persistence across calls
+try:
+    import builtins as _builtins_mod
+    if not hasattr(_builtins_mod, "_harmonia_prev_state_hashes"):
+        _builtins_mod._harmonia_prev_state_hashes = {}
+    _prev_hashes = _builtins_mod._harmonia_prev_state_hashes
+except Exception:
+    _prev_hashes = {}
+
+def _apply_state_budget(_state):
+    if not _state or not isinstance(_state, dict):
+        return _state
+
+    _vars = _state.get("variables", {})
+    _budgeted = {}
+    _running = 0
+    _dropped_count = 0
+    _unchanged_count = 0
+    _new_hashes = {}
+
+    _sized = []
+    for _vn, _vi in _vars.items():
+        try:
+            _serialized = _json.dumps(_vi, default=str)
+            _vs = len(_serialized)
+            _vh = hash(_serialized)
+        except Exception:
+            _vs = 0
+            _vh = 0
+        _sized.append((_vn, _vi, _vs, _vh))
+        _new_hashes[_vn] = _vh
+
+    _sized.sort(key=lambda x: x[2])
+
+    for _vn, _vi, _vs, _vh in _sized:
+        _vt = str(_vi.get("type", ""))
+        _is_wl = _vn in _BUDGET_VAR_WHITELIST
+
+        if not _is_wl and any(_bl in _vt for _bl in _BUDGET_TYPE_BLACKLIST):
+            _budgeted[_vn] = {"type": _vt, "value": f"<dropped: blacklisted_type, size={_vs:,}>", "_dropped": True}
+            _dropped_count += 1
+            continue
+
+        if not _is_wl and _vn in _prev_hashes and _prev_hashes[_vn] == _vh:
+            _compact = {"type": _vt, "size": _vi.get("size", ""), "_unchanged": True}
+            _budgeted[_vn] = _compact
+            _running += len(_json.dumps(_compact, default=str))
+            _unchanged_count += 1
+            continue
+
+        if not _is_wl and _BUDGET_MAX_VAR_SIZE > 0 and _vs > _BUDGET_MAX_VAR_SIZE:
+            _budgeted[_vn] = {"type": _vt, "value": f"<dropped: size={_vs:,} > max={_BUDGET_MAX_VAR_SIZE:,}>", "_dropped": True}
+            _dropped_count += 1
+            continue
+
+        if not _is_wl and _BUDGET_TOTAL > 0 and (_running + _vs) > _BUDGET_TOTAL:
+            _budgeted[_vn] = {"type": _vt, "value": f"<dropped: total_budget_exceeded, size={_vs:,}>", "_dropped": True}
+            _dropped_count += 1
+            continue
+
+        _budgeted[_vn] = _vi
+        _running += _vs
+
+    _state["variables"] = _budgeted
+
+    try:
+        _builtins_mod._harmonia_prev_state_hashes = _new_hashes
+    except Exception:
+        pass
+
+    if _dropped_count > 0 or _unchanged_count > 0:
+        _state["_budget_metadata"] = {
+            "dropped_count": _dropped_count,
+            "unchanged_count": _unchanged_count,
+            "budget_total": _BUDGET_TOTAL,
+            "max_var_size": _BUDGET_MAX_VAR_SIZE,
+            "final_size_chars": _running,
+        }
+    return _state
+
+_result = _apply_state_budget(_result)
+# === END HARMONIA: Kernel State Budget Enforcement ===
+'''
+
+# Read the original file
+with open(SUBKERNEL_PATH, 'r') as f:
+    content = f.read()
+
+# The original FETCH_STATE_CODE ends with: _result\n"""
+# We insert budget code before the final _result expression.
+# Find the pattern: the last `_result\n"""` in FETCH_STATE_CODE
+# The code currently has:
+#   _result = _json.loads(_json.dumps(_result, cls=_SubkernelStateEncoder))
+#   ...
+#   _result
+#   """
+# We insert our budget code before the final bare `_result` that returns the value.
+
+# Strategy: find FETCH_STATE_CODE string, find its last `_result\n"""` ending
+fetch_start = content.find('FETCH_STATE_CODE')
+if fetch_start == -1:
+    print("ERROR: FETCH_STATE_CODE not found in file")
+    sys.exit(1)
+
+# Find the closing triple-quote of FETCH_STATE_CODE after the start
+# The pattern is: bare _result on its own line, followed by closing """
+import re
+# Match the last `_result\n"""` within FETCH_STATE_CODE
+# We need to replace just the final `_result\n"""` with our budget code + `_result\n"""`
+pattern = r'(_result\n""")'
+matches = list(re.finditer(pattern, content[fetch_start:]))
+if not matches:
+    print("ERROR: Could not find _result ending pattern in FETCH_STATE_CODE")
+    sys.exit(1)
+
+# Use the last match (the actual return expression, not the json.loads assignment)
+last_match = matches[-1]
+abs_start = fetch_start + last_match.start()
+abs_end = fetch_start + last_match.end()
+
+patched = content[:abs_start] + BUDGET_CODE + '\n_result\n"""' + content[abs_end:]
+
+with open(SUBKERNEL_PATH, 'w') as f:
+    f.write(patched)
+
+print(f"SUCCESS: Patched FETCH_STATE_CODE in {SUBKERNEL_PATH}")
+print(f"  Added {len(BUDGET_CODE)} chars of budget enforcement code")
+PATCH_EOF
+
+        python3 /tmp/patch_fetch_state_code.py
+        PATCH_RESULT=$?
+        rm -f /tmp/patch_fetch_state_code.py
+
+        if [ $PATCH_RESULT -ne 0 ]; then
+            echo "WARNING: FETCH_STATE_CODE patch failed (exit code $PATCH_RESULT)"
+            echo "  Budget enforcement will NOT be active in this container"
+            echo "  Manual patching may be required"
+        else
+            echo "=== FETCH_STATE_CODE patch applied successfully ==="
+        fi
+    fi
+
     # --------------------------------------------------------------------------
     # Verify installations
     # --------------------------------------------------------------------------
