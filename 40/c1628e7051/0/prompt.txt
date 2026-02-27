@@ -1,0 +1,39 @@
+please investigate how to rebuild the harmonia container using the local versions of archytas and beaker-kernel: /hpc/compgen/projects/llm_GEO_project/beaker-kernel and /hpc/compgen/projects/llm_GEO_project/archytas and /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/build_harmonia_apptainer.sh
+
+Tell me the commands you will run and what you need to change in the .def etc.
+
+---
+
+MAke the edits, rebuild the container, and make sure it completes
+
+---
+
+Can you check whether there are any relevant lines in the latest 'how this codebase works' files, and add 1 sentence describing how the new container generation depends on local (changed) versions of Archytas and beaker-kernel.
+
+Then, I would like to make my own fork of Archytas and beaker-kernel on Github and make our local changes in /hpc/compgen/projects/llm_GEO_project/archytas and /hpc/compgen/projects/llm_GEO_project/beaker-kernel commit and push to that. Can you tell me how to do that?
+
+---
+
+can you perform the commands in step 2 and 3? The forks are at:
+https://github.com/DieStok/beaker-kernel.git
+https://github.com/DieStok/archytas.git
+
+---
+
+I am pushing things sucessfully through the VSCode Github interface, so why is this not working while that is? Perhaps I can do it through the GUI instead?
+
+---
+
+it says 'you don't have permissions to push to DieStok/beaker-kernel'. Strange...Why?
+
+---
+
+[Request interrupted by user]
+
+---
+
+Ah, yes, change it back to https.
+
+---
+
+And how do I make sure I always (sync&)push to myforks there?

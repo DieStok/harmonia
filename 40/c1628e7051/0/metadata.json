@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "40c1628e7051",
+  "session_id": "0b6226c8-c4f9-4c68-857d-5824409399f7",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-27T13:04:45.754472635Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "documentation/codebase_descriptions/how_this_codebase_works_26_02_2026.md",
+    "harmonia_beaker_LLM_agent_environment_apptainer.def"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "1571d570-dafb-4a13-86c3-2c4f3cff0425",
+  "token_usage": {
+    "input_tokens": 55,
+    "cache_creation_tokens": 137933,
+    "cache_read_tokens": 2148701,
+    "output_tokens": 11035,
+    "api_call_count": 41
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-27T13:04:42.120096604Z",
+    "agent_lines": 288,
+    "human_added": 3560,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 3852,
+    "agent_percentage": 7.476635514018691
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/0b6226c8-c4f9-4c68-857d-5824409399f7.jsonl"
+}

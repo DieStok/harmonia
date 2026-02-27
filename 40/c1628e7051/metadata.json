@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "40c1628e7051",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "documentation/codebase_descriptions/how_this_codebase_works_26_02_2026.md",
+    "harmonia_beaker_LLM_agent_environment_apptainer.def"
+  ],
+  "sessions": [
+    {
+      "metadata": "/40/c1628e7051/0/metadata.json",
+      "transcript": "/40/c1628e7051/0/full.jsonl",
+      "context": "/40/c1628e7051/0/context.md",
+      "content_hash": "/40/c1628e7051/0/content_hash.txt",
+      "prompt": "/40/c1628e7051/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 55,
+    "cache_creation_tokens": 137933,
+    "cache_read_tokens": 2148701,
+    "output_tokens": 11035,
+    "api_call_count": 41
+  }
+}
