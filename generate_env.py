@@ -196,6 +196,77 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
         if value:
             env_content = update_env_value(env_content, env_var, value)
 
+    # Handle context management configuration
+    cm_config = config.get('context_management', {})
+
+    # --- Python kernel state budget env vars ---
+    pk_config = cm_config.get('python_kernel', {})
+    pk_vars = {
+        'max_variable_size': ('HARMONIA_STATE_MAX_VAR_SIZE', '20000'),
+        'state_budget_pct': ('HARMONIA_STATE_BUDGET_PCT', '25'),
+    }
+    for yaml_key, (env_var, default) in pk_vars.items():
+        value = pk_config.get(yaml_key)
+        if value is not None:
+            env_content = update_env_value(env_content, env_var, str(value))
+
+    # Type blacklist and var whitelist as comma-separated strings
+    type_blacklist = pk_config.get('type_blacklist')
+    if type_blacklist and isinstance(type_blacklist, list):
+        env_content = update_env_value(env_content, 'HARMONIA_STATE_TYPE_BLACKLIST', ','.join(type_blacklist))
+
+    var_whitelist = pk_config.get('var_whitelist')
+    if var_whitelist and isinstance(var_whitelist, list):
+        env_content = update_env_value(env_content, 'HARMONIA_STATE_VAR_WHITELIST', ','.join(var_whitelist))
+
+    # --- Archytas context management env vars ---
+    arch_config = cm_config.get('archytas', {})
+
+    arch_vars = {
+        'summarization_threshold_pct': ('ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT', None),
+        'context_window_override': ('ARCHYTAS_CONTEXT_WINDOW_OVERRIDE', None),
+        'tool_output_summarization_threshold': ('ARCHYTAS_TOOL_SUMMARIZATION_THRESHOLD', None),
+        'tool_output_snippet_size': ('ARCHYTAS_TOOL_SNIPPET_SIZE', None),
+        'max_react_steps': ('ARCHYTAS_MAX_REACT_STEPS', None),
+        'max_errors': ('ARCHYTAS_MAX_ERRORS', None),
+        'max_tokens': ('LLM_MAX_TOKENS', None),
+    }
+    for yaml_key, (env_var, _) in arch_vars.items():
+        value = arch_config.get(yaml_key)
+        if value is not None:
+            env_content = update_env_value(env_content, env_var, str(value))
+
+    # Build summarization model config JSON if specified
+    summ_model = arch_config.get('summarization_model')
+    if summ_model:
+        import json as _json
+
+        summ_provider = arch_config.get('summarization_model_provider', provider)
+
+        # Build the import path for the summarization model
+        summ_import_path = get_provider_import_path(summ_provider)
+
+        summ_config = {
+            "import_path": summ_import_path,
+            "model_name": summ_model,
+        }
+
+        # For providers that need a base_url (Ollama), add it
+        if 'ollama' in summ_provider.lower():
+            summ_base_url = llm_config.get('base_url', 'http://localhost:11434')
+            summ_config["base_url"] = summ_base_url
+
+        # For providers that need an API key, try to get it from the base env
+        summ_api_key = get_api_key_for_provider(summ_provider, env_content)
+        if summ_api_key:
+            summ_config["api_key"] = summ_api_key
+
+        env_content = update_env_value(
+            env_content,
+            'ARCHYTAS_SUMMARIZATION_MODEL_CONFIG',
+            _json.dumps(summ_config),
+        )
+
     # Determine output path
     if output_dir is None:
         output_dir = config_path.parent

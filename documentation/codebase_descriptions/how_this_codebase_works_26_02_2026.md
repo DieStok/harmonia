@@ -336,6 +336,8 @@ This is the current Apptainer image with litellm and bdi-kit v0.9.0 support. It 
 - **langchain-core** - Message type compatibility
 - **beaker-kernel >= 1.14.0** - Latest Beaker functionality
 
+**Note:** The container is built from local development forks of beaker-kernel and archytas (`/hpc/compgen/projects/llm_GEO_project/beaker-kernel` and `/hpc/compgen/projects/llm_GEO_project/archytas`) rather than PyPI, so local changes to those repos (e.g. context management patches to `models/base.py`, `models/ollama.py`, `summarizers.py`) take effect when the container is rebuilt.
+
 **Build command:**
 ```bash
 srun -J apptainer_build_claude-code --time=02:30:00 --mem=50G --gres=tmpspace:100G bash

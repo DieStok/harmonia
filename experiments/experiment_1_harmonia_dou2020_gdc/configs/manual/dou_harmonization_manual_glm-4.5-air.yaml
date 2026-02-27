@@ -57,3 +57,7 @@ data:
 
 # No messages - this is for manual interaction
 # messages: []
+context_management:
+  archytas:
+    summarization_threshold_pct: 50
+    max_react_steps: 30

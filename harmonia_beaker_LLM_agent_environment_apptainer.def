@@ -58,6 +58,9 @@ From: python:3.11
     pyproject.toml /jupyter/pyproject.toml
     README.md /jupyter/README.md
     # Note: dou.csv is accessed via bind mount at runtime, not copied into image
+    # Local development versions of beaker-kernel and archytas
+    /hpc/compgen/projects/llm_GEO_project/beaker-kernel /build/beaker-kernel
+    /hpc/compgen/projects/llm_GEO_project/archytas /build/archytas
 
 %post
     # ==========================================================================
@@ -79,10 +82,27 @@ From: python:3.11
     df -h /var/tmp
 
     # --------------------------------------------------------------------------
-    # Install beaker_kernel (provides hatch build hook and kernel functionality)
+    # Install beaker_kernel and archytas from local source
     # --------------------------------------------------------------------------
-    echo "Installing beaker_kernel (provides hatch build hook)..."
-    TMPDIR=/var/tmp uv pip install --system --no-cache "beaker_kernel>=1.14.0"
+    echo "Installing poetry (needed for archytas build backend)..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache poetry
+
+    echo "Installing archytas from local source..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache /build/archytas
+
+    # Pre-install beaker_kernel's runtime deps so the hatch build hook can import them.
+    # The hook imports beaker_kernel.lib.subkernel at build time, which pulls in
+    # zmq, jupyter_core, tornado, six, etc. — none of which are declared as build deps.
+    echo "Pre-installing beaker_kernel runtime deps (needed for its hatch build hook)..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache \
+        pyzmq jupyter_core tornado six \
+        jupyterlab "jupyterlab-server>=2.22.1,<3" \
+        requests watchdog click python-dotenv \
+        toml dill pandas matplotlib xarray numpy scipy openpyxl \
+        "adhoc-api>=2.6.2" "tree-sitter<0.25.0"
+
+    echo "Installing beaker_kernel from local source (provides hatch build hook)..."
+    TMPDIR=/var/tmp uv pip install --system --no-cache --no-build-isolation /build/beaker-kernel
 
     # --------------------------------------------------------------------------
     # Install litellm (unified LLM provider library, also used by bdi-kit)

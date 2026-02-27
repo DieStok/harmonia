@@ -56,3 +56,10 @@ data:
 
 # No messages - this is for manual interaction
 # messages: []
+context_management:
+  python_kernel:
+    max_variable_size: 20000
+    state_budget_pct: 25
+  archytas:
+    summarization_threshold_pct: 50
+    max_react_steps: 30

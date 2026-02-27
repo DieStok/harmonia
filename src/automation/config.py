@@ -70,6 +70,42 @@ class PromptsConfig:
 
 
 @dataclass
+class PythonKernelContextConfig:
+    """Configuration for kernel state budget enforcement (FETCH_STATE_CODE patch)."""
+    max_variable_size: int = 20_000
+    state_budget_pct: int = 25
+    type_blacklist: list[str] = field(default_factory=lambda: [
+        "SchemaGraph", "SimilarityFloodingMatcher",
+        "ColumnMappingSpec", "ValueMappingSpec",
+    ])
+    var_whitelist: list[str] = field(default_factory=lambda: [
+        "df", "df_harmonized", "df_subset", "result", "results",
+        "output", "harmonized", "mapping", "column_mapping", "value_mapping",
+    ])
+
+
+@dataclass
+class ArchytasContextConfig:
+    """Configuration for Archytas agent/model context management."""
+    summarization_threshold_pct: int = 50
+    context_window_override: Optional[int] = None
+    max_tokens: Optional[int] = None
+    tool_output_summarization_threshold: int = 1000
+    tool_output_snippet_size: int = 1000
+    max_react_steps: Optional[int] = 30
+    max_errors: int = 3
+    summarization_model: Optional[str] = None
+    summarization_model_provider: Optional[str] = None
+
+
+@dataclass
+class ContextManagementConfig:
+    """Top-level context management configuration."""
+    python_kernel: PythonKernelContextConfig = field(default_factory=PythonKernelContextConfig)
+    archytas: ArchytasContextConfig = field(default_factory=ArchytasContextConfig)
+
+
+@dataclass
 class ExperimentConfig:
     """Complete experiment configuration."""
     name: str
@@ -80,6 +116,7 @@ class ExperimentConfig:
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     prompts: PromptsConfig = field(default_factory=PromptsConfig)
+    context_management: ContextManagementConfig = field(default_factory=ContextManagementConfig)
     # Manual mode: if True, this config is for manual experiments (no automated messages)
     manual_mode: bool = False
     # Optional reference to dataset metadata
@@ -142,6 +179,32 @@ class ExperimentConfig:
 
         prompts = PromptsConfig(**prompts_data) if prompts_data else PromptsConfig()
 
+        cm_data = data.get("context_management", {})
+        pk_data = cm_data.get("python_kernel", {})
+        arch_data = cm_data.get("archytas", {})
+
+        python_kernel_config = PythonKernelContextConfig(
+            max_variable_size=pk_data.get("max_variable_size", 20_000),
+            state_budget_pct=pk_data.get("state_budget_pct", 25),
+            type_blacklist=pk_data.get("type_blacklist", PythonKernelContextConfig().type_blacklist),
+            var_whitelist=pk_data.get("var_whitelist", PythonKernelContextConfig().var_whitelist),
+        )
+        archytas_config = ArchytasContextConfig(
+            summarization_threshold_pct=arch_data.get("summarization_threshold_pct", 50),
+            context_window_override=arch_data.get("context_window_override"),
+            max_tokens=arch_data.get("max_tokens"),
+            tool_output_summarization_threshold=arch_data.get("tool_output_summarization_threshold", 1000),
+            tool_output_snippet_size=arch_data.get("tool_output_snippet_size", 1000),
+            max_react_steps=arch_data.get("max_react_steps", 30),
+            max_errors=arch_data.get("max_errors", 3),
+            summarization_model=arch_data.get("summarization_model"),
+            summarization_model_provider=arch_data.get("summarization_model_provider"),
+        )
+        context_management = ContextManagementConfig(
+            python_kernel=python_kernel_config,
+            archytas=archytas_config,
+        )
+
         return cls(
             name=exp.get("name", "unnamed_experiment"),
             description=exp.get("description", ""),
@@ -151,6 +214,7 @@ class ExperimentConfig:
             decision_handling=decision,
             evaluation=evaluation,
             prompts=prompts,
+            context_management=context_management,
             manual_mode=manual_mode,
             dataset_metadata=exp.get("dataset_metadata"),
             context=exp.get("context"),

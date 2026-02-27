@@ -116,3 +116,7 @@ evaluation:
   value_mapping_file: value_mapping.json
   index_column: null
   numeric_tolerance: null
+context_management:
+  archytas:
+    summarization_threshold_pct: 50
+    max_react_steps: 30
