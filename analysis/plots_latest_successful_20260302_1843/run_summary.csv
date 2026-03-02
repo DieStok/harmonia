@@ -1,0 +1,8 @@
+run_id,experiment_name,model_label,context,model_family,column_mapping_accuracy,avg_value_accuracy_excl_empty,avg_value_f1_excl_empty,timing_seconds
+8f25137b,dou_harmonization_code-context_kimi-k2.5,moonshotai/kimi-k2.5,code_context,frontier,1.0,1.0,1.0,
+8620ee84,dou_harmonization_codeact_claude-sonnet-4.6,anthropic/claude-sonnet-4.6,codeact_context,frontier,1.0,1.0,1.0,
+9a482697,dou_harmonization_bdikit-tools_gemini-3-flash-preview,google/gemini-3-flash-preview,bdikit_context,frontier,1.0,0.8862061141472907,0.8991530208921513,
+0ba7ba21,dou_harmonization_bdikit-tools_kimi-k2.5,moonshotai/kimi-k2.5,bdikit_context,frontier,1.0,0.8862061141472907,0.8810107284020327,
+1f8f71bf,dou_harmonization_codeact_kimi-k2.5,moonshotai/kimi-k2.5,codeact_context,frontier,1.0,0.4256854256854257,0.3635046113306983,
+58fa9479,dou_harmonization_code-context_gemini-3-flash-preview,google/gemini-3-flash-preview,code_context,frontier,0.7272727272727273,0.6151854681266445,0.586231884057971,
+495062d5,dou_harmonization_codeact_gemini-3-flash-preview,google/gemini-3-flash-preview,codeact_context,frontier,0.7272727272727273,0.3156089193825043,0.1930484290332364,
