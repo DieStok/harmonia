@@ -23,18 +23,66 @@ DEFAULT_TARGET = "gdc"
 DEFAULT_OUTPUT_FILE = "harmonized_table.csv"
 
 
+def _build_litellm_model(model: str) -> str:
+    """Normalize model names to litellm provider/model format when needed."""
+    if not model:
+        return model
+
+    known_prefixes = (
+        "openrouter/",
+        "anthropic/",
+        "ollama/",
+        "ollama_chat/",
+        "groq/",
+        "gemini/",
+        "mistral/",
+        "azure/",
+        "bedrock/",
+        "cohere/",
+        "cohere_chat/",
+        "together_ai/",
+        "perplexity/",
+        "deepseek/",
+        "fireworks_ai/",
+        "openai/",
+    )
+    if model.startswith(known_prefixes):
+        return model
+
+    provider = os.environ.get("LLM_SERVICE_PROVIDER", "openai").lower()
+    base_provider = provider.split(":")[-1] if ":" in provider else provider
+    provider_prefixes = {
+        "openai": "",
+        "openrouter": "openrouter/",
+        "anthropic": "anthropic/",
+        "ollama": "ollama/",
+        "groq": "groq/",
+        "gemini": "gemini/",
+        "mistral": "mistral/",
+        "azure": "azure/",
+        "bedrock": "bedrock/",
+        "cohere": "cohere/",
+        "together": "together_ai/",
+        "perplexity": "perplexity/",
+        "deepseek": "deepseek/",
+        "fireworks": "fireworks_ai/",
+    }
+    prefix = provider_prefixes.get(base_provider, f"{base_provider}/")
+    return f"{prefix}{model}" if prefix else model
+
+
 def _get_method_args_for_schema(method: str) -> dict:
     """Build method_args dict for schema matching based on HARMONIA_* env vars."""
     fallback = os.environ.get("LLM_SERVICE_MODEL", "openai/gpt-4o-mini")
     if method == "llm":
         model = os.environ.get("HARMONIA_LLM_FOR_SCHEMA_MATCHING", fallback)
-        return {"model_name": model}
+        return {"model_name": _build_litellm_model(model)}
     elif method == "magneto_zs_llm":
         model = os.environ.get("HARMONIA_LLM_FOR_MAGNETO_ZERO_SHOT_SCHEMA_MATCHING", fallback)
-        return {"reranker_model": model}
+        return {"reranker_model": _build_litellm_model(model)}
     elif method == "magneto_ft_llm":
         model = os.environ.get("HARMONIA_LLM_FOR_MAGNETO_FINE_TUNED_SCHEMA_MATCHING", fallback)
-        return {"reranker_model": model}
+        return {"reranker_model": _build_litellm_model(model)}
     return {}
 
 
@@ -43,10 +91,10 @@ def _get_method_args_for_values(method: str) -> dict:
     fallback = os.environ.get("LLM_SERVICE_MODEL", "openai/gpt-4o-mini")
     if method == "llm":
         model = os.environ.get("HARMONIA_LLM_FOR_INSTANCE_MATCHING", fallback)
-        return {"model_name": model}
+        return {"model_name": _build_litellm_model(model)}
     elif method == "llm_numeric":
         model = os.environ.get("HARMONIA_LLM_FOR_NUMERIC_INSTANCE_MATCHING", fallback)
-        return {"model_name": model}
+        return {"model_name": _build_litellm_model(model)}
     elif method == "embedding":
         model = os.environ.get("HARMONIA_EMBEDDING_MODEL_FOR_INSTANCE_MATCHING", "bert-base-multilingual-cased")
         return {"model_name": model}

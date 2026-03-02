@@ -51,7 +51,7 @@ evaluation:
   index_column: null
   numeric_tolerance: null
 messages:
-- content: 'Load the file data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
+- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
     and subset it to the following columns:
 
     Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,

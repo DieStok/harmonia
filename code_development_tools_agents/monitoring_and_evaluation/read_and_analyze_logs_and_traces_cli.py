@@ -36,10 +36,11 @@ import json
 import os
 import re
 import sys
+from collections import Counter
 from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 from pydantic import BaseModel
@@ -137,6 +138,7 @@ class RunAnalysis(BaseModel):
     total_duration_seconds: Optional[float]
     problems: list[DetectedProblem]
     turns: Optional[list[TurnAnalysis]] = None
+    diagnostics: Optional[dict[str, Any]] = None
 
 
 class AnalysisReport(BaseModel):
@@ -548,6 +550,112 @@ def detect_problems(
     return unique_problems, turn_analyses
 
 
+def _raw_message_type(raw_msg: dict) -> str:
+    return str(raw_msg.get("msg_type") or raw_msg.get("type") or "")
+
+
+def _raw_message_text(raw_msg: dict) -> str:
+    content = raw_msg.get("content", {})
+    if isinstance(content, str):
+        return content
+    if isinstance(content, dict):
+        text = (
+            content.get("text")
+            or content.get("evalue")
+            or content.get("data", {}).get("text/plain")
+            or ""
+        )
+        if not text and isinstance(content.get("traceback"), list):
+            text = "\n".join(content.get("traceback", []))
+        return str(text)
+    return ""
+
+
+def collect_run_diagnostics(
+    log_content: str,
+    trace: Optional[dict],
+    results: Optional[DiscoveredResults],
+) -> dict[str, Any]:
+    """Collect targeted diagnostics for quick RCA on current failure patterns."""
+    diagnostics: dict[str, Any] = {}
+
+    if trace and "turns" in trace:
+        turns = trace.get("turns", [])
+        turn_counts = Counter(t.get("turn") for t in turns if t.get("turn") is not None)
+        duplicate_turns = [
+            {"turn": int(turn), "count": int(count)}
+            for turn, count in sorted(turn_counts.items())
+            if count > 1
+        ]
+        if duplicate_turns:
+            diagnostics["duplicate_turn_entries"] = duplicate_turns
+
+        execution_by_turn: list[dict[str, Any]] = []
+        first_filenotfound = None
+        max_turn_reached = False
+
+        for t in turns:
+            raw_messages = t.get("raw_messages", []) or []
+            execute_input = 0
+            execute_reply = 0
+            error_count = 0
+            for raw in raw_messages:
+                msg_type = _raw_message_type(raw)
+                if msg_type == "beaker__execute_input":
+                    execute_input += 1
+                elif msg_type == "beaker__execute_reply":
+                    execute_reply += 1
+                elif msg_type == "beaker__error":
+                    error_count += 1
+
+                txt = _raw_message_text(raw)
+                if (
+                    first_filenotfound is None
+                    and ("No such file or directory" in txt or "FileNotFoundError" in txt)
+                ):
+                    first_filenotfound = txt.replace("\n", " ")[:260]
+
+            if raw_messages:
+                execution_by_turn.append({
+                    "turn": int(t.get("turn", 0)),
+                    "raw_messages": len(raw_messages),
+                    "execute_input": execute_input,
+                    "execute_reply": execute_reply,
+                    "errors": error_count,
+                })
+
+            if "[CodeAct agent reached maximum of" in (t.get("agent_response") or ""):
+                max_turn_reached = True
+
+        diagnostics["codeact_max_turn_reached"] = max_turn_reached
+        if first_filenotfound:
+            diagnostics["first_filenotfound_evidence"] = first_filenotfound
+        if execution_by_turn:
+            diagnostics["execution_signal_by_turn"] = execution_by_turn
+
+    if results:
+        nested_results = results.path / "results"
+        top_level_files = sorted([p.name for p in results.path.iterdir() if p.is_file()])
+        nested_files = sorted([p.name for p in nested_results.iterdir() if p.is_file()]) if nested_results.exists() else []
+        diagnostics["output_layout"] = {
+            "top_level_files": top_level_files,
+            "nested_results_dir": nested_results.exists(),
+            "nested_results_files": nested_files,
+        }
+
+    if log_content:
+        workspace_results_lines = [ln.strip() for ln in log_content.splitlines() if "/workspace/results" in ln]
+        workspace_old_lines = [ln for ln in workspace_results_lines if "/workspace/results/old/" in ln]
+        diagnostics["workspace_results_line_count"] = len(workspace_results_lines)
+        diagnostics["workspace_results_old_line_count"] = len(workspace_old_lines)
+        if workspace_old_lines:
+            diagnostics["observability_warning"] = (
+                "Container saw historical /workspace/results/old entries; mount scope is broad."
+            )
+
+    return diagnostics
+
+
 def _check_patterns(pc: ProblemClass, log_content: str, trace_text: str) -> Optional[str]:
     """Check keyword/regex patterns against log and trace text. Returns first match."""
     for kw in pc.log_keywords:
@@ -867,8 +975,11 @@ def _detect_no_output(
     if not results.has_trace:
         return None
 
-    harmonized_csv = results.path / "dou_harmonized.csv"
-    if harmonized_csv.exists():
+    harmonized_candidates = [
+        results.path / "dou_harmonized.csv",
+        results.path / "results" / "dou_harmonized.csv",
+    ]
+    if any(p.exists() for p in harmonized_candidates):
         return None
 
     pc = _find_pc(taxonomy, "5A")
@@ -1043,6 +1154,7 @@ def analyze_run(
     run: dict,
     taxonomy: list[ProblemClass],
     verbose: bool = False,
+    diagnostics: bool = False,
 ) -> RunAnalysis:
     """Analyze a single run: read log+trace, detect problems."""
     log: Optional[DiscoveredLog] = run.get("log")
@@ -1129,6 +1241,7 @@ def analyze_run(
     problems, turn_analyses = detect_problems(
         log_content, trace, metrics, results, taxonomy, verbose
     )
+    diagnostics_data = collect_run_diagnostics(log_content, trace, results) if diagnostics else None
 
     return RunAnalysis(
         run_id=run_id,
@@ -1148,6 +1261,7 @@ def analyze_run(
         total_duration_seconds=total_duration,
         problems=problems,
         turns=turn_analyses,
+        diagnostics=diagnostics_data,
     )
 
 
@@ -1257,6 +1371,23 @@ def format_human_readable(report: AnalysisReport) -> str:
         else:
             lines.append("  Problems: none detected")
 
+        if run.diagnostics:
+            lines.append("  Diagnostics:")
+            d = run.diagnostics
+            if d.get("duplicate_turn_entries"):
+                lines.append(f"    duplicate_turn_entries: {d['duplicate_turn_entries']}")
+            if "codeact_max_turn_reached" in d:
+                lines.append(f"    codeact_max_turn_reached: {d['codeact_max_turn_reached']}")
+            if d.get("first_filenotfound_evidence"):
+                lines.append(f"    first_filenotfound: {d['first_filenotfound_evidence']}")
+            if d.get("observability_warning"):
+                lines.append(f"    observability_warning: {d['observability_warning']}")
+            if d.get("workspace_results_old_line_count", 0):
+                lines.append(
+                    "    workspace_results_old_line_count: "
+                    f"{d['workspace_results_old_line_count']}"
+                )
+
         # Verbose per-turn output
         if run.turns:
             lines.append(f"  Per-turn analysis:")
@@ -1342,6 +1473,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Show detailed per-turn trace analysis",
     )
     parser.add_argument(
+        "--diagnostics",
+        action="store_true",
+        help="Include targeted RCA diagnostics (duplicate turns, execution signals, output layout, mount visibility hints)",
+    )
+    parser.add_argument(
         "--run-id",
         type=str, default=None,
         help="Analyze a specific run by its 8-char hex ID",
@@ -1392,7 +1528,12 @@ def main():
     # Analyze each run
     analyzed_runs = []
     for run in runs:
-        analyzed = analyze_run(run, taxonomy, verbose=args.verbose)
+        analyzed = analyze_run(
+            run,
+            taxonomy,
+            verbose=args.verbose,
+            diagnostics=args.diagnostics,
+        )
         analyzed_runs.append(analyzed)
 
     # Generate report

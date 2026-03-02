@@ -175,8 +175,12 @@ async def main() -> int:
                 trace_path = output_dir / "trace.json"
                 trace_data = _load_json(trace_path) if trace_path.exists() else None
 
-                # Find LLM output CSV
+                # Find LLM output CSV (primary location, then common nested results/ layout)
                 llm_output = output_dir / "dou_harmonized.csv"
+                if not llm_output.exists():
+                    nested_output = output_dir / "results" / "dou_harmonized.csv"
+                    if nested_output.exists():
+                        llm_output = nested_output
 
                 # Check for value mapping file
                 llm_value_mapping_path = output_dir / config.evaluation.value_mapping_file

@@ -150,6 +150,7 @@ class ExperimentRunner:
     async def _run_turn(self, msg_config: MessageConfig) -> AgentResponse:
         """Run a single conversation turn."""
         self.current_turn += 1
+        main_turn = self.current_turn
 
         # Send message and get response
         response = await self.client.send_message(
@@ -157,13 +158,9 @@ class ExperimentRunner:
             timeout=float(msg_config.wait_seconds),
         )
 
-        # Handle decision points if needed
-        if self._is_decision_point(response):
-            response = await self._handle_decision(response, msg_config)
-
-        # Log the turn
+        # Log the primary turn response first (before any auto-decision follow-up)
         self.trace_logger.log_turn(
-            turn=self.current_turn,
+            turn=main_turn,
             user_message=msg_config.content,
             agent_response=response.content,
             response_type=response.response_type,
@@ -172,11 +169,36 @@ class ExperimentRunner:
             raw_messages=response.raw_messages,
         )
         self.conversation_logger.log_turn(
-            turn=self.current_turn,
+            turn=main_turn,
             user_message=msg_config.content,
             agent_response=response.content,
             response_type=response.response_type,
         )
+
+        # Handle decision points as a distinct follow-up turn
+        if self._is_decision_point(response):
+            decision_response, decision_mode, decision = await self._handle_decision(
+                response, msg_config
+            )
+            self.current_turn += 1
+            decision_turn = self.current_turn
+
+            self.trace_logger.log_turn(
+                turn=decision_turn,
+                user_message=f"[AUTO-DECISION: {decision_mode}] {decision}",
+                agent_response=decision_response.content,
+                response_type=decision_response.response_type,
+                tool_calls=decision_response.tool_calls,
+                duration_seconds=decision_response.duration_seconds,
+                raw_messages=decision_response.raw_messages,
+            )
+            self.conversation_logger.log_turn(
+                turn=decision_turn,
+                user_message=f"[AUTO-DECISION] {decision}",
+                agent_response=decision_response.content,
+                response_type=decision_response.response_type,
+            )
+            response = decision_response
 
         # Call callback if provided
         if self.on_turn_complete:
@@ -211,7 +233,7 @@ class ExperimentRunner:
 
     async def _handle_decision(
         self, response: AgentResponse, msg_config: MessageConfig
-    ) -> AgentResponse:
+    ) -> tuple[AgentResponse, str, str]:
         """Handle a decision point based on configuration."""
         # Determine decision mode
         decision_mode = (
@@ -237,23 +259,7 @@ class ExperimentRunner:
 
         # Send the decision
         decision_response = await self.client.send_message(decision, timeout=60.0)
-
-        # Log the decision as an additional turn
-        self.current_turn += 1
-        self.trace_logger.log_turn(
-            turn=self.current_turn,
-            user_message=f"[AUTO-DECISION: {decision_mode}] {decision}",
-            agent_response=decision_response.content,
-            response_type=decision_response.response_type,
-            duration_seconds=decision_response.duration_seconds,
-        )
-        self.conversation_logger.log_turn(
-            turn=self.current_turn,
-            user_message=f"[AUTO-DECISION] {decision}",
-            agent_response=decision_response.content,
-        )
-
-        return decision_response
+        return decision_response, decision_mode, decision
 
     def _find_predefined_response(self, agent_content: str) -> Optional[str]:
         """Find a predefined response matching the agent's question."""

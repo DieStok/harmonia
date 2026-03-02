@@ -32,6 +32,7 @@ set -e
 # Generate unique run ID for linking logs to results
 RUN_ID=$(python3 -c "import secrets; print(secrets.token_hex(4))")
 export RUN_ID
+RUN_RESULTS_DIR="{{project_dir}}/results/{{experiment_name}}_${SLURM_JOB_ID}_${RUN_ID}"
 
 # Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
@@ -82,6 +83,7 @@ echo ""
     --port $PORT \
     --config {{config_path}} \
     --job-name "{{experiment_name}}_${SLURM_JOB_ID}" \
+    --results-dir "$RUN_RESULTS_DIR" \
     --run-id "$RUN_ID" &
 
 SERVER_PID=$!

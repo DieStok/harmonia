@@ -1,0 +1,5 @@
+job_id,config,job_script,expected_results_glob,submitted_at_utc,run_id,status
+47434915,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_gemini-3-flash-preview.yaml,jobs/dou_harmonization_codeact_gemini-3-flash-preview.sh,results/dou_harmonization_codeact_gemini-3-flash-preview_*,2026-03-02T13:31:46Z,,SUBMITTED
+47434916,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_claude-sonnet-4.6.yaml,jobs/dou_harmonization_codeact_claude-sonnet-4.6.sh,results/dou_harmonization_codeact_claude-sonnet-4.6_*,2026-03-02T13:31:46Z,,SUBMITTED
+47434917,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_bdikit-tools_gemini-3-flash-preview.yaml,jobs/dou_harmonization_bdikit-tools_gemini-3-flash-preview.sh,results/dou_harmonization_bdikit-tools_gemini-3-flash-preview_*,2026-03-02T13:31:46Z,,SUBMITTED
+47434918,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_bdikit-tools_claude-sonnet-4.6.yaml,jobs/dou_harmonization_bdikit-tools_claude-sonnet-4.6.sh,results/dou_harmonization_bdikit-tools_claude-sonnet-4.6_*,2026-03-02T13:31:46Z,,SUBMITTED

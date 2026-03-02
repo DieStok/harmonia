@@ -144,7 +144,7 @@ echo ""
 MONITOR_PID=$!
 
 # Trap to kill monitor on exit
-trap "kill $MONITOR_PID 2>/dev/null" EXIT
+trap "kill $MONITOR_PID 2>/dev/null || true" EXIT
 
 # Build the sandbox
 apptainer build --sandbox --bind $BUILD_TMP:/tmp $SANDBOX_DIR $DEF_FILE

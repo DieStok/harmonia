@@ -180,6 +180,13 @@ fi
 
 # Create results directory if it doesn't exist
 mkdir -p "$RESULTS_DIR"
+# Keep Jupyter runtime artifacts inside the per-run results directory
+RUNTIME_DIR_HOST="${RESULTS_DIR}/.jupyter_runtime"
+mkdir -p "$RUNTIME_DIR_HOST"
+# Keep Beaker runtime and IPython history/checkpoints in per-run storage
+BEAKER_RUNTIME_DIR_HOST="${RESULTS_DIR}/.beaker_runtime"
+IPYTHON_DIR_HOST="${RESULTS_DIR}/.ipython"
+mkdir -p "$BEAKER_RUNTIME_DIR_HOST" "$IPYTHON_DIR_HOST"
 
 # If config file specified, generate .env from it
 if [ -n "$CONFIG_FILE" ]; then
@@ -1025,6 +1032,10 @@ APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_SERVER=http://localhost:${PORT}"
 APPTAINER_CMD="$APPTAINER_CMD --env DATA_DIR=/workspace/data"
 APPTAINER_CMD="$APPTAINER_CMD --env RESULTS_DIR=/workspace/results"
 APPTAINER_CMD="$APPTAINER_CMD --env WORKSPACE_DIR=/workspace"
+APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_RUNTIME_DIR=/workspace/results/.jupyter_runtime"
+APPTAINER_CMD="$APPTAINER_CMD --env XDG_RUNTIME_DIR=/workspace/results/.jupyter_runtime"
+APPTAINER_CMD="$APPTAINER_CMD --env BEAKER_RUN_PATH=/workspace/results/.beaker_runtime"
+APPTAINER_CMD="$APPTAINER_CMD --env IPYTHONDIR=/workspace/results/.ipython"
 
 # Pass run metadata into container for structured prompt logging
 APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_RUN_ID=${RUN_ID}"
