@@ -601,10 +601,16 @@ except:
         echo ""
     } >> "${OLLAMA_LOG_FILE}"
 
-    # Pre-warm the model if specified (blocking - wait for model to load)
+    # Pre-warm the model if specified (bounded wait to avoid blocking Beaker startup for too long)
     if [ -n "$LLM_MODEL" ]; then
         echo "   Pre-loading model: ${LLM_MODEL}..."
         echo "[$(date)] Pre-loading model: ${LLM_MODEL}" >> "${OLLAMA_LOG_FILE}"
+        PRELOAD_TIMEOUT_SECONDS="${HARMONIA_OLLAMA_PRELOAD_TIMEOUT_SECONDS:-90}"
+        if echo "$LLM_MODEL" | grep -Eiq 'nemotron|30b|70b|72b'; then
+            PRELOAD_TIMEOUT_SECONDS="${HARMONIA_OLLAMA_PRELOAD_TIMEOUT_SECONDS:-180}"
+        fi
+        echo "   Pre-load timeout: ${PRELOAD_TIMEOUT_SECONDS}s"
+        echo "[$(date)] Pre-load timeout: ${PRELOAD_TIMEOUT_SECONDS}s" >> "${OLLAMA_LOG_FILE}"
 
         # Build generate request with optional num_ctx for context length
         if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
@@ -615,15 +621,19 @@ except:
             GENERATE_DATA="{\"model\": \"${LLM_MODEL}\", \"prompt\": \"Hello\", \"stream\": false}"
         fi
 
-        # This call blocks until the model is loaded into memory
-        if curl -s "http://localhost:${OLLAMA_PORT}/api/generate" \
+        if timeout "${PRELOAD_TIMEOUT_SECONDS}s" curl -s "http://localhost:${OLLAMA_PORT}/api/generate" \
             -d "$GENERATE_DATA" \
             >> "${OLLAMA_LOG_FILE}" 2>&1; then
             echo "   ✓ Model preloaded successfully"
             echo "[$(date)] Model preloaded successfully" >> "${OLLAMA_LOG_FILE}"
         else
-            echo "   Warning: Model pre-load may have failed"
-            echo "[$(date)] Warning: Model pre-load may have failed" >> "${OLLAMA_LOG_FILE}"
+            if [ $? -eq 124 ]; then
+                echo "   Warning: Model pre-load timed out after ${PRELOAD_TIMEOUT_SECONDS}s (continuing startup)"
+                echo "[$(date)] Warning: Model pre-load timed out after ${PRELOAD_TIMEOUT_SECONDS}s (continuing startup)" >> "${OLLAMA_LOG_FILE}"
+            else
+                echo "   Warning: Model pre-load may have failed"
+                echo "[$(date)] Warning: Model pre-load may have failed" >> "${OLLAMA_LOG_FILE}"
+            fi
         fi
 
         # Verify model loading with ollama ps

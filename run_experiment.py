@@ -19,6 +19,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -98,6 +99,22 @@ def on_turn_complete(turn: int, message: str, response) -> None:
     print(f"  {status_icon} Turn {turn}: {response.response_type} ({response.duration_seconds:.1f}s)")
 
 
+def _resolve_required_artifacts(output_dir: Path, config) -> tuple[Path | None, list[Path]]:
+    llm_output = output_dir / "dou_harmonized.csv"
+    if not llm_output.exists():
+        nested_output = output_dir / "results" / "dou_harmonized.csv"
+        if nested_output.exists():
+            llm_output = nested_output
+
+    mapping_files: list[Path] = []
+    if config.evaluation:
+        if config.evaluation.column_mapping_file:
+            mapping_files.append(output_dir / config.evaluation.column_mapping_file)
+        if config.evaluation.value_mapping_file:
+            mapping_files.append(output_dir / config.evaluation.value_mapping_file)
+    return (llm_output if llm_output.exists() else None), mapping_files
+
+
 async def main() -> int:
     """Main entry point."""
     args = parse_args()
@@ -150,10 +167,27 @@ async def main() -> int:
 
         output_dir = await runner.run(interactive=args.interactive)
 
+        # Keep prompt composition adjacent to trace/metrics if written to run parent dir by context logger.
+        prompt_src = output_dir.parent / "full_prompt_composition.json"
+        prompt_dst = output_dir / "full_prompt_composition.json"
+        if not prompt_dst.exists() and prompt_src.exists():
+            shutil.copy2(prompt_src, prompt_dst)
+
         print(f"\n✓ Experiment complete!")
         print(f"  Output directory: {output_dir}")
         print(f"  - trace.json: Full execution trace")
         print(f"  - conversation.md: Simplified conversation log")
+
+        llm_output, mapping_files = _resolve_required_artifacts(output_dir, config)
+        missing_artifacts = []
+        if llm_output is None:
+            missing_artifacts.append("dou_harmonized.csv")
+        missing_artifacts.extend(str(p.relative_to(output_dir)) for p in mapping_files if not p.exists())
+        if missing_artifacts:
+            print("  ✗ Required output artifacts missing:")
+            for artifact in missing_artifacts:
+                print(f"    - {artifact}")
+            return 1
 
         # Calculate metrics if evaluation config is present
         if config.evaluation and config.evaluation.gold_standard:
@@ -175,18 +209,13 @@ async def main() -> int:
                 trace_path = output_dir / "trace.json"
                 trace_data = _load_json(trace_path) if trace_path.exists() else None
 
-                # Find LLM output CSV (primary location, then common nested results/ layout)
-                llm_output = output_dir / "dou_harmonized.csv"
-                if not llm_output.exists():
-                    nested_output = output_dir / "results" / "dou_harmonized.csv"
-                    if nested_output.exists():
-                        llm_output = nested_output
+                llm_output, _ = _resolve_required_artifacts(output_dir, config)
 
                 # Check for value mapping file
                 llm_value_mapping_path = output_dir / config.evaluation.value_mapping_file
                 value_mapping_found = llm_value_mapping_path.exists() if config.evaluation.value_mapping_file else False
 
-                if llm_output.exists():
+                if llm_output and llm_output.exists():
                     result = calculate_all_metrics(
                         gold_standard_csv=Path(config.evaluation.gold_standard),
                         llm_output_csv=llm_output,
@@ -205,7 +234,7 @@ async def main() -> int:
                     print(f"  ✓ Metrics saved to: {metrics_path}")
                     print(f"  - metrics.json: Harmonization metrics")
                 else:
-                    print(f"  ⚠ LLM output CSV not found at {llm_output}")
+                    print("  ⚠ LLM output CSV not found")
                     print(f"  Skipping metrics calculation.")
             except Exception as e:
                 print(f"  ⚠ Error calculating metrics: {e}")

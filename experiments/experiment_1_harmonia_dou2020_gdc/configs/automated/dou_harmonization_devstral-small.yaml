@@ -8,13 +8,9 @@ llm:
   base_url: http://localhost:11434
   temperature: 0.0
   context_length: 64000
-# bdi-kit internal LLM configuration for schema/value matching.
-# These default to the top-level llm.model if not specified.
-# Set explicitly here so each config documents which LLM bdi-kit uses internally.
 bdikit_models:
   instance_matching_llm: devstral-small-2:latest
   numeric_instance_matching_llm: devstral-small-2:latest
-  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
   schema_matching_llm: devstral-small-2:latest
   magneto_zero_shot_schema_matching_llm: devstral-small-2:latest
   magneto_fine_tuned_schema_matching_llm: devstral-small-2:latest
@@ -24,7 +20,7 @@ context_management:
     state_budget_pct: 25
   archytas:
     summarization_threshold_pct: 50
-    context_window_override: 64000  # Must match llm.context_length
+    context_window_override: 64000
     max_react_steps: 30
 output:
   base_dir: ./results
@@ -47,9 +43,18 @@ evaluation:
   value_mapping_file: value_mapping.json
   index_column: null
   numeric_tolerance: null
+retry_policy:
+  retry_delay_seconds: 5
+  n_retries_per_error_code:
+    openrouter_500: 3
+    openrouter_5xx: 2
+    openrouter_429: 3
+    timeout: 2
+    aimessage_validation_error: 1
+    default: 0
 messages:
-- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
-    and subset it to the following columns:
+- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv
+    as a dataframe and subset it to the following columns:
 
     Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
 

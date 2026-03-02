@@ -310,7 +310,14 @@ class BeakerClient:
                 content = raw_msg.get("content", {})
 
                 if msg_type == "llm_response":
-                    final_content = content.get("text", "")
+                    text = (
+                        content.get("text")
+                        or content.get("content")
+                        or content.get("message")
+                        or ""
+                    )
+                    if text:
+                        final_content = str(text)
                     response_type = "llm_response"
                 elif msg_type == "code_cell":
                     final_content = content.get("code", "")
@@ -331,6 +338,19 @@ class BeakerClient:
         except asyncio.TimeoutError:
             response_type = "timeout"
             final_content = f"Request timed out after {timeout} seconds"
+
+        if response_type == "llm_response" and not final_content.strip():
+            for raw in reversed(responses):
+                c = raw.get("content", {})
+                if raw.get("msg_type") == "stream":
+                    text = c.get("text", "")
+                elif raw.get("msg_type") == "llm_response":
+                    text = c.get("text") or c.get("content") or c.get("message") or ""
+                else:
+                    continue
+                if text and str(text).strip():
+                    final_content = str(text)
+                    break
 
         duration = asyncio.get_event_loop().time() - start_time
 
@@ -373,9 +393,12 @@ class BeakerClient:
             yield msg
 
             # Check for completion signals
-            if msg_type in ("llm_response", "error", "execute_reply"):
-                # Final response received
+            if msg_type in ("error", "execute_reply"):
                 break
+            if msg_type == "llm_response":
+                text = msg.get("content", {}).get("text", "")
+                if text:
+                    break
             elif msg_type == "status":
                 # Check if kernel is idle (request complete)
                 if msg.get("content", {}).get("execution_state") == "idle":

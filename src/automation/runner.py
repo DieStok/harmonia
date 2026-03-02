@@ -153,7 +153,7 @@ class ExperimentRunner:
         main_turn = self.current_turn
 
         # Send message and get response
-        response = await self.client.send_message(
+        response = await self._send_with_retries(
             msg_config.content,
             timeout=float(msg_config.wait_seconds),
         )
@@ -258,8 +258,55 @@ class ExperimentRunner:
             decision = "Please continue."
 
         # Send the decision
-        decision_response = await self.client.send_message(decision, timeout=60.0)
+        decision_response = await self._send_with_retries(decision, timeout=60.0)
         return decision_response, decision_mode, decision
+
+    def _retry_budget_for_error(self, error_code: str) -> int:
+        policy = self.config.retry_policy.n_retries_per_error_code
+        if error_code in policy:
+            return policy[error_code]
+        if error_code.startswith("openrouter_"):
+            suffix = error_code.replace("openrouter_", "", 1)
+            if suffix.isdigit():
+                bucket = f"{suffix[0]}xx"
+                if f"openrouter_{bucket}" in policy:
+                    return policy[f"openrouter_{bucket}"]
+                if bucket in policy:
+                    return policy[bucket]
+        return policy.get("default", 0)
+
+    def _classify_retryable_error(self, response: AgentResponse) -> Optional[str]:
+        text = (response.content or "").strip()
+        if response.response_type == "timeout":
+            return "timeout"
+        if response.response_type != "llm_response" or not text:
+            return None
+        m = re.search(r"Error from OpenRouter:.*'code':\s*(\d+)", text, re.DOTALL)
+        if m:
+            return f"openrouter_{m.group(1)}"
+        if "validation errors for AIMessage" in text:
+            return "aimessage_validation_error"
+        if "Internal Server Error" in text and "OpenRouter" in text:
+            return "openrouter_500"
+        return None
+
+    async def _send_with_retries(self, message: str, timeout: float) -> AgentResponse:
+        attempt = 0
+        while True:
+            response = await self.client.send_message(message, timeout=timeout)
+            error_code = self._classify_retryable_error(response)
+            if not error_code:
+                return response
+            budget = self._retry_budget_for_error(error_code)
+            if attempt >= budget:
+                return response
+            attempt += 1
+            delay = max(self.config.retry_policy.retry_delay_seconds, 0.0) * attempt
+            print(
+                f"  ↻ Retrying turn after {error_code} "
+                f"({attempt}/{budget}) in {delay:.1f}s"
+            )
+            await asyncio.sleep(delay)
 
     def _find_predefined_response(self, agent_content: str) -> Optional[str]:
         """Find a predefined response matching the agent's question."""

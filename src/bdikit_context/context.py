@@ -6,6 +6,7 @@ from beaker_kernel.lib.context import BeakerContext
 from .agent import BDIKitAgent
 from .prompts import PromptLoader, get_prompt_loader
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
+from openrouter_hardening import apply_openrouter_hardening
 
 if TYPE_CHECKING:
     from beaker_kernel.kernel import BeakerKernel
@@ -27,6 +28,7 @@ class BDIKitContext(BeakerContext):
     SLUG = "bdikit_context"
 
     def __init__(self, beaker_kernel: "BeakerKernel", config: Dict[str, Any]):
+        apply_openrouter_hardening()
         # Determine prompts directory from env var (set by generate_env.py)
         prompts_dir_env = os.environ.get("HARMONIA_PROMPTS_DIR")
         if prompts_dir_env and Path(prompts_dir_env).exists():

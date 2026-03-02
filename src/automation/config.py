@@ -40,6 +40,13 @@ class DecisionConfig:
 
 
 @dataclass
+class RetryPolicyConfig:
+    """Retry behavior for transient model/provider failures."""
+    n_retries_per_error_code: dict[str, int] = field(default_factory=dict)
+    retry_delay_seconds: float = 2.0
+
+
+@dataclass
 class EvaluationConfig:
     """Evaluation configuration for metrics calculation."""
     gold_standard: Optional[str] = None
@@ -114,6 +121,7 @@ class ExperimentConfig:
     messages: list[MessageConfig]
     output: OutputConfig = field(default_factory=OutputConfig)
     decision_handling: DecisionConfig = field(default_factory=DecisionConfig)
+    retry_policy: RetryPolicyConfig = field(default_factory=RetryPolicyConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     prompts: PromptsConfig = field(default_factory=PromptsConfig)
     context_management: ContextManagementConfig = field(default_factory=ContextManagementConfig)
@@ -132,6 +140,7 @@ class ExperimentConfig:
         messages_data = data.get("messages", [])
         output_data = data.get("output", {})
         decision_data = data.get("decision_handling", {})
+        retry_data = data.get("retry_policy", {})
         evaluation_data = data.get("evaluation", {})
         prompts_data = data.get("prompts", {})
 
@@ -159,6 +168,13 @@ class ExperimentConfig:
         decision = DecisionConfig(
             default_mode=decision_data.get("default_mode", "auto_accept"),
             predefined_responses=decision_data.get("predefined_responses", {}),
+        )
+        retry_policy = RetryPolicyConfig(
+            n_retries_per_error_code={
+                str(k): int(v)
+                for k, v in retry_data.get("n_retries_per_error_code", {}).items()
+            },
+            retry_delay_seconds=float(retry_data.get("retry_delay_seconds", 2.0)),
         )
 
         evaluation = EvaluationConfig(
@@ -212,6 +228,7 @@ class ExperimentConfig:
             messages=messages,
             output=output,
             decision_handling=decision,
+            retry_policy=retry_policy,
             evaluation=evaluation,
             prompts=prompts,
             context_management=context_management,

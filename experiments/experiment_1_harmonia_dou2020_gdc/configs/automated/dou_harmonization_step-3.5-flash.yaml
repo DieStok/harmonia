@@ -1,6 +1,3 @@
-# NOTE: This model is accessed via OpenRouter. Prompts and responses
-# are logged by OpenRouter and may be used for model improvement.
-# See: https://openrouter.ai/docs/privacy
 experiment:
   name: dou_harmonization_step-3.5-flash
   description: Harmonize dou.csv to GDC schema using similarity method (Step-3.5-Flash
@@ -9,13 +6,9 @@ llm:
   provider: openrouter
   model: stepfun/step-3.5-flash:free
   temperature: 0.0
-# bdi-kit internal LLM configuration for schema/value matching.
-# These default to the top-level llm.model if not specified.
-# Set explicitly here so each config documents which LLM bdi-kit uses internally.
 bdikit_models:
   instance_matching_llm: stepfun/step-3.5-flash:free
   numeric_instance_matching_llm: stepfun/step-3.5-flash:free
-  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
   schema_matching_llm: stepfun/step-3.5-flash:free
   magneto_zero_shot_schema_matching_llm: stepfun/step-3.5-flash:free
   magneto_fine_tuned_schema_matching_llm: stepfun/step-3.5-flash:free
@@ -44,9 +37,18 @@ evaluation:
   value_mapping_file: value_mapping.json
   index_column: null
   numeric_tolerance: null
+retry_policy:
+  retry_delay_seconds: 5
+  n_retries_per_error_code:
+    openrouter_500: 3
+    openrouter_5xx: 2
+    openrouter_429: 3
+    timeout: 2
+    aimessage_validation_error: 1
+    default: 0
 messages:
-- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
-    and subset it to the following columns:
+- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv
+    as a dataframe and subset it to the following columns:
 
     Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
 

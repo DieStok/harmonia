@@ -137,7 +137,7 @@ python run_experiment.py \
     --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_gemini-3-flash-preview.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
-    --timeout 300
+    --timeout 1200
 
 EXIT_CODE=$?
 

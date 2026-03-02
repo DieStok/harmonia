@@ -62,6 +62,19 @@ NEW_SAVE_ARTIFACTS = [
     "value_mapping.json",
 ]
 
+# Retry policy to mitigate transient provider/model failures
+RETRY_POLICY = {
+    "retry_delay_seconds": 5,
+    "n_retries_per_error_code": {
+        "openrouter_500": 3,
+        "openrouter_5xx": 2,
+        "openrouter_429": 3,
+        "timeout": 2,
+        "aimessage_validation_error": 1,
+        "default": 0,
+    },
+}
+
 
 def update_config(config_path: Path):
     """Update a single config file."""
@@ -72,6 +85,7 @@ def update_config(config_path: Path):
 
     # 1. Add evaluation block
     config["evaluation"] = EVALUATION_BLOCK
+    config["retry_policy"] = RETRY_POLICY
 
     # 2. Insert new message after message 5 (index 5, which is the "save dou_harmonized.csv" message)
     # First, find the message that contains "save it as" or "dou_harmonized.csv"
@@ -93,12 +107,14 @@ def update_config(config_path: Path):
         print(f"  ⚠ Could not find save message, appending to end")
         messages.append(NEW_MESSAGE)
 
-    config["messages"] = messages
-
     # 3. Update save_artifacts
     if "output" in config:
         config["output"]["save_artifacts"] = NEW_SAVE_ARTIFACTS
         print(f"  ✓ Updated save_artifacts")
+
+    # Keep messages as the final top-level YAML section
+    config.pop("messages", None)
+    config["messages"] = messages
 
     # Write back to file
     with open(config_path, "w") as f:

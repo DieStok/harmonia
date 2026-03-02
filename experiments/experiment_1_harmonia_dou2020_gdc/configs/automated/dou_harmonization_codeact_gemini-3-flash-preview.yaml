@@ -1,19 +1,15 @@
 experiment:
   name: dou_harmonization_codeact_gemini-3-flash-preview
-  description: Harmonize dou.csv to GDC schema using similarity method (CodeAct + google/gemini-3-flash-preview via OpenRouter)
+  description: Harmonize dou.csv to GDC schema using similarity method (CodeAct +
+    google/gemini-3-flash-preview via OpenRouter)
   context: codeact_context
 llm:
   provider: anyllm:openrouter
-  # OpenRouter model context window: 1048576 tokens
   model: google/gemini-3-flash-preview
   temperature: 0.0
-# bdi-kit internal LLM configuration for schema/value matching.
-# These default to the top-level llm.model if not specified.
-# Set explicitly here so each config documents which LLM bdi-kit uses internally.
 bdikit_models:
   instance_matching_llm: google/gemini-3-flash-preview
   numeric_instance_matching_llm: google/gemini-3-flash-preview
-  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
   schema_matching_llm: google/gemini-3-flash-preview
   magneto_zero_shot_schema_matching_llm: google/gemini-3-flash-preview
   magneto_fine_tuned_schema_matching_llm: google/gemini-3-flash-preview
@@ -43,9 +39,18 @@ evaluation:
   value_mapping_file: value_mapping.json
   index_column: null
   numeric_tolerance: null
+retry_policy:
+  retry_delay_seconds: 5
+  n_retries_per_error_code:
+    openrouter_500: 3
+    openrouter_5xx: 2
+    openrouter_429: 3
+    timeout: 2
+    aimessage_validation_error: 1
+    default: 0
 messages:
-- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe
-    and subset it to the following columns:
+- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv
+    as a dataframe and subset it to the following columns:
 
     Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
 

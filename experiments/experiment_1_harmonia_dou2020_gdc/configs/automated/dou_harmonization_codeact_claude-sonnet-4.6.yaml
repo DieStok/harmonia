@@ -39,6 +39,15 @@ evaluation:
   value_mapping_file: value_mapping.json
   index_column: null
   numeric_tolerance: null
+retry_policy:
+  retry_delay_seconds: 5
+  n_retries_per_error_code:
+    openrouter_500: 3
+    openrouter_5xx: 2
+    openrouter_429: 3
+    timeout: 2
+    aimessage_validation_error: 1
+    default: 0
 messages:
 - content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv
     as a dataframe and subset it to the following columns:

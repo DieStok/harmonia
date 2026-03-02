@@ -18,7 +18,7 @@
 #SBATCH --job-name=harmonia_dou_harmonization_code-context_nemotron-3-nano
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
-#SBATCH --time=03:00:00
+#SBATCH --time=02:30:00
 #SBATCH --mem=24G
 #SBATCH --cpus-per-task=2
 #SBATCH --gres=gpu:quadro_rtx_6000:1,tmpspace:1G
@@ -33,6 +33,10 @@ set -e
 # Generate unique run ID for linking logs to results
 RUN_ID=$(python3 -c "import secrets; print(secrets.token_hex(4))")
 export RUN_ID
+
+# Create deterministic per-run results directory
+RUN_RESULTS_DIR="results/dou_harmonization_code-context_nemotron-3-nano_${SLURM_JOB_ID}_${RUN_ID}"
+mkdir -p "$RUN_RESULTS_DIR"
 
 # Redirect all output to date-stamped log files (includes run_id)
 LOG_TIMESTAMP=$(date +%d-%m-%Y_%H%M)
@@ -84,6 +88,7 @@ echo ""
     --port $PORT \
     --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_nemotron-3-nano.yaml \
     --job-name "dou_harmonization_code-context_nemotron-3-nano_${SLURM_JOB_ID}" \
+    --results-dir "$RUN_RESULTS_DIR" \
     --run-id "$RUN_ID" &
 
 SERVER_PID=$!
@@ -137,7 +142,7 @@ python run_experiment.py \
     --config experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_nemotron-3-nano.yaml \
     --server http://localhost:$PORT \
     --token "$TOKEN" \
-    --timeout 300
+    --timeout 1800
 
 EXIT_CODE=$?
 

@@ -1,0 +1,5 @@
+slurm_job_id,experiment,config_path,purpose
+47438286,dou_harmonization_code-context_nemotron-3-nano,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_nemotron-3-nano.yaml,2F validation
+47438287,dou_harmonization_code-context_deepseek-v3.2,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_deepseek-v3.2.yaml,3G validation
+47438288,dou_harmonization_bdikit-tools_minimax-m2.5,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_bdikit-tools_minimax-m2.5.yaml,5A+3G validation
+47438289,dou_harmonization_code-context_gemini-3-flash-preview,experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_code-context_gemini-3-flash-preview.yaml,regression guard

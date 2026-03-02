@@ -11,6 +11,7 @@ from pathlib import Path
 from beaker_kernel.lib.context import BeakerContext
 from .agent import CodeActAgent, CodeActAgentLoop
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
+from openrouter_hardening import apply_openrouter_hardening
 
 
 class CodeActContext(BeakerContext):
@@ -28,6 +29,7 @@ class CodeActContext(BeakerContext):
     enabled_subkernels = ["python3"]
 
     def __init__(self, beaker_kernel, config):
+        apply_openrouter_hardening()
         # Pass CodeActAgent to super().__init__() — the subkernel initializes
         # correctly, but react_async() is overridden to use our CodeAct loop
         super().__init__(beaker_kernel, CodeActAgent, config)

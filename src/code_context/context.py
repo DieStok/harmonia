@@ -15,6 +15,7 @@ from pathlib import Path
 from beaker_kernel.lib.context import BeakerContext
 from .agent import CodeAgent
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
+from openrouter_hardening import apply_openrouter_hardening
 
 
 class CodeContext(BeakerContext):
@@ -32,6 +33,7 @@ class CodeContext(BeakerContext):
 
     def __init__(self, beaker_kernel, config):
         """Initialize with the CodeAgent."""
+        apply_openrouter_hardening()
         super().__init__(beaker_kernel, CodeAgent, config)
 
         # Prompt composition logging
