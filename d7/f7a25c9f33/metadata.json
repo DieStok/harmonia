@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "d7f7a25c9f33",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "code_development_tools_agents/monitoring_and_evaluation/diagnose_interactive_beaker_session.py",
+    "documentation/my_instructions/03_03_2026_1335_get_openrouter_model_info.md",
+    "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-C_provider_prefix_and_generate_jobs_implementation_progress.md",
+    "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-D_manage_configs_cli_implementation_progress.md",
+    "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-F_ollama_python_launcher_implementation_progress.md",
+    "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-G_quality_tooling_implementation_progress.md",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/manual/dou_harmonization_manual_config.template",
+    "src/automation/client.py",
+    "src/bdikit_context/config/__init__.py",
+    "src/bdikit_context/context.py",
+    "src/bdikit_context/llm/__init__.py",
+    "src/bdikit_context/llm/litellm_model.py",
+    "src/bdikit_context/llm/provider_prefixes.py",
+    "src/code_context/context.py",
+    "src/codeact_context/context.py",
+    "src/context_management/kernel_state_budget.py",
+    "tests/test_config_loading.py",
+    "tests/test_metrics_smoke.py",
+    "tests/test_ollama_launcher.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/d7/f7a25c9f33/0/metadata.json",
+      "transcript": "/d7/f7a25c9f33/0/full.jsonl",
+      "context": "/d7/f7a25c9f33/0/context.md",
+      "content_hash": "/d7/f7a25c9f33/0/content_hash.txt",
+      "prompt": "/d7/f7a25c9f33/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 122,
+    "cache_creation_tokens": 177342,
+    "cache_read_tokens": 9544121,
+    "output_tokens": 31063,
+    "api_call_count": 112
+  }
+}
