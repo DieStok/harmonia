@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from beaker_kernel.lib.context import BeakerContext
-
 from openrouter_hardening import apply_openrouter_hardening
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
 
@@ -39,6 +38,8 @@ class CodeContext(BeakerContext):
 
     def __init__(self, beaker_kernel, config):
         """Initialize with the CodeAgent."""
+        # NOTE: This patch only applies to native Archytas OpenRouterModel (provider: openrouter
+        # without litellm: prefix). Has no effect on the litellm:openrouter code path.
         apply_openrouter_hardening()
         super().__init__(beaker_kernel, CodeAgent, config)
 

@@ -24,7 +24,7 @@ experiment:
   dataset_metadata: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/experiment_metadata.yaml"
 
 llm:
-  provider: anyllm:ollama
+  provider: ollama
   model: olmo-3.1:32b
   temperature: 0.0
 
@@ -43,7 +43,7 @@ output:
 
 # Environment variables to set in .env before running exec_apptainer_harmonia.sh
 env_settings:
-  LLM_SERVICE_PROVIDER: "anyllm:ollama"
+  LLM_SERVICE_PROVIDER: "ollama"
   LLM_SERVICE_MODEL: "olmo-3.1:32b"
   LLM_TEMPERATURE: "0.0"
   # Note: Ollama runs locally, no API key needed

@@ -4,12 +4,8 @@ litellm adapter for Archytas/Beaker integration.
 This module provides an Archytas-compatible model that uses the litellm library
 for LLM communication, enabling support for 100+ providers with a unified interface.
 
-Replaces the previous any-llm adapter (anyllm.py) with a single dependency that
-is also used internally by bdi-kit for schema/value matching.
-
 Usage:
     Set LLM_SERVICE_PROVIDER to "litellm:ollama", "litellm:openai", etc.
-    (or "anyllm:ollama" etc. for backwards compatibility)
     The adapter will be automatically loaded by Beaker via LLM_PROVIDER_IMPORT_PATH.
 """
 
@@ -345,14 +341,14 @@ class LiteLLMModel(BaseArchytasModel):
 
     def auth(self, **kwargs) -> None:
         """Set up authentication from config/environment."""
-        # Determine provider - handle "litellm:provider" and "anyllm:provider" format
+        # Determine provider - handle "litellm:provider" format (anyllm: accepted as legacy)
         raw_provider = (
             kwargs.get("provider")
             or getattr(self.config, "provider", None)
             or os.getenv("LLM_SERVICE_PROVIDER", self.DEFAULT_PROVIDER)
         )
 
-        # Strip "litellm:" or "anyllm:" prefix if present
+        # Strip "litellm:" prefix (or legacy "anyllm:" prefix) if present
         if raw_provider.lower().startswith("litellm:"):
             self.provider = raw_provider.lower().split(":", 1)[1]
         elif raw_provider.lower().startswith("anyllm:"):

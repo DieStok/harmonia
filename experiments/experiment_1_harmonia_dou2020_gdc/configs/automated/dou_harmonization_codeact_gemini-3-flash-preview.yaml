@@ -4,7 +4,7 @@ experiment:
     google/gemini-3-flash-preview via OpenRouter)
   context: codeact_context
 llm:
-  provider: anyllm:openrouter
+  provider: openrouter
   model: google/gemini-3-flash-preview
   temperature: 0.0
 bdikit_models:

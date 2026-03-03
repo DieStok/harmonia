@@ -203,49 +203,7 @@ class BeakerClient:
         except Exception as e:
             print(f"  Warning: Failed to set context '{context_slug}': {e}")
 
-    async def _set_context_ws(self, context_slug: str) -> None:
-        """Set the Beaker context via WebSocket message.
-
-        This enables bdi-kit tools and harmonization functions.
-        Must be called after WebSocket is connected.
-        """
-        if not self.ws or self.ws.closed:
-            print(f"  Warning: WebSocket not connected, cannot set context '{context_slug}'")
-            return
-
-        # Send set_context message via Jupyter protocol
-        msg = self._make_message("set_context", {
-            "context": context_slug,
-            "payload": {}
-        })
-        msg_id = msg["header"]["msg_id"]
-
-        try:
-            await self.ws.send_json(msg)
-
-            # Wait for context to be set (look for status=idle or context_set confirmation)
-            end_time = asyncio.get_event_loop().time() + 30  # 30s timeout
-            while asyncio.get_event_loop().time() < end_time:
-                try:
-                    response = await asyncio.wait_for(self.ws.receive_json(), timeout=5.0)
-                    parent = response.get("parent_header", {})
-                    if parent.get("msg_id") == msg_id:
-                        msg_type = response.get("msg_type", "")
-                        if msg_type == "status":
-                            state = response.get("content", {}).get("execution_state")
-                            if state == "idle":
-                                print(f"  Context '{context_slug}' set successfully")
-                                return
-                        elif msg_type == "error":
-                            error = response.get("content", {}).get("evalue", "Unknown error")
-                            print(f"  Warning: Error setting context '{context_slug}': {error}")
-                            return
-                except asyncio.TimeoutError:
-                    continue
-
-            print(f"  Warning: Timeout setting context '{context_slug}'")
-        except Exception as e:
-            print(f"  Warning: Failed to set context '{context_slug}': {e}")
+    # Supersedes a WebSocket-based set_context approach that Beaker does not support via Jupyter protocol.
 
     def _get_websocket_url(self) -> str:
         """Get WebSocket URL for kernel connection."""

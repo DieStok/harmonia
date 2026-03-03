@@ -1,3 +1,7 @@
+# REFERENCE ONLY: This module is NOT imported at runtime by any Beaker context.
+# The budget enforcement logic is injected into the Beaker Python subkernel via
+# the FETCH_STATE_CODE patch in harmonia_beaker_LLM_agent_environment_apptainer.def.
+# This file exists as a canonical reference and test target only.
 """
 Kernel state budget enforcement for Beaker's FETCH_STATE_CODE.
 

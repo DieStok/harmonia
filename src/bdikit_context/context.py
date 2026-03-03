@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict
 
 from beaker_kernel.lib.context import BeakerContext
-
 from openrouter_hardening import apply_openrouter_hardening
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
 
@@ -30,6 +29,8 @@ class BDIKitContext(BeakerContext):
     SLUG = "bdikit_context"
 
     def __init__(self, beaker_kernel: "BeakerKernel", config: Dict[str, Any]):
+        # NOTE: This patch only applies to native Archytas OpenRouterModel (provider: openrouter
+        # without litellm: prefix). Has no effect on the litellm:openrouter code path.
         apply_openrouter_hardening()
         # Determine prompts directory from env var (set by generate_env.py)
         prompts_dir_env = os.environ.get("HARMONIA_PROMPTS_DIR")

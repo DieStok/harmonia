@@ -12,7 +12,7 @@
 #   python generate_jobs.py --config experiments/configs/dou_harmonization_nemotron.yaml --gpu
 #
 # Note: Ollama server is automatically started by exec_apptainer_harmonia.sh
-#       when a local LLM provider is detected (ollama, anyllm:ollama, etc.)
+#       when a local LLM provider is detected (ollama, ollama, etc.)
 # =============================================================================
 
 #SBATCH --job-name=harmonia_dou_harmonization_qwen3-coder
@@ -67,7 +67,7 @@ mkdir -p logs
 # Start Beaker Server with exec_apptainer_harmonia.sh
 # =============================================================================
 # The exec script handles:
-# - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
+# - Ollama auto-start for local LLM providers (ollama, ollama)
 # - Ollama logging to logs/ollama_<timestamp>.log
 # - Model pre-loading/warming
 # - Apptainer image selection (new harmonia image with any-llm support)

@@ -4,7 +4,7 @@ experiment:
     via any-llm/Ollama)
   context: bdikit_context
 llm:
-  provider: anyllm:ollama
+  provider: ollama
   model: devstral:latest
   base_url: http://localhost:11434
   temperature: 0.0

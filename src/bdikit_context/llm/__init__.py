@@ -3,18 +3,15 @@ LLM provider configuration for Harmonia.
 
 Sets up environment variables that Beaker/Archytas expects.
 
-Supports three modes:
+Supports two modes:
 1. Native Archytas providers (legacy): "openai", "ollama", etc.
 2. litellm unified providers (preferred): "litellm:openai", "litellm:ollama", etc.
-3. any-llm prefix (backwards compatible): "anyllm:openai", "anyllm:ollama", etc.
-   (maps to litellm under the hood)
 
 The litellm providers use the litellm library for LLM communication,
 enabling support for 100+ providers with a consistent interface.
 """
 
 import os
-from typing import Optional
 
 from ..config import get_config
 
@@ -46,22 +43,6 @@ PROVIDER_IMPORT_MAP = {
     "litellm:deepseek": "bdikit_context.llm.litellm_model.LiteLLMModel",
     "litellm:fireworks": "bdikit_context.llm.litellm_model.LiteLLMModel",
     "litellm:gemini": "bdikit_context.llm.litellm_model.LiteLLMModel",
-
-    # Backwards compatibility: anyllm: prefix still works (maps to litellm)
-    "anyllm": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:openai": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:ollama": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:anthropic": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:openrouter": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:mistral": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:groq": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:together": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:perplexity": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:bedrock": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:azure": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:cohere": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:deepseek": "bdikit_context.llm.litellm_model.LiteLLMModel",
-    "anyllm:fireworks": "bdikit_context.llm.litellm_model.LiteLLMModel",
 }
 
 # Map provider names to their API key environment variable names
@@ -84,24 +65,21 @@ def configure_llm_environment():
     This function reads from Harmonia's config and sets the environment
     variables that Beaker expects for LLM provider configuration.
 
-    Supports native Archytas providers, litellm unified providers, and
-    backwards-compatible anyllm: prefixed providers:
+    Supports native Archytas providers and litellm unified providers:
     - Native: "openai", "ollama", etc. (uses archytas.models.*)
     - litellm: "litellm:openai", "litellm:ollama", etc. (uses bdikit_context.llm.litellm_model)
-    - anyllm: "anyllm:openai", "anyllm:ollama", etc. (backwards compatible, maps to litellm)
     """
     config = get_config()
     llm = config.llm
 
     provider_key = llm.provider.lower()
 
-    # Handle litellm: or anyllm: prefixed providers
+    # Handle litellm: prefixed providers (anyllm: still accepted as legacy fallback)
     if provider_key.startswith("litellm:") or provider_key.startswith("anyllm:"):
         actual_provider = provider_key.split(":", 1)[1]
         os.environ["LLM_SERVICE_PROVIDER"] = actual_provider
         import_path = PROVIDER_IMPORT_MAP.get(provider_key) or PROVIDER_IMPORT_MAP.get("litellm")
     elif provider_key in ("litellm", "anyllm"):
-        # Generic litellm/anyllm - provider will be determined by LLM_SERVICE_PROVIDER env var
         actual_provider = os.getenv("LLM_SERVICE_PROVIDER", "openai")
         import_path = PROVIDER_IMPORT_MAP.get("litellm")
     else:
@@ -138,7 +116,7 @@ def get_provider_info() -> dict:
     config = get_config()
     provider_key = config.llm.provider.lower()
 
-    # Handle litellm: or anyllm: provider format
+    # Handle litellm: provider format (anyllm: still accepted as legacy fallback)
     if provider_key.startswith("litellm:") or provider_key.startswith("anyllm:"):
         actual_provider = provider_key.split(":", 1)[1]
         is_litellm = True

@@ -8,9 +8,8 @@ in the Beaker subkernel. No tool schemas, no ReAct prelude, no Archytas.
 import os
 from pathlib import Path
 
-from beaker_kernel.lib.context import BeakerContext
-
 from bdikit_context.llm.provider_prefixes import LITELLM_PROVIDER_PREFIX
+from beaker_kernel.lib.context import BeakerContext
 from openrouter_hardening import apply_openrouter_hardening
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
 
@@ -32,6 +31,8 @@ class CodeActContext(BeakerContext):
     enabled_subkernels = ["python3"]
 
     def __init__(self, beaker_kernel, config):
+        # NOTE: This patch only applies to native Archytas OpenRouterModel (provider: openrouter
+        # without litellm: prefix). Has no effect on the litellm:openrouter code path.
         apply_openrouter_hardening()
         # Pass CodeActAgent to super().__init__() — the subkernel initializes
         # correctly, but react_async() is overridden to use our CodeAct loop
@@ -41,7 +42,7 @@ class CodeActContext(BeakerContext):
         model = os.environ.get("LLM_SERVICE_MODEL", "gpt-4o")
         provider = os.environ.get("LLM_SERVICE_PROVIDER", "openai")
 
-        # Handle compound providers like "litellm:openrouter" or "anyllm:ollama"
+        # Handle compound providers like "litellm:openrouter"
         base_provider = provider.split(":")[-1] if ":" in provider else provider
         prefix = LITELLM_PROVIDER_PREFIX.get(base_provider, base_provider)
         litellm_model = f"{prefix}/{model}" if prefix else model

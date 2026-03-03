@@ -23,7 +23,7 @@ experiment:
   dataset_metadata: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/experiment_metadata.yaml"
 
 llm:
-  provider: anyllm:openrouter
+  provider: openrouter
   model: xiaomi/mimo-v2-flash:free
   temperature: 0.0
 
@@ -42,7 +42,7 @@ output:
 
 # Environment variables to set in .env before running exec_apptainer_harmonia.sh
 env_settings:
-  LLM_SERVICE_PROVIDER: "anyllm:openrouter"
+  LLM_SERVICE_PROVIDER: "openrouter"
   LLM_SERVICE_MODEL: "xiaomi/mimo-v2-flash:free"
   LLM_TEMPERATURE: "0.0"
   # Required: OPENROUTER_API_KEY=your_key_here

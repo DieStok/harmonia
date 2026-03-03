@@ -11,7 +11,7 @@
 # Or generate jobs first:
 #   python generate_jobs.py --config experiments/configs/dou_harmonization.yaml
 #
-# Note: For local LLM providers (ollama, anyllm:ollama), use sbatch_template_gpu.sh
+# Note: For local LLM providers (ollama, ollama), use sbatch_template_gpu.sh
 #       or exec_apptainer_harmonia.sh will auto-start Ollama on CPU nodes too.
 # =============================================================================
 
@@ -65,7 +65,7 @@ mkdir -p logs
 # Start Beaker Server with exec_apptainer_harmonia.sh
 # =============================================================================
 # The exec script handles:
-# - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
+# - Ollama auto-start for local LLM providers (ollama, ollama)
 # - Ollama logging to logs/ollama_<timestamp>.log
 # - Model pre-loading/warming
 # - Apptainer image selection (new harmonia image with any-llm support)
@@ -74,7 +74,7 @@ mkdir -p logs
 
 echo ""
 echo "Starting Beaker server on port $PORT..."
-echo "LLM Provider: anyllm:openrouter"
+echo "LLM Provider: openrouter"
 echo "LLM Model: google/gemini-3-flash-preview"
 echo ""
 

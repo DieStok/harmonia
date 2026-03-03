@@ -41,13 +41,13 @@ experiment:
 # -----------------------------------------------------------------------------
 # LLM Configuration
 # -----------------------------------------------------------------------------
-# Provider options for anyllm backend:
-#   - anyllm:openrouter  (cloud, requires OPENROUTER_API_KEY)
-#   - anyllm:ollama      (local, no API key needed)
-#   - anyllm:openai      (cloud, requires OPENAI_API_KEY)
-#   - anyllm:anthropic   (cloud, requires ANTHROPIC_API_KEY)
-#   - anyllm:groq        (cloud, requires GROQ_API_KEY)
-#   - anyllm:gemini      (cloud, requires GOOGLE_API_KEY)
+# Provider options (via litellm):
+#   - openrouter   (cloud, requires OPENROUTER_API_KEY)
+#   - ollama       (local, no API key needed)
+#   - openai       (cloud, requires OPENAI_API_KEY)
+#   - anthropic    (cloud, requires ANTHROPIC_API_KEY)
+#   - groq         (cloud, requires GROQ_API_KEY)
+#   - gemini       (cloud, requires GOOGLE_API_KEY)
 #
 # Model examples:
 #   OpenRouter: xiaomi/mimo-v2-flash:free, z-ai/glm-4.5-air:free, anthropic/claude-3.5-sonnet
@@ -57,7 +57,7 @@ experiment:
 # -----------------------------------------------------------------------------
 
 llm:
-  provider: anyllm:PROVIDER_HERE   # e.g., anyllm:openrouter or anyllm:ollama
+  provider: PROVIDER_HERE           # e.g., openrouter or ollama
   model: MODEL_NAME_HERE           # e.g., xiaomi/mimo-v2-flash:free
   temperature: 0.0                 # 0.0 = deterministic, 1.0 = creative
 
@@ -76,7 +76,7 @@ output:
 # You can also manually set these in your .env file.
 
 env_settings:
-  LLM_SERVICE_PROVIDER: "anyllm:PROVIDER_HERE"
+  LLM_SERVICE_PROVIDER: "PROVIDER_HERE"
   LLM_SERVICE_MODEL: "MODEL_NAME_HERE"
   LLM_TEMPERATURE: "0.0"
   # API Key required for cloud providers (uncomment the relevant one):

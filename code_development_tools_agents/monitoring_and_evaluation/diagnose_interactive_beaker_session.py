@@ -18,11 +18,12 @@ Usage:
     apptainer exec jupyter.sif python /jupyter/diagnose_interactive_beaker_session.py
 """
 
+import inspect
+import json
 import os
 import sys
-import json
-import inspect
 from pathlib import Path
+
 
 # Colors for output
 class Colors:
@@ -175,7 +176,7 @@ def check_tool_registration():
     header("4. Tool Registration (Archytas)")
 
     try:
-        from archytas.tool_utils import is_tool, tool
+        from archytas.tool_utils import is_tool, tool  # noqa: F401
         ok("archytas.tool_utils imported")
     except ImportError as e:
         fail(f"Cannot import archytas.tool_utils: {e}")
@@ -273,8 +274,8 @@ def check_ollama_connectivity():
     info(f"Testing Ollama at: {ollama_host}")
 
     try:
-        import urllib.request
         import urllib.error
+        import urllib.request
 
         # Test /api/tags endpoint
         url = f"{ollama_host}/api/tags"
@@ -348,8 +349,8 @@ def check_context_instantiation():
     header("9. Context Instantiation Test")
 
     try:
-        from bdikit_context.context import BDIKitContext
         from bdikit_context.agent import BDIKitAgent
+        from bdikit_context.context import BDIKitContext
 
         # Check agent can be inspected
         ok("BDIKitContext and BDIKitAgent classes are available")
