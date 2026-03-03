@@ -15,6 +15,17 @@ bdikit_models:
   schema_matching_llm: devstral-small-2:latest
   magneto_zero_shot_schema_matching_llm: devstral-small-2:latest
   magneto_fine_tuned_schema_matching_llm: devstral-small-2:latest
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.0
+  pricing_completion_per_million_tokens: 0.0
+  context_length: 393216
+  parameter_count_b: null
+  model_family_group: Mistral
+  modalities:
+  - Text, Image
+  supports_tools: null
+  supports_structured_output: null
+  source: ollama
 context_management:
   python_kernel:
     max_variable_size: 20000

@@ -1,0 +1,193 @@
+{
+  "_source": "https://openrouter.ai/docs/api/reference/parameters",
+  "_additional_sources": [
+    "https://openrouter.ai/docs/guides/best-practices/reasoning-tokens",
+    "https://openrouter.ai/docs/guides/features/plugins/web-search"
+  ],
+  "_fetched_at": "2026-03-03T15:14:20.228623+00:00",
+  "_note": "This file is auto-updated by fetch_openrouter.py --parameters. The _fetched_at field is set on fetch.",
+  "parameters": {
+    "temperature": {
+      "type": "float",
+      "default": 1.0,
+      "range": "0.0 to 2.0",
+      "description": "Influences the variety in the model's responses. Lower values lead to more predictable responses, higher values encourage more diverse and creative output."
+    },
+    "top_p": {
+      "type": "float",
+      "default": 1.0,
+      "range": "0.0 to 1.0",
+      "description": "Restricts choices to tokens whose cumulative probability equals P. Functions as dynamic top-k, adapting token selection based on probability distribution."
+    },
+    "top_k": {
+      "type": "integer",
+      "default": 0,
+      "range": "0 or above (0 = disabled)",
+      "description": "Constrains token selection to a smaller set at each generation step. Limits sampling to the k most likely tokens."
+    },
+    "frequency_penalty": {
+      "type": "float",
+      "default": 0.0,
+      "range": "-2.0 to 2.0",
+      "description": "Controls token repetition based on input frequency. Penalty scales with the number of times a token has appeared. Positive values discourage repetition."
+    },
+    "presence_penalty": {
+      "type": "float",
+      "default": 0.0,
+      "range": "-2.0 to 2.0",
+      "description": "Adjusts how often the model repeats specific tokens already used in the input. Unlike frequency_penalty, applies a flat penalty regardless of occurrence count."
+    },
+    "repetition_penalty": {
+      "type": "float",
+      "default": 1.0,
+      "range": "0.0 to 2.0",
+      "description": "Reduces token repetition. Penalty scales by original token probability. Values > 1.0 discourage repetition; < 1.0 encourage it."
+    },
+    "min_p": {
+      "type": "float",
+      "default": 0.0,
+      "range": "0.0 to 1.0",
+      "description": "Minimum probability threshold relative to the most likely token. Tokens below min_p * P(most_likely) are filtered out."
+    },
+    "top_a": {
+      "type": "float",
+      "default": 0.0,
+      "range": "0.0 to 1.0",
+      "description": "Filters tokens based on probability proximity to the highest-probability option. More aggressive filtering than top_p for focused outputs."
+    },
+    "seed": {
+      "type": "integer",
+      "default": null,
+      "range": "any integer",
+      "description": "Enables deterministic sampling for reproducible outputs. When set, the model attempts to return the same output for repeated requests with the same seed."
+    },
+    "max_tokens": {
+      "type": "integer",
+      "default": null,
+      "range": "1 or above",
+      "description": "Upper limit on generated tokens. Cannot exceed context length minus prompt length. If not set, model generates until natural stop or context limit."
+    },
+    "logit_bias": {
+      "type": "map (token_id -> float)",
+      "default": null,
+      "range": "values from -100 to 100",
+      "description": "Adjusts token selection likelihood via token ID mappings. Positive values increase likelihood, negative values decrease it. -100 effectively bans a token."
+    },
+    "logprobs": {
+      "type": "boolean",
+      "default": false,
+      "range": null,
+      "description": "Returns log probabilities of output tokens. Useful for analyzing model confidence in its predictions."
+    },
+    "top_logprobs": {
+      "type": "integer",
+      "default": null,
+      "range": "0 to 20",
+      "description": "Number of most likely tokens with probabilities returned per position. Requires logprobs=true."
+    },
+    "response_format": {
+      "type": "object",
+      "default": null,
+      "range": null,
+      "description": "Specifies output format. Set {\"type\": \"json_object\"} to enforce valid JSON output. Model will only produce syntactically valid JSON."
+    },
+    "structured_outputs": {
+      "type": "boolean",
+      "default": false,
+      "range": null,
+      "description": "Enables structured outputs using JSON schema. When true, the model follows the provided JSON schema in response_format to produce typed, validated output."
+    },
+    "stop": {
+      "type": "array of strings",
+      "default": null,
+      "range": null,
+      "description": "Halts generation upon encountering any of the specified token sequences. Useful for controlling where the model stops generating."
+    },
+    "tools": {
+      "type": "array of tool definitions",
+      "default": null,
+      "range": null,
+      "description": "Tool/function calling parameter following OpenAI's format. Defines functions the model can invoke. Each tool has a name, description, and JSON schema for parameters."
+    },
+    "tool_choice": {
+      "type": "string or object",
+      "default": "auto",
+      "range": "'none', 'auto', 'required', or {\"type\": \"function\", \"function\": {\"name\": \"...\"}}",
+      "description": "Controls tool invocation behavior. 'none' disables tools, 'auto' lets model decide, 'required' forces a tool call, or specify a particular tool."
+    },
+    "parallel_tool_calls": {
+      "type": "boolean",
+      "default": true,
+      "range": null,
+      "description": "Enables simultaneous vs sequential function calls. When true, the model may invoke multiple tools in a single response."
+    },
+    "verbosity": {
+      "type": "string (enum)",
+      "default": "medium",
+      "range": "'low', 'medium', 'high', 'max'",
+      "description": "Constrains response detail level. Lower values produce more concise responses, higher values produce more detailed ones."
+    },
+    "reasoning": {
+      "type": "object",
+      "default": null,
+      "range": null,
+      "description": "Unified parameter for controlling AI model reasoning (thinking) behavior. Contains sub-fields: effort, max_tokens, exclude, enabled.",
+      "sub_fields": {
+        "effort": {
+          "type": "string",
+          "values": [
+            "xhigh",
+            "high",
+            "medium",
+            "low",
+            "minimal",
+            "none"
+          ],
+          "description": "Allocates reasoning tokens as approximate percentages of max_tokens. xhigh=~95%, high=~80%, medium=~50%, low=~20%, minimal=~10%, none=disabled. Supported by OpenAI (o1, o3, GPT-5) and Grok models."
+        },
+        "max_tokens": {
+          "type": "integer",
+          "description": "Direct maximum token allocation for reasoning. Minimum 1024 for Anthropic models, capped at 128000. Supported by Gemini thinking, Anthropic, and some Qwen models."
+        },
+        "exclude": {
+          "type": "boolean",
+          "default": false,
+          "description": "When true, model uses reasoning internally but withholds it from response output."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Enables reasoning with medium effort and no exclusions when set to true. Inferred from effort/max_tokens if not set."
+        }
+      }
+    },
+    "include_reasoning": {
+      "type": "boolean",
+      "default": false,
+      "range": null,
+      "description": "Legacy parameter. true is equivalent to {\"reasoning\": {}}. false is equivalent to {\"reasoning\": {\"exclude\": true}}. Use the unified 'reasoning' parameter instead."
+    },
+    "reasoning_effort": {
+      "type": "string",
+      "default": null,
+      "range": "'xhigh', 'high', 'medium', 'low', 'minimal'",
+      "description": "Legacy shorthand for reasoning.effort. Controls thinking time. Budget formula: max(min(max_tokens * effort_ratio, 128000), 1024). Use the unified 'reasoning' parameter instead."
+    },
+    "web_search_options": {
+      "type": "object",
+      "default": null,
+      "range": null,
+      "description": "Configures web search for grounding model responses with real-time data. Can also be activated by appending ':online' to the model slug. Powered natively for Anthropic, OpenAI, Perplexity, xAI; uses Exa for other models.",
+      "sub_fields": {
+        "search_context_size": {
+          "type": "string",
+          "values": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "description": "Determines the volume of search data retrieved and processed. low=minimal for basic queries, medium=moderate for general queries, high=extensive for detailed research."
+        }
+      }
+    }
+  }
+}

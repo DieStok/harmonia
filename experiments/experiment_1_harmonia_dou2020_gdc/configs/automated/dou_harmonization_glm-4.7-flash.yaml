@@ -15,6 +15,17 @@ bdikit_models:
   schema_matching_llm: glm-4.7-flash:q8_0
   magneto_zero_shot_schema_matching_llm: glm-4.7-flash:q8_0
   magneto_fine_tuned_schema_matching_llm: glm-4.7-flash:q8_0
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.0
+  pricing_completion_per_million_tokens: 0.0
+  context_length: 202752
+  parameter_count_b: null
+  model_family_group: null
+  modalities:
+  - Text
+  supports_tools: null
+  supports_structured_output: null
+  source: ollama
 context_management:
   python_kernel:
     max_variable_size: 20000

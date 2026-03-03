@@ -13,6 +13,18 @@ bdikit_models:
   schema_matching_llm: moonshotai/kimi-k2.5
   magneto_zero_shot_schema_matching_llm: moonshotai/kimi-k2.5
   magneto_fine_tuned_schema_matching_llm: moonshotai/kimi-k2.5
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.45
+  pricing_completion_per_million_tokens: 2.2
+  context_length: 262144
+  parameter_count_b: null
+  model_family_group: Kimi
+  modalities:
+  - image
+  - text
+  supports_tools: true
+  supports_structured_output: true
+  source: openrouter
 context_management:
   archytas:
     summarization_threshold_pct: 50

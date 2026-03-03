@@ -13,6 +13,17 @@ bdikit_models:
   schema_matching_llm: z-ai/glm-4.5-air:free
   magneto_zero_shot_schema_matching_llm: z-ai/glm-4.5-air:free
   magneto_fine_tuned_schema_matching_llm: z-ai/glm-4.5-air:free
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.0
+  pricing_completion_per_million_tokens: 0.0
+  context_length: 131072
+  parameter_count_b: null
+  model_family_group: null
+  modalities:
+  - text
+  supports_tools: true
+  supports_structured_output: false
+  source: openrouter
 context_management:
   archytas:
     summarization_threshold_pct: 50

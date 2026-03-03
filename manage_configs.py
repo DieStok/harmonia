@@ -463,7 +463,7 @@ def cmd_clone(args) -> int:
             print(f"Warning: model '{model}' not found in registries. model_metadata will use defaults.", file=sys.stderr)
             registry_hint = REGISTRY_DIR / "openrouter_models.json"
             if not registry_hint.exists():
-                print("  Hint: run .venv/bin/python LLM_associated_metadata/fetch_openrouter_models.py", file=sys.stderr)
+                print("  Hint: run .venv/bin/python LLM_associated_metadata/fetch_openrouter.py", file=sys.stderr)
 
     # Derive name
     name = getattr(args, "name", None)

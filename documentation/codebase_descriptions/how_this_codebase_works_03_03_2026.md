@@ -9,7 +9,7 @@
 ## Update Summary (03-03-2026, second update)
 
 - **Model Registry System (`LLM_associated_metadata/`):**
-  - New CLI tools: `fetch_openrouter_models.py` (OpenRouter API), `fetch_ollama_models.py` (ollama.com scraper), `lookup_model.py` (search/details/config-snippet).
+  - New CLI tools: `fetch_openrouter.py` (OpenRouter API models + parameter docs), `fetch_ollama_models.py` (ollama.com scraper), `lookup_model.py` (search/details/config-snippet).
   - Registry data cached as JSON with configurable staleness threshold (default 24h).
   - `manage_configs.py clone` now auto-enriches configs with `model_metadata` (pricing, context length, capabilities) from registry.
   - New `ModelMetadataConfig` dataclass in `config.py` with pricing, parameter count, modalities, tool support fields.
@@ -436,11 +436,12 @@ harmonia/
 ├── manage_configs.py         # CLI tool for listing, querying, updating, cloning, and validating experiment configs
 │
 ├── LLM_associated_metadata/          # Model registry data and lookup tools
-│   ├── fetch_openrouter_models.py    # CLI: fetch OpenRouter model registry → openrouter_models.json
-│   ├── fetch_ollama_models.py        # CLI: scrape Ollama model registry → ollama_models.json
-│   ├── lookup_model.py              # CLI: search/details/list/config-snippet for model lookup
-│   ├── openrouter_models.json       # Cached OpenRouter registry (auto-fetched, 24h staleness)
-│   └── ollama_models.json           # Cached Ollama registry (auto-fetched, 24h staleness)
+│   ├── fetch_openrouter.py                       # CLI: fetch OpenRouter models + parameter docs
+│   ├── fetch_ollama_models.py                    # CLI: scrape Ollama model registry → ollama_models.json
+│   ├── lookup_model.py                           # CLI: search/details/list/config-snippet for model lookup
+│   ├── openrouter_models.json                    # Cached OpenRouter registry (auto-fetched, 24h staleness)
+│   ├── openrouter_models_parameter_meanings.json # API parameter definitions cross-referenced from registry
+│   └── ollama_models.json                        # Cached Ollama registry (auto-fetched, 24h staleness)
 │
 ├── # Container files (NEW and LEGACY)
 ├── harmonia_beaker_LLM_agent_environment_apptainer.def  # NEW: Apptainer definition with litellm
@@ -1334,10 +1335,11 @@ Provides automated model metadata fetching and lookup for config generation and 
 
 | File | Purpose |
 |---|---|
-| `fetch_openrouter_models.py` | CLI to fetch the OpenRouter model catalogue via `GET /api/v1/models`. Saves raw JSON. Supports `--force`, `--max-age HOURS` staleness control. |
+| `fetch_openrouter.py` | CLI to fetch OpenRouter model catalogue (`--models`) and API parameter meanings (`--parameters`). Both by default. Supports `--force`, `--max-age HOURS`. |
 | `fetch_ollama_models.py` | CLI to scrape `ollama.com/library` for model names and per-tag metadata (size, context window, modalities, parameter count). Supports `--models`, `--skip-tags`, rate limiting. |
-| `lookup_model.py` | CLI for searching, listing, and generating config snippets from registry data. Subcommands: `search`, `details`, `list`, `config-snippet`. |
+| `lookup_model.py` | CLI for searching, listing, and generating config snippets from registry data. Subcommands: `search`, `details`, `list`, `config-snippet`. Cross-references parameter meanings via `explain-params`. |
 | `openrouter_models.json` | Cached OpenRouter registry (auto-managed, 24h default staleness). |
+| `openrouter_models_parameter_meanings.json` | API parameter definitions (type, range, description) cross-referenced with `supported_parameters` from the model registry. |
 | `ollama_models.json` | Cached Ollama registry (auto-managed, 24h default staleness). |
 
 **Data flow:** Registry JSON files are fetched by the CLI tools, read by `manage_configs.py clone` (auto-enrichment) and `lookup_model.py` (manual queries). The `model_metadata` section in config YAMLs is then read by the visualization pipeline (`normalize.py`) to populate pricing, cost tier, and model family group columns in the runs DataFrame.

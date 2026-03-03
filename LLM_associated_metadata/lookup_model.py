@@ -17,6 +17,18 @@ from pathlib import Path
 import yaml
 
 REGISTRY_DIR = Path(__file__).resolve().parent
+PARAMS_FILE = REGISTRY_DIR / "openrouter_models_parameter_meanings.json"
+
+
+def _load_parameter_meanings() -> dict:
+    """Load the parameter meanings reference file."""
+    if not PARAMS_FILE.exists():
+        return {}
+    try:
+        data = json.loads(PARAMS_FILE.read_text())
+        return data.get("parameters", {})
+    except Exception:
+        return {}
 
 
 def _load_openrouter_registry() -> list[dict]:
@@ -270,6 +282,64 @@ def cmd_config_snippet(args) -> int:
     return 0
 
 
+def cmd_explain_params(args) -> int:
+    """Explain supported_parameters for a given model using the meanings reference."""
+    ref = args.model_ref
+    if ref.startswith("openrouter:"):
+        model_id = ref[len("openrouter:"):]
+    else:
+        model_id = ref
+
+    entry = None
+    for e in _load_openrouter_registry():
+        if e.get("id") == model_id:
+            entry = e
+            break
+
+    if entry is None:
+        print(f"Model '{ref}' not found in OpenRouter registry.", file=sys.stderr)
+        print("Note: explain-params only works for OpenRouter models (they have supported_parameters).", file=sys.stderr)
+        return 1
+
+    supported = entry.get("supported_parameters", [])
+    if not supported:
+        print(f"Model '{model_id}' has no supported_parameters listed.")
+        return 0
+
+    meanings = _load_parameter_meanings()
+    if not meanings:
+        print("Warning: parameter meanings file not found. Run: .venv/bin/python LLM_associated_metadata/fetch_openrouter.py --parameters", file=sys.stderr)
+
+    print(f"Supported parameters for {model_id} ({len(supported)} total):\n")
+    for param in sorted(supported):
+        info = meanings.get(param)
+        if info:
+            ptype = info.get("type", "?")
+            default = info.get("default")
+            prange = info.get("range")
+            desc = info.get("description", "")
+            print(f"  {param}")
+            print(f"    Type: {ptype}", end="")
+            if default is not None:
+                print(f"  |  Default: {default}", end="")
+            if prange:
+                print(f"  |  Range: {prange}", end="")
+            print()
+            print(f"    {desc}")
+            if "sub_fields" in info:
+                for sf_name, sf_info in info["sub_fields"].items():
+                    sf_desc = sf_info.get("description", "")
+                    sf_vals = sf_info.get("values")
+                    print(f"      .{sf_name}: {sf_desc}")
+                    if sf_vals:
+                        print(f"        Values: {', '.join(str(v) for v in sf_vals)}")
+        else:
+            print(f"  {param}")
+            print("    (not documented)")
+        print()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Look up model information from registries")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -287,6 +357,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_snippet = sub.add_parser("config-snippet", help="Output config-ready YAML snippet")
     p_snippet.add_argument("model_ref", help="Model reference, e.g. openrouter:anthropic/claude-sonnet-4.6")
 
+    p_explain = sub.add_parser("explain-params", help="Explain supported_parameters for a model")
+    p_explain.add_argument("model_ref", help="Model reference, e.g. openrouter:anthropic/claude-sonnet-4.6")
+
     return parser
 
 
@@ -299,6 +372,7 @@ def main() -> int:
         "details": cmd_details,
         "list": cmd_list,
         "config-snippet": cmd_config_snippet,
+        "explain-params": cmd_explain_params,
     }
     return dispatch[args.command](args)
 

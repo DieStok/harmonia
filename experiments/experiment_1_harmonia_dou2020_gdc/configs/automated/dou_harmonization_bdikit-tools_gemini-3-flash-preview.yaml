@@ -13,6 +13,21 @@ bdikit_models:
   schema_matching_llm: google/gemini-3-flash-preview
   magneto_zero_shot_schema_matching_llm: google/gemini-3-flash-preview
   magneto_fine_tuned_schema_matching_llm: google/gemini-3-flash-preview
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.5
+  pricing_completion_per_million_tokens: 3.0
+  context_length: 1048576
+  parameter_count_b: null
+  model_family_group: Gemini
+  modalities:
+  - audio
+  - file
+  - image
+  - text
+  - video
+  supports_tools: true
+  supports_structured_output: true
+  source: openrouter
 context_management:
   archytas:
     summarization_threshold_pct: 50
