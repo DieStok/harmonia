@@ -11,11 +11,15 @@ Supports custom prompts via HARMONIA_CODE_CONTEXT_PROMPT env var.
 
 import os
 from pathlib import Path
+from typing import Dict, Any, TYPE_CHECKING
 
 from beaker_kernel.lib.context import BeakerContext
 from .agent import CodeAgent
 from prompt_logging import print_prompt_composition, register_prompt_json_logger
 from openrouter_hardening import apply_openrouter_hardening
+
+if TYPE_CHECKING:
+    from beaker_kernel.kernel import BeakerKernel
 
 
 class CodeContext(BeakerContext):
@@ -35,6 +39,22 @@ class CodeContext(BeakerContext):
         """Initialize with the CodeAgent."""
         apply_openrouter_hardening()
         super().__init__(beaker_kernel, CodeAgent, config)
+
+        # Wire ArchytasContextConfig -> Archytas agent (max_react_steps, max_errors)
+        # BeakerContext creates the agent internally without forwarding kwargs, so we patch
+        # the instance attributes directly after construction. These are plain int attributes
+        # on ReActAgent (react.py lines 234-235) checked per-task in the react loop.
+        _max_react_steps = os.environ.get("ARCHYTAS_MAX_REACT_STEPS")
+        _max_errors = os.environ.get("ARCHYTAS_MAX_ERRORS")
+        if _max_react_steps:
+            self.agent.max_react_steps = int(_max_react_steps)
+            print(f"  [HarmoniaConfig] max_react_steps = {self.agent.max_react_steps}")
+        if _max_errors:
+            self.agent.max_errors = int(_max_errors)
+            print(f"  [HarmoniaConfig] max_errors = {self.agent.max_errors}")
+        # NOTE: context_window_override, tool_output_summarization_threshold,
+        # tool_output_snippet_size, summarization_model are not exposed in the
+        # installed Archytas ReActAgent API and remain informational in the YAML config.
 
         # Prompt composition logging
         print_prompt_composition(self.agent, context_slug="code_context")

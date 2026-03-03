@@ -36,9 +36,11 @@ visualization = ["pandas>=2.0", "matplotlib>=3.7", "seaborn>=0.12", "plotly>=5.0
 
 # Beaker context entry points for autodiscovery
 # This registers contexts with beaker's autodiscovery system
+# NOTE: Changing entry points requires rebuilding the Apptainer image (build_harmonia_apptainer.sh)
 [project.entry-points."beaker.contexts"]
 bdikit_context = "bdikit_context.context:BDIKitContext"
 code_context = "code_context.context:CodeContext"
+codeact_context = "codeact_context.context:CodeActContext"
 
 [project.urls]
 Documentation = "https://github.com/unknown/beaker-buildtest#readme"
@@ -100,3 +102,15 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["F", "E", "W", "I"]
+ignore = ["E501"]
+exclude = ["src/context_management/test_*", "src/bdikit_context/__about__.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "src/context_management"]
+python_files = ["test_*.py"]

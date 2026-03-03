@@ -30,6 +30,7 @@ class OutputConfig:
     """Output configuration for an experiment."""
     base_dir: str = "./results"
     save_artifacts: list[str] = field(default_factory=list)
+    input_files: list[str] = field(default_factory=lambda: ["dou.csv", "data.csv", "input.csv"])
 
 
 @dataclass
@@ -94,15 +95,15 @@ class PythonKernelContextConfig:
 @dataclass
 class ArchytasContextConfig:
     """Configuration for Archytas agent/model context management."""
-    summarization_threshold_pct: int = 50
-    context_window_override: Optional[int] = None
-    max_tokens: Optional[int] = None
-    tool_output_summarization_threshold: int = 1000
-    tool_output_snippet_size: int = 1000
-    max_react_steps: Optional[int] = 30
-    max_errors: int = 3
-    summarization_model: Optional[str] = None
-    summarization_model_provider: Optional[str] = None
+    summarization_threshold_pct: int = 50          # informational -- not currently wired
+    context_window_override: Optional[int] = None  # informational -- not in Archytas API
+    max_tokens: Optional[int] = None               # informational -- not in Archytas API
+    tool_output_summarization_threshold: int = 1000  # informational -- not in Archytas API
+    tool_output_snippet_size: int = 1000           # informational -- not in Archytas API
+    max_react_steps: Optional[int] = 30            # WIRED -- sets agent.max_react_steps via ARCHYTAS_MAX_REACT_STEPS env var
+    max_errors: int = 3                            # WIRED -- sets agent.max_errors via ARCHYTAS_MAX_ERRORS env var
+    summarization_model: Optional[str] = None      # informational -- not in Archytas API
+    summarization_model_provider: Optional[str] = None  # informational -- not in Archytas API
 
 
 @dataclass
@@ -163,6 +164,7 @@ class ExperimentConfig:
         output = OutputConfig(
             base_dir=output_data.get("base_dir", "./results"),
             save_artifacts=output_data.get("save_artifacts", []),
+            input_files=output_data.get("input_files", ["dou.csv", "data.csv", "input.csv"]),
         )
 
         decision = DecisionConfig(

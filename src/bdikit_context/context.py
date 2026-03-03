@@ -40,6 +40,22 @@ class BDIKitContext(BeakerContext):
         # Call parent (creates agent with default ReAct prelude)
         super().__init__(beaker_kernel, BDIKitAgent, config)
 
+        # Wire ArchytasContextConfig -> Archytas agent (max_react_steps, max_errors)
+        # BeakerContext creates the agent internally without forwarding kwargs, so we patch
+        # the instance attributes directly after construction. These are plain int attributes
+        # on ReActAgent (react.py lines 234-235) checked per-task in the react loop.
+        _max_react_steps = os.environ.get("ARCHYTAS_MAX_REACT_STEPS")
+        _max_errors = os.environ.get("ARCHYTAS_MAX_ERRORS")
+        if _max_react_steps:
+            self.agent.max_react_steps = int(_max_react_steps)
+            print(f"  [HarmoniaConfig] max_react_steps = {self.agent.max_react_steps}")
+        if _max_errors:
+            self.agent.max_errors = int(_max_errors)
+            print(f"  [HarmoniaConfig] max_errors = {self.agent.max_errors}")
+        # NOTE: context_window_override, tool_output_summarization_threshold,
+        # tool_output_snippet_size, summarization_model are not exposed in the
+        # installed Archytas ReActAgent API and remain informational in the YAML config.
+
         # Override ReAct prelude if custom one specified
         react_prelude_path = os.environ.get("HARMONIA_REACT_PRELUDE")
         if react_prelude_path and Path(react_prelude_path).exists():
