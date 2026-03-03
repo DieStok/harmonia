@@ -4,8 +4,9 @@ Pydantic schemas for metadata harmonization metrics output.
 Defines the structure of metrics.json that is produced by the evaluation pipeline.
 """
 
-from pydantic import BaseModel, Field
 from typing import Optional
+
+from pydantic import BaseModel, Field
 
 
 class Misclassification(BaseModel):

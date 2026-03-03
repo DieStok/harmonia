@@ -10,15 +10,11 @@ Contains:
 """
 
 import logging
-import os
 import re
-from pathlib import Path
 from typing import Optional
 
 import litellm
-
 from beaker_kernel.lib.agent import BeakerAgent
-
 
 logger = logging.getLogger(__name__)
 

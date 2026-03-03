@@ -10,7 +10,6 @@ import yaml
 from .enrich import infer_context, infer_model_family, infer_model_label, merge_labels
 from .io import extract_run_id
 
-
 RUN_METRICS = {
     "column_mapping_accuracy": ("column_mapping", "accuracy"),
     "column_mapping_precision_excl_null": ("column_mapping", "precision_excl_null"),

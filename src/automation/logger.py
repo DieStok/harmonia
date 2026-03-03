@@ -251,7 +251,7 @@ class ConversationLogger:
         self.lines.extend([
             "## Error",
             "",
-            f"```",
+            "```",
             error_message,
             "```",
             "",

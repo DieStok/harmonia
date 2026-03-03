@@ -1,10 +1,10 @@
 import os
-
-from archytas.tool_utils import AgentRef, LoopControllerRef, is_tool, tool, toolset
-from beaker_kernel.lib.agent import BeakerAgent
-from beaker_kernel.lib.context import BeakerContext
 from typing import Optional
 
+from archytas.tool_utils import AgentRef, tool
+from beaker_kernel.lib.agent import BeakerAgent
+
+from bdikit_context.llm.provider_prefixes import LITELLM_PROVIDER_PREFIX
 
 # Valid methods for BDI-Kit operations
 VALID_SCHEMA_METHODS = [
@@ -28,47 +28,17 @@ def _build_litellm_model(model: str) -> str:
     if not model:
         return model
 
-    known_prefixes = (
-        "openrouter/",
-        "anthropic/",
-        "ollama/",
-        "ollama_chat/",
-        "groq/",
-        "gemini/",
-        "mistral/",
-        "azure/",
-        "bedrock/",
-        "cohere/",
-        "cohere_chat/",
-        "together_ai/",
-        "perplexity/",
-        "deepseek/",
-        "fireworks_ai/",
-        "openai/",
+    # Build known_prefixes dynamically from the shared table
+    known_prefixes = tuple(
+        f"{p}/" for p in set(filter(None, LITELLM_PROVIDER_PREFIX.values()))
     )
     if model.startswith(known_prefixes):
         return model
 
     provider = os.environ.get("LLM_SERVICE_PROVIDER", "openai").lower()
     base_provider = provider.split(":")[-1] if ":" in provider else provider
-    provider_prefixes = {
-        "openai": "",
-        "openrouter": "openrouter/",
-        "anthropic": "anthropic/",
-        "ollama": "ollama/",
-        "groq": "groq/",
-        "gemini": "gemini/",
-        "mistral": "mistral/",
-        "azure": "azure/",
-        "bedrock": "bedrock/",
-        "cohere": "cohere/",
-        "together": "together_ai/",
-        "perplexity": "perplexity/",
-        "deepseek": "deepseek/",
-        "fireworks": "fireworks_ai/",
-    }
-    prefix = provider_prefixes.get(base_provider, f"{base_provider}/")
-    return f"{prefix}{model}" if prefix else model
+    prefix = LITELLM_PROVIDER_PREFIX.get(base_provider, base_provider)
+    return f"{prefix}/{model}" if prefix else model
 
 
 def _get_method_args_for_schema(method: str) -> dict:

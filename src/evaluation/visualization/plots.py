@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 
-
 SEABORN_READY = True
 PLOTLY_READY = True
 try:

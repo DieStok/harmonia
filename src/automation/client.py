@@ -6,11 +6,10 @@ to the LLM agent, capturing responses for experiment automation.
 """
 
 import asyncio
-import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, AsyncIterator, Optional
+from typing import AsyncIterator, Optional
 
 import aiohttp
 

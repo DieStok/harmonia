@@ -1,12 +1,14 @@
 import os
 from pathlib import Path
-from typing import Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict
+
 from beaker_kernel.lib.context import BeakerContext
 
-from .agent import BDIKitAgent
-from .prompts import PromptLoader, get_prompt_loader
-from prompt_logging import print_prompt_composition, register_prompt_json_logger
 from openrouter_hardening import apply_openrouter_hardening
+from prompt_logging import print_prompt_composition, register_prompt_json_logger
+
+from .agent import BDIKitAgent
+from .prompts import PromptLoader
 
 if TYPE_CHECKING:
     from beaker_kernel.kernel import BeakerKernel

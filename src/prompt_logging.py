@@ -9,13 +9,12 @@ Two capabilities:
 See documentation/plans/11_06_2025_1715_make_logging_full_prompt_in_container.md for design.
 """
 
+import hashlib
 import json
 import os
-import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-
 
 # ============================================================
 # OUTPUT A: Stdout printing for visual inspection (sync)
@@ -322,4 +321,4 @@ def register_prompt_json_logger(agent, context_slug: str) -> None:
         return await original_execute(*args, **kwargs)
 
     agent.execute = logging_execute_wrapper
-    print(f"[Harmonia] Registered one-shot prompt JSON logger (will fire on first LLM call)")
+    print("[Harmonia] Registered one-shot prompt JSON logger (will fire on first LLM call)")

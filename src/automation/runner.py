@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from .client import AgentResponse, BeakerClient
-from .config import DecisionConfig, ExperimentConfig, MessageConfig
+from .config import ExperimentConfig, MessageConfig
 from .logger import ConversationLogger, TraceLogger
 
 
@@ -333,8 +333,8 @@ class ExperimentRunner:
         # Get absolute path for output directory
         output_path = str(self.output_dir.absolute())
 
-        # List of common data files to copy
-        data_files = ["dou.csv", "data.csv", "input.csv"]
+        # Data files to copy (configurable via output.input_files)
+        data_files = self.config.output.input_files
 
         setup_code = f'''
 import os

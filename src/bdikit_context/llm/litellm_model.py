@@ -13,22 +13,21 @@ Usage:
     The adapter will be automatically loaded by Beaker via LLM_PROVIDER_IMPORT_PATH.
 """
 
-import os
-import json
 import asyncio
-from typing import Any, Optional, Sequence
-from functools import lru_cache
+import json
 import logging
-
-from archytas.models.base import BaseArchytasModel, ModelConfig
-from archytas.exceptions import AuthenticationError
-from langchain_core.messages import (
-    BaseMessage, HumanMessage, SystemMessage, AIMessage,
-    ToolCall as LangChainToolCall, ToolMessage
-)
+import os
+from functools import lru_cache
+from typing import Any, Optional, Sequence
 
 import litellm
+from archytas.exceptions import AuthenticationError
+from archytas.models.base import BaseArchytasModel
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage, ToolMessage
+from langchain_core.messages import ToolCall as LangChainToolCall
 from litellm import acompletion, token_counter
+
+from .provider_prefixes import LITELLM_PROVIDER_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -50,27 +49,6 @@ PROVIDER_API_KEY_ENV = {
     "cohere": "COHERE_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "fireworks": "FIREWORKS_API_KEY",
-}
-
-# litellm provider prefix mapping
-# Maps Harmonia provider names to litellm model string prefixes
-# See: https://docs.litellm.ai/docs/providers
-LITELLM_PROVIDER_PREFIX = {
-    "ollama": "ollama_chat",    # ollama_chat/ for chat completions
-    "openai": None,             # No prefix needed for OpenAI
-    "openrouter": "openrouter",
-    "anthropic": "anthropic",
-    "azure": "azure",
-    "azureopenai": "azure",
-    "bedrock": "bedrock",
-    "gemini": "gemini",
-    "groq": "groq",
-    "mistral": "mistral",
-    "together": "together_ai",
-    "perplexity": "perplexity",
-    "cohere": "cohere_chat",
-    "deepseek": "deepseek",
-    "fireworks": "fireworks_ai",
 }
 
 
@@ -255,7 +233,7 @@ class ChatLiteLLM:
     def invoke(self, input: list[BaseMessage], *args, **kwargs) -> AIMessage:
         """Synchronous completion (runs async in executor)."""
         try:
-            loop = asyncio.get_running_loop()
+            asyncio.get_running_loop()  # noqa: F841 -- detect running loop
         except RuntimeError:
             # No running loop, create one
             return asyncio.run(self.ainvoke(input, *args, **kwargs))

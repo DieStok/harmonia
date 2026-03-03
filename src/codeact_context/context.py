@@ -9,9 +9,12 @@ import os
 from pathlib import Path
 
 from beaker_kernel.lib.context import BeakerContext
-from .agent import CodeActAgent, CodeActAgentLoop
-from prompt_logging import print_prompt_composition, register_prompt_json_logger
+
+from bdikit_context.llm.provider_prefixes import LITELLM_PROVIDER_PREFIX
 from openrouter_hardening import apply_openrouter_hardening
+from prompt_logging import print_prompt_composition, register_prompt_json_logger
+
+from .agent import CodeActAgent, CodeActAgentLoop
 
 
 class CodeActContext(BeakerContext):
@@ -38,18 +41,10 @@ class CodeActContext(BeakerContext):
         model = os.environ.get("LLM_SERVICE_MODEL", "gpt-4o")
         provider = os.environ.get("LLM_SERVICE_PROVIDER", "openai")
 
-        provider_prefixes = {
-            "openai": "",           # litellm handles OpenAI natively
-            "ollama": "ollama/",
-            "anthropic": "anthropic/",
-            "openrouter": "openrouter/",
-            "groq": "groq/",
-            "gemini": "gemini/",
-        }
         # Handle compound providers like "litellm:openrouter" or "anyllm:ollama"
         base_provider = provider.split(":")[-1] if ":" in provider else provider
-        prefix = provider_prefixes.get(base_provider, f"{base_provider}/")
-        litellm_model = f"{prefix}{model}" if prefix else model
+        prefix = LITELLM_PROVIDER_PREFIX.get(base_provider, base_provider)
+        litellm_model = f"{prefix}/{model}" if prefix else model
 
         temperature = float(os.environ.get("LLM_TEMPERATURE", "0.0"))
         max_turns = int(os.environ.get("CODEACT_MAX_TURNS", "30"))

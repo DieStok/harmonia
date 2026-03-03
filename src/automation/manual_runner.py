@@ -332,7 +332,7 @@ class ManualExperimentRunner:
         trace_path = self.trace_logger.save()
         conv_path = self.conversation_logger.save()
 
-        print(f"\nExperiment complete!")
+        print("\nExperiment complete!")
         print(f"  Total turns: {self.current_turn}")
         print(f"  Output directory: {self.output_dir}")
         print(f"  - {trace_path.name}")

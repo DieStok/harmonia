@@ -33,12 +33,15 @@ RESULTS_DIR=""
 # Ollama configuration
 OLLAMA_DIR="/hpc/compgen/projects/ollama/ollama_run/analysis/dstoker"
 # Dynamic Ollama port per SLURM job for isolation
-# Interactive/manual use (no SLURM_JOB_ID) keeps default 11434
-if [ -n "$SLURM_JOB_ID" ]; then
-    OLLAMA_PORT=$((11434 + 1 + (SLURM_JOB_ID % 200)))
-else
-    OLLAMA_PORT=11434
-fi
+# Python-backed port calculation (see src/automation/ollama_launcher.py)
+OLLAMA_PORT=$(python3 "${SCRIPT_DIR}/src/automation/ollama_launcher.py" get-port --job-id "${SLURM_JOB_ID:-}") || {
+    # Fallback to original bash logic if Python fails
+    if [ -n "$SLURM_JOB_ID" ]; then
+        OLLAMA_PORT=$((11434 + 1 + (SLURM_JOB_ID % 200)))
+    else
+        OLLAMA_PORT=11434
+    fi
+}
 OLLAMA_STARTED_BY_US=false
 
 # Logs directory
@@ -661,8 +664,11 @@ except:
         fi
 
         # VRAM estimation: show GPU memory usage and estimate peak with full KV cache
+        # Python-backed VRAM estimation (see src/automation/ollama_launcher.py)
         if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
-            estimate_vram_usage "$OLLAMA_CONTEXT_LENGTH"
+            python3 "${SCRIPT_DIR}/src/automation/ollama_launcher.py" estimate-vram \
+                --model "$LLM_MODEL" --context "${OLLAMA_CONTEXT_LENGTH:-8192}" || \
+                estimate_vram_usage "$OLLAMA_CONTEXT_LENGTH"
         fi
     fi
 

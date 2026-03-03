@@ -73,7 +73,7 @@ mkdir -p logs
 # - Ollama auto-start for local LLM providers (ollama, anyllm:ollama)
 # - Ollama logging to logs/ollama_<timestamp>.log
 # - Model pre-loading/warming
-# - Apptainer image selection (new harmonia image with any-llm support)
+# - Apptainer image selection (new harmonia image with litellm support)
 # - Data and results directory binding
 # - Environment variable configuration
 

@@ -3,10 +3,8 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
-
 
 MODEL_TOKEN_PATTERN = re.compile(
     r"(gemini-3-flash-preview|claude-sonnet-4\.6|minimax-m2\.5|deepseek-v3\.2|kimi-k2\.5|qwen3-coder|devstral(?:-small)?)",

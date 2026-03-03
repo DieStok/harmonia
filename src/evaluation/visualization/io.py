@@ -5,7 +5,6 @@ import re
 from pathlib import Path
 from typing import Any
 
-
 RUN_ID_PATTERN = re.compile(r"_([0-9a-f]{8})$")
 
 

@@ -8,9 +8,9 @@ Configuration priority (highest to lowest):
 """
 
 import os
-from pathlib import Path
-from typing import Optional, Dict, Any
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Optional YAML support (graceful fallback if not installed)
 try:
@@ -21,7 +21,7 @@ except ImportError:
 
 
 @dataclass
-class LLMConfig:
+class ContainerLLMConfig:
     """
     LLM provider configuration.
 
@@ -57,7 +57,7 @@ class LLMConfig:
 @dataclass
 class HarmoniaConfig:
     """Main Harmonia configuration."""
-    llm: LLMConfig = field(default_factory=LLMConfig)
+    llm: ContainerLLMConfig = field(default_factory=ContainerLLMConfig)
     prompts_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent / "prompts")
     debug: bool = True
 
@@ -95,7 +95,7 @@ class HarmoniaConfig:
         use_anyllm = os.getenv("USE_ANYLLM", "").lower() in ("true", "1", "yes")
 
         return cls(
-            llm=LLMConfig(
+            llm=ContainerLLMConfig(
                 provider=provider,
                 model=os.getenv("LLM_SERVICE_MODEL", "gpt-4o"),
                 api_key=api_key,
@@ -140,7 +140,7 @@ class HarmoniaConfig:
                      os.getenv("USE_ANYLLM", "").lower() in ("true", "1", "yes")
 
         return cls(
-            llm=LLMConfig(
+            llm=ContainerLLMConfig(
                 provider=provider,
                 model=llm_data.get("model", "gpt-4o"),
                 api_key=api_key,

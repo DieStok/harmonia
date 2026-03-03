@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.1",
+  "metadata": {
+    "experiment_name": "smoke_test_experiment_ab12cd34",
+    "timestamp": "2026-01-15T12:00:00+00:00",
+    "llm_provider": "openai",
+    "llm_model": "gpt-4o",
+    "timing_seconds": 120.5
+  },
+  "column_mapping": {
+    "total_expected": 3,
+    "correct": 2,
+    "wrong": 1,
+    "missing": 0,
+    "explicitly_null": 0,
+    "precision_excl_null": 0.6667,
+    "precision_incl_null": 0.6667,
+    "recall": 0.6667,
+    "accuracy": 0.6667,
+    "details": [
+      {
+        "source_column": "sample_type",
+        "expected_target": "sample_type",
+        "actual_target": "sample_type",
+        "is_correct": true,
+        "is_acceptable": false,
+        "is_missing": false,
+        "is_explicitly_null": false,
+        "is_wrong": false
+      },
+      {
+        "source_column": "tissue_type",
+        "expected_target": "tissue_or_organ_of_origin",
+        "actual_target": "tissue_or_organ_of_origin",
+        "is_correct": true,
+        "is_acceptable": false,
+        "is_missing": false,
+        "is_explicitly_null": false,
+        "is_wrong": false
+      },
+      {
+        "source_column": "gender",
+        "expected_target": "gender",
+        "actual_target": "sex",
+        "is_correct": false,
+        "is_acceptable": false,
+        "is_missing": false,
+        "is_explicitly_null": false,
+        "is_wrong": true
+      }
+    ]
+  },
+  "column_values": {
+    "sample_type": {
+      "column_name": "sample_type",
+      "source_column_name": "sample_type",
+      "total_cells": 10,
+      "accuracy_incl_empty": 0.9,
+      "precision_macro_incl_empty": 0.85,
+      "recall_macro_incl_empty": 0.85,
+      "f1_macro_incl_empty": 0.85,
+      "accuracy_excl_empty": 0.9,
+      "precision_macro_excl_empty": 0.85,
+      "recall_macro_excl_empty": 0.85,
+      "f1_macro_excl_empty": 0.85,
+      "hallucination_count": 0,
+      "hallucination_rate": 0.0,
+      "omission_count": 0,
+      "omission_rate": 0.0,
+      "empty_empty_count": 0,
+      "error_categorization": {
+        "total_errors": 1,
+        "whitespace_only": 0,
+        "case_only": 1,
+        "whitespace_and_case": 0,
+        "genuine": 0,
+        "whitespace_only_fraction": 0.0,
+        "case_only_fraction": 1.0,
+        "whitespace_and_case_fraction": 0.0,
+        "genuine_fraction": 0.0
+      },
+      "confusion_matrix": {
+        "Primary Tumor": {"Primary Tumor": 5},
+        "Metastatic": {"Metastatic": 4, "metastatic": 1}
+      },
+      "misclassifications": [
+        {
+          "row_index": 7,
+          "expected": "Metastatic",
+          "actual": "metastatic",
+          "error_type": "case_only"
+        }
+      ]
+    }
+  },
+  "extra_columns_count": 1,
+  "extra_columns": ["extra_col"],
+  "overall_summary": {
+    "total_columns": 1,
+    "avg_accuracy_incl_empty": 0.9,
+    "avg_accuracy_excl_empty": 0.9,
+    "avg_precision_incl_empty": 0.85,
+    "avg_precision_excl_empty": 0.85,
+    "avg_recall_incl_empty": 0.85,
+    "avg_recall_excl_empty": 0.85,
+    "avg_f1_incl_empty": 0.85,
+    "avg_f1_excl_empty": 0.85,
+    "total_hallucinations": 0,
+    "total_omissions": 0,
+    "avg_hallucination_rate": 0.0,
+    "avg_omission_rate": 0.0,
+    "total_errors": 1,
+    "total_whitespace_only": 0,
+    "total_case_only": 1,
+    "total_whitespace_and_case": 0,
+    "total_genuine": 0
+  },
+  "gold_standard_file": "/tmp/gold_standard.csv",
+  "llm_output_file": "/tmp/llm_output.csv",
+  "column_mapping_file_found": true,
+  "value_mapping_file_found": false
+}

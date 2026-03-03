@@ -15,8 +15,8 @@ enabling support for 100+ providers with a consistent interface.
 
 import os
 from typing import Optional
-from ..config import get_config
 
+from ..config import get_config
 
 # Map provider names to Archytas import paths
 PROVIDER_IMPORT_MAP = {
