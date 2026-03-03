@@ -3,12 +3,17 @@
   "checkpoint_id": "d7f7a25c9f33",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
+    "LLM_associated_metadata/fetch_ollama_models.py",
+    "LLM_associated_metadata/fetch_openrouter_models.py",
+    "LLM_associated_metadata/lookup_model.py",
+    "LLM_associated_metadata/openrouter_models.json",
     "check_archytas.py",
     "code_development_tools_agents/monitoring_and_evaluation/diagnose_interactive_beaker_session.py",
     "diagnose_interactive_beaker_session.py",
     "diagnose_llm.py",
+    "documentation/codebase_descriptions/how_this_codebase_works_03_03_2026.md",
     "documentation/my_instructions/03_03_2026_1335_get_openrouter_model_info.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-C_provider_prefix_and_generate_jobs_implementation_progress.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-D_manage_configs_cli_implementation_progress.md",
@@ -18,8 +23,10 @@
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/manual/dou_harmonization_manual_config.template",
     "jobs/dou_harmonization.sh",
     "jobs/dou_harmonization_anyllm_openrouter.sh",
+    "manage_configs.py",
     "quick_test.py",
     "src/automation/client.py",
+    "src/automation/config.py",
     "src/bdikit_context/config/__init__.py",
     "src/bdikit_context/context.py",
     "src/bdikit_context/llm/__init__.py",
@@ -29,6 +36,11 @@
     "src/code_context/context.py",
     "src/codeact_context/context.py",
     "src/context_management/kernel_state_budget.py",
+    "src/evaluation/schemas.py",
+    "src/evaluation/visualization/aggregate.py",
+    "src/evaluation/visualization/normalize.py",
+    "src/evaluation/visualization/plots.py",
+    "src/evaluation/visualize_metrics_cli.py",
     "test_anyllm_adapter.py",
     "test_anyllm_basic.py",
     "tests/test_config_loading.py",
@@ -49,13 +61,20 @@
       "context": "/d7/f7a25c9f33/1/context.md",
       "content_hash": "/d7/f7a25c9f33/1/content_hash.txt",
       "prompt": "/d7/f7a25c9f33/1/prompt.txt"
+    },
+    {
+      "metadata": "/d7/f7a25c9f33/2/metadata.json",
+      "transcript": "/d7/f7a25c9f33/2/full.jsonl",
+      "context": "/d7/f7a25c9f33/2/context.md",
+      "content_hash": "/d7/f7a25c9f33/2/content_hash.txt",
+      "prompt": "/d7/f7a25c9f33/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 161,
-    "cache_creation_tokens": 241524,
-    "cache_read_tokens": 11445447,
-    "output_tokens": 44481,
-    "api_call_count": 145
+    "input_tokens": 247,
+    "cache_creation_tokens": 346912,
+    "cache_read_tokens": 18918478,
+    "output_tokens": 80661,
+    "api_call_count": 225
   }
 }
