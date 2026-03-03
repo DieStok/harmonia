@@ -1,0 +1,139 @@
+experiment:
+  name: dou_harmonization_code-context_qwen3.5-9b
+  description: Harmonize dou.csv to GDC schema using similarity method (code_context + qwen3.5:9b via Ollama)
+  context: code_context
+llm:
+  provider: ollama
+  model: qwen3.5:9b
+  base_url: http://localhost:11434
+  temperature: 0.0
+  context_length: 32768
+bdikit_models:
+  instance_matching_llm: qwen3.5:9b
+  numeric_instance_matching_llm: qwen3.5:9b
+  schema_matching_llm: qwen3.5:9b
+  magneto_zero_shot_schema_matching_llm: qwen3.5:9b
+  magneto_fine_tuned_schema_matching_llm: qwen3.5:9b
+model_metadata:
+  pricing_prompt_per_million_tokens: 0.0
+  pricing_completion_per_million_tokens: 0.0
+  context_length: 262144
+  parameter_count_b: 9.0
+  model_family_group: Qwen
+  modalities:
+  - Text
+  supports_tools: null
+  supports_structured_output: null
+  source: ollama
+context_management:
+  python_kernel:
+    max_variable_size: 20000
+    state_budget_pct: 25
+  archytas:
+    summarization_threshold_pct: 50
+    context_window_override: 32768
+    max_react_steps: 30
+output:
+  base_dir: ./results
+  save_artifacts:
+  - dou_harmonized.csv
+  - column_mapping.json
+  - value_mapping.json
+decision_handling:
+  default_mode: auto_accept
+  predefined_responses:
+    choose.*alternative: Please proceed with the recommended option
+    multiple.*options: Pick the first option
+evaluation:
+  gold_standard: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonized_dou_correct.csv
+  input_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv
+  gold_column_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_column_mapping.json
+  gold_value_mapping: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/gold_standard_value_mapping.json
+  acceptable_columns_file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/gold_standard/harmonization_acceptable_columns.json
+  column_mapping_file: column_mapping.json
+  value_mapping_file: value_mapping.json
+  index_column: null
+  numeric_tolerance: null
+retry_policy:
+  retry_delay_seconds: 5
+  n_retries_per_error_code:
+    openrouter_500: 3
+    openrouter_5xx: 2
+    openrouter_429: 3
+    timeout: 2
+    aimessage_validation_error: 1
+    default: 0
+messages:
+- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe and subset it to the following
+    columns:
+
+    Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
+
+    Race, Ethnicity, Gender, Tumor_Focality, Tumor_Size_cm.
+
+    '
+  wait_seconds: 180
+- content: 'Please match this to the GDC schema using the ''similarity'' method,
+
+    and fix any results that don''t look correct.
+
+    '
+  wait_seconds: 300
+  decision_mode: auto_accept
+- content: 'Find alternative mappings for Histologic_type.
+
+    '
+  wait_seconds: 180
+  decision_mode: auto_accept
+- content: 'Find alternative mappings for Tumor_Size_cm.
+
+    '
+  wait_seconds: 180
+  decision_mode: auto_accept
+- content: 'Find value mappings for the columns Country, Histologic_Grade_FIGO,
+
+    Histologic_type, FIGO_stage, Race, Ethnicity, Gender, Tumor_Focality.
+
+    If there are any errors in the mappings, please provide suggestions.
+
+    '
+  wait_seconds: 360
+  decision_mode: auto_accept
+- content: 'Please create a final harmonized table based on the discovered column
+
+    and value mappings and save it as "dou_harmonized.csv".
+
+    '
+  wait_seconds: 600
+- content: 'Now save the column mapping you used as "column_mapping.json".
+
+    The format should be a JSON object where each key is the original source
+
+    column name and each value is the GDC column name it was mapped to.
+
+    For example: {"Country": "country_of_birth", "Age": "age_at_index", ...}
+
+    Include all columns, even those that were not mapped (set value to null).
+
+
+    Also save the value mapping as "value_mapping.json".
+
+    The format should be a JSON object where each key is the original source
+
+    column name, and each value is another object mapping each unique source
+
+    value to its harmonized target value.
+
+    For example: {"Histologic_Grade_FIGO": {"FIGO grade 1": "G1", "FIGO grade 2": "G2"}, ...}
+
+    For columns where values were not changed, use the string "__identity__" instead of
+
+    the mapping object.'
+  wait_seconds: 300
+  decision_mode: auto_accept
+- content: 'Show dou_harmonized.csv and the initial subsetted dou.csv file
+
+    one after the other for comparison.
+
+    '
+  wait_seconds: 120
