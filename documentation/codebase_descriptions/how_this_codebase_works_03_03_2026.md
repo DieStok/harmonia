@@ -6,7 +6,20 @@
 ---
 
 
-## Update Summary (03-03-2026)
+## Update Summary (03-03-2026, second update)
+
+- **Model Registry System (`LLM_associated_metadata/`):**
+  - New CLI tools: `fetch_openrouter_models.py` (OpenRouter API), `fetch_ollama_models.py` (ollama.com scraper), `lookup_model.py` (search/details/config-snippet).
+  - Registry data cached as JSON with configurable staleness threshold (default 24h).
+  - `manage_configs.py clone` now auto-enriches configs with `model_metadata` (pricing, context length, capabilities) from registry.
+  - New `ModelMetadataConfig` dataclass in `config.py` with pricing, parameter count, modalities, tool support fields.
+  - `ExperimentMetadata` schema extended with pricing and model family fields.
+  - Visualization pipeline enriched: `normalize.py` extracts model_metadata from config YAMLs, derives `cost_tier`, `is_local`, `model_family_group` columns.
+  - New `boxplot` subcommand in `visualize_metrics_cli.py` for group-based distribution analysis.
+  - All subcommands support `--group-by`, `--sort-by`, `--cost-bin-edges` flags.
+  - `compare` subcommand auto-generates boxplots by model family, local/frontier, and cost tier.
+
+## Update Summary (03-03-2026, first update)
 
 This update captures dead code cleanup, liteLLM migration finalization, config consolidation, quality tooling, and several structural improvements:
 
@@ -83,7 +96,7 @@ This update captures major reliability, observability, and analysis changes impl
   - Added reusable metrics-visualization package under `src/evaluation/visualization/`:
     - `io.py`, `enrich.py`, `normalize.py`, `aggregate.py`, `plots.py`, `report.py`
   - Added CLI: `src/evaluation/visualize_metrics_cli.py` with subcommands:
-    - `summarize`, `bars`, `heatmap`, `confusion`, `errors`, `compare`
+    - `summarize`, `bars`, `heatmap`, `confusion`, `errors`, `compare`, `boxplot`
   - Supports both static and interactive plotting backends:
     - `--backend seaborn|plotly`
     - `--interactive` shortcut
@@ -422,6 +435,13 @@ harmonia/
 ├── generate_env.py           # Generate .env files from experiment configs
 ├── manage_configs.py         # CLI tool for listing, querying, updating, cloning, and validating experiment configs
 │
+├── LLM_associated_metadata/          # Model registry data and lookup tools
+│   ├── fetch_openrouter_models.py    # CLI: fetch OpenRouter model registry → openrouter_models.json
+│   ├── fetch_ollama_models.py        # CLI: scrape Ollama model registry → ollama_models.json
+│   ├── lookup_model.py              # CLI: search/details/list/config-snippet for model lookup
+│   ├── openrouter_models.json       # Cached OpenRouter registry (auto-fetched, 24h staleness)
+│   └── ollama_models.json           # Cached Ollama registry (auto-fetched, 24h staleness)
+│
 ├── # Container files (NEW and LEGACY)
 ├── harmonia_beaker_LLM_agent_environment_apptainer.def  # NEW: Apptainer definition with litellm
 ├── harmonia_beaker_LLM_agent_environment_apptainer.sif  # NEW: Built image with litellm support
@@ -693,6 +713,19 @@ class ContextManagementConfig:
     archytas: ArchytasContextConfig
 
 @dataclass
+class ModelMetadataConfig:
+    """Model metadata from registry, attached at config generation time."""
+    pricing_prompt_per_million_tokens: float = 0.0
+    pricing_completion_per_million_tokens: float = 0.0
+    context_length: Optional[int] = None
+    parameter_count_b: Optional[float] = None
+    model_family_group: Optional[str] = None   # "Claude", "Gemini", "DeepSeek", etc.
+    modalities: Optional[list[str]] = None
+    supports_tools: Optional[bool] = None
+    supports_structured_output: Optional[bool] = None
+    source: Optional[str] = None               # "openrouter" or "ollama"
+
+@dataclass
 class ExperimentConfig:
     name: str
     description: str
@@ -709,6 +742,8 @@ class ExperimentConfig:
     dataset_metadata: Optional[str] = None
     # Beaker context to use: "bdikit_context", "code_context", or "codeact_context"
     context: Optional[str] = None
+    # Model metadata from registry (pricing, capabilities, etc.)
+    model_metadata: ModelMetadataConfig = field(default_factory=ModelMetadataConfig)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig"
@@ -1265,7 +1300,7 @@ Standalone CLI tool for listing, querying, updating, cloning, and validating exp
 | `list` | Display all configs with key metadata (name, context, provider, model, context_window_override). Supports `--format table\|json`. |
 | `get` | Read a field value using dotted path (e.g. `llm.model`, `context_management.archytas.max_react_steps`). |
 | `set` | Update a field in one or more configs. Supports `--dry-run`, `--filter` for selective updates. |
-| `clone` | Create a new config from a base with `--model`, `--provider`, `--context` overrides. Also updates `bdikit_models` when model is changed. |
+| `clone` | Create a new config from a base with `--model`, `--provider`, `--context` overrides. Also updates `bdikit_models` when model is changed. Auto-enriches with `model_metadata` from registry (pricing, context_length, capabilities) and sets `context_window_override` if not already set. |
 | `regenerate` | Re-run `generate_env.py` for a config to rebuild its associated `.env` file. |
 | `validate` | Parse all configs and report errors (PARSE_ERROR, MISSING_FIELD, TYPE_ERROR, LOAD_ERROR). Uses `load_config()` from `src/automation/config.py`. |
 
@@ -1288,6 +1323,34 @@ Standalone CLI tool for listing, querying, updating, cloning, and validating exp
 ```
 
 **Exit codes:** 0 = full success, 1 = partial failure, 2 = complete failure.
+
+---
+
+### 4c. Model Registry System (`LLM_associated_metadata/`)
+
+Provides automated model metadata fetching and lookup for config generation and visualization.
+
+**Components:**
+
+| File | Purpose |
+|---|---|
+| `fetch_openrouter_models.py` | CLI to fetch the OpenRouter model catalogue via `GET /api/v1/models`. Saves raw JSON. Supports `--force`, `--max-age HOURS` staleness control. |
+| `fetch_ollama_models.py` | CLI to scrape `ollama.com/library` for model names and per-tag metadata (size, context window, modalities, parameter count). Supports `--models`, `--skip-tags`, rate limiting. |
+| `lookup_model.py` | CLI for searching, listing, and generating config snippets from registry data. Subcommands: `search`, `details`, `list`, `config-snippet`. |
+| `openrouter_models.json` | Cached OpenRouter registry (auto-managed, 24h default staleness). |
+| `ollama_models.json` | Cached Ollama registry (auto-managed, 24h default staleness). |
+
+**Data flow:** Registry JSON files are fetched by the CLI tools, read by `manage_configs.py clone` (auto-enrichment) and `lookup_model.py` (manual queries). The `model_metadata` section in config YAMLs is then read by the visualization pipeline (`normalize.py`) to populate pricing, cost tier, and model family group columns in the runs DataFrame.
+
+**Derived columns in visualization:**
+- `model_family_group` — human-readable family (Claude, Gemini, DeepSeek, etc.)
+- `is_local` — boolean (Ollama provider or zero pricing)
+- `cost_tier` — categorical: free / cheap (< $0.50/M) / moderate (< $5/M) / expensive ($5+/M)
+
+**Visualization enhancements:**
+- New `boxplot` subcommand: box-and-whisker plots grouped by `model_family_group`, `is_local`, or `cost_tier`
+- All subcommands support `--group-by <column>`, `--sort-by <column>`, `--cost-bin-edges` for custom cost tiers
+- `compare` subcommand now auto-generates boxplots by family group, local/frontier, and cost tier
 
 ---
 

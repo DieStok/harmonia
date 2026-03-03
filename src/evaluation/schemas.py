@@ -114,6 +114,11 @@ class ExperimentMetadata(BaseModel):
     llm_provider: Optional[str] = Field(None, description="LLM provider (e.g., 'openai', 'anthropic')")
     llm_model: Optional[str] = Field(None, description="LLM model name")
     timing_seconds: Optional[float] = Field(None, description="Experiment duration in seconds")
+    pricing_prompt_per_million_tokens: Optional[float] = Field(None, description="Input pricing per million tokens")
+    pricing_completion_per_million_tokens: Optional[float] = Field(None, description="Output pricing per million tokens")
+    parameter_count_b: Optional[float] = Field(None, description="Model parameter count in billions")
+    model_family_group: Optional[str] = Field(None, description="Model family group (Claude, Gemini, etc.)")
+    supports_tools: Optional[bool] = Field(None, description="Whether the model supports tool use")
 
 
 class OverallSummary(BaseModel):

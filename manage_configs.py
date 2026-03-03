@@ -31,6 +31,7 @@ DEFAULT_CONFIG_DIR = Path(
 )
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+REGISTRY_DIR = SCRIPT_DIR / "LLM_associated_metadata"
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +120,136 @@ def write_yaml(path: Path, data: dict) -> None:
     """Write *data* back to *path* as YAML, preserving key order."""
     with open(path, "w") as fh:
         yaml.dump(data, fh, allow_unicode=True, sort_keys=False, default_flow_style=False)
+
+
+def _infer_model_family_group(model_id: str) -> str | None:
+    """Infer a human-friendly model family group from the model ID."""
+    model_lower = model_id.lower()
+    families = {
+        "claude": "Claude",
+        "gpt": "GPT",
+        "gemini": "Gemini",
+        "deepseek": "DeepSeek",
+        "qwen": "Qwen",
+        "llama": "Llama",
+        "mistral": "Mistral",
+        "devstral": "Mistral",
+        "codestral": "Mistral",
+        "command": "Cohere",
+        "minimax": "MiniMax",
+        "kimi": "Kimi",
+        "phi": "Phi",
+    }
+    for token, group in families.items():
+        if token in model_lower:
+            return group
+    return None
+
+
+def _lookup_openrouter_model(model_id: str) -> dict | None:
+    """Look up a model in the OpenRouter registry JSON. Returns model_metadata dict or None."""
+    registry_file = REGISTRY_DIR / "openrouter_models.json"
+    if not registry_file.exists():
+        return None
+    try:
+        data = json.loads(registry_file.read_text())
+    except Exception:
+        return None
+
+    for entry in data.get("data", []):
+        if entry.get("id") == model_id:
+            pricing = entry.get("pricing", {})
+            arch = entry.get("architecture", {})
+            input_mod = arch.get("input_modalities", [])
+            output_mod = arch.get("output_modalities", [])
+            modalities = sorted(set(input_mod + output_mod)) or None
+            supported_params = entry.get("supported_parameters", [])
+
+            prompt_price = pricing.get("prompt", "0")
+            completion_price = pricing.get("completion", "0")
+            # OpenRouter prices are per-token; convert to per-million-tokens
+            try:
+                prompt_per_m = float(prompt_price) * 1_000_000
+            except (TypeError, ValueError):
+                prompt_per_m = 0.0
+            try:
+                completion_per_m = float(completion_price) * 1_000_000
+            except (TypeError, ValueError):
+                completion_per_m = 0.0
+
+            return {
+                "pricing_prompt_per_million_tokens": round(prompt_per_m, 4),
+                "pricing_completion_per_million_tokens": round(completion_per_m, 4),
+                "context_length": entry.get("context_length"),
+                "parameter_count_b": None,
+                "model_family_group": _infer_model_family_group(model_id),
+                "modalities": modalities,
+                "supports_tools": "tools" in supported_params if supported_params else None,
+                "supports_structured_output": "structured_outputs" in supported_params if supported_params else None,
+                "source": "openrouter",
+            }
+    return None
+
+
+def _lookup_ollama_model(model_id: str) -> dict | None:
+    """Look up a model in the Ollama registry JSON. Returns model_metadata dict or None."""
+    registry_file = REGISTRY_DIR / "ollama_models.json"
+    if not registry_file.exists():
+        return None
+    try:
+        data = json.loads(registry_file.read_text())
+    except Exception:
+        return None
+
+    # model_id might be "model:tag" or just "model"
+    if ":" in model_id:
+        base_name = model_id.split(":")[0]
+    else:
+        base_name = model_id
+
+    model_entry = data.get("models", {}).get(base_name)
+    if not model_entry:
+        return None
+
+    # Try to find the exact tag, or use the first tag as default
+    tags = model_entry.get("tags", [])
+    tag_info = None
+    for t in tags:
+        if t.get("tag") == model_id:
+            tag_info = t
+            break
+    if tag_info is None and tags:
+        tag_info = tags[0]
+
+    context_k = tag_info.get("context_k") if tag_info else None
+    context_length = context_k * 1024 if context_k else None
+
+    return {
+        "pricing_prompt_per_million_tokens": 0.0,
+        "pricing_completion_per_million_tokens": 0.0,
+        "context_length": context_length,
+        "parameter_count_b": tag_info.get("parameter_count_b") if tag_info else None,
+        "model_family_group": _infer_model_family_group(model_id),
+        "modalities": tag_info.get("modalities") if tag_info else None,
+        "supports_tools": None,
+        "supports_structured_output": None,
+        "source": "ollama",
+    }
+
+
+def lookup_model_metadata(model_id: str, provider: str | None = None) -> dict | None:
+    """Look up model metadata from the appropriate registry.
+
+    Returns a dict suitable for the model_metadata YAML section, or None.
+    """
+    p = (provider or "").lower()
+    if "ollama" in p:
+        return _lookup_ollama_model(model_id)
+    # Default: try OpenRouter first, then Ollama
+    result = _lookup_openrouter_model(model_id)
+    if result is None:
+        result = _lookup_ollama_model(model_id)
+    return result
 
 
 def filter_configs(configs: list[Path], substr: str | None) -> list[Path]:
@@ -314,6 +445,25 @@ def cmd_clone(args) -> int:
 
     if context:
         set_nested(data, "experiment.context", context)
+
+    # Enrich with model metadata from registry
+    if model:
+        metadata = lookup_model_metadata(model, provider)
+        if metadata:
+            data["model_metadata"] = metadata
+            # Auto-set context_window_override from registry if not already set
+            ctx_len = metadata.get("context_length")
+            if ctx_len:
+                cm = data.setdefault("context_management", {})
+                arch = cm.setdefault("archytas", {})
+                if not arch.get("context_window_override"):
+                    arch["context_window_override"] = ctx_len
+            print(f"Enriched with model metadata from {metadata.get('source', 'registry')}", file=sys.stderr)
+        else:
+            print(f"Warning: model '{model}' not found in registries. model_metadata will use defaults.", file=sys.stderr)
+            registry_hint = REGISTRY_DIR / "openrouter_models.json"
+            if not registry_hint.exists():
+                print("  Hint: run .venv/bin/python LLM_associated_metadata/fetch_openrouter_models.py", file=sys.stderr)
 
     # Derive name
     name = getattr(args, "name", None)

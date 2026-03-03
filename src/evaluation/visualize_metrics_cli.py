@@ -8,11 +8,12 @@ from pathlib import Path
 # Allow running as a script without installing package
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from evaluation.visualization.aggregate import apply_filters, heatmap_matrix
+from evaluation.visualization.aggregate import apply_cost_bins, apply_filters, heatmap_matrix
 from evaluation.visualization.enrich import load_labels_file
 from evaluation.visualization.io import discover_metrics_files, load_metrics_bundle
 from evaluation.visualization.normalize import build_tables
 from evaluation.visualization.plots import (
+    plot_boxplot,
     plot_confusion,
     plot_global_bars,
     plot_heatmap,
@@ -33,6 +34,9 @@ def _common_parser(parser: argparse.ArgumentParser):
     parser.add_argument("--figure-format", default="png", choices=["png", "svg", "pdf", "html"])
     parser.add_argument("--dpi", type=int, default=160)
     parser.add_argument("--save-dataframes", action="store_true")
+    parser.add_argument("--group-by", default=None, help="Column to group by instead of display_label (e.g. model_family_group, cost_tier, is_local)")
+    parser.add_argument("--sort-by", default=None, help="Column to sort results by")
+    parser.add_argument("--cost-bin-edges", default=None, help="Comma-separated cost tier bin edges (e.g. 0,0.5,5,999)")
 
 
 def _load_tables(args) -> tuple[dict, list[Path], list[dict[str, str]]]:
@@ -45,6 +49,13 @@ def _load_tables(args) -> tuple[dict, list[Path], list[dict[str, str]]]:
 
     for key in ["runs", "column_mapping", "column_values", "confusion"]:
         tables[key] = apply_filters(tables[key], include_runs=args.include_runs, exclude_runs=args.exclude_runs)
+
+    # Apply custom cost bins if specified
+    cost_edges = getattr(args, "cost_bin_edges", None)
+    if cost_edges and not tables["runs"].empty:
+        edges = [float(x) for x in cost_edges.split(",")]
+        tables["runs"] = apply_cost_bins(tables["runs"], bin_edges=edges)
+
     return tables, paths, skipped
 
 
@@ -107,12 +118,17 @@ def cmd_bars(args):
     if metric not in runs.columns:
         raise SystemExit(f"Unknown metric '{metric}'.")
 
-    fig = plot_global_bars(runs, metric=metric, x_col="display_label", hue_col=args.hue, backend=backend, title=f"Global comparison: {metric}")
+    x_col = args.group_by or "display_label"
+    if args.sort_by and args.sort_by in runs.columns:
+        runs = runs.sort_values(args.sort_by, ascending=False)
+
+    fig = plot_global_bars(runs, metric=metric, x_col=x_col, hue_col=args.hue, backend=backend, title=f"Global comparison: {metric}")
     save_figure(fig, out_dir / f"global_bar_{metric}", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
 
     write_manifest(Path(args.out_dir), {
         "command": "bars",
         "metric": metric,
+        "group_by": x_col,
         "backend": backend,
         "input_count": len(paths),
         "skipped": skipped,
@@ -132,7 +148,8 @@ def cmd_heatmap(args):
         err_cols = _error_columns(col_df)
         col_df = col_df[col_df["column_name"].isin(err_cols)] if err_cols else col_df.iloc[0:0]
 
-    matrix = heatmap_matrix(col_df, metric=metric, row_key="display_label", columns_mode=args.columns_mode)
+    row_key = args.group_by or "display_label"
+    matrix = heatmap_matrix(col_df, metric=metric, row_key=row_key, columns_mode=args.columns_mode)
     if args.topk_columns and args.topk_columns > 0 and not matrix.empty:
         ranked = matrix.mean(axis=0).sort_values(ascending=False).head(args.topk_columns).index
         matrix = matrix.loc[:, ranked]
@@ -237,6 +254,37 @@ def cmd_errors(args):
     })
 
 
+def cmd_boxplot(args):
+    tables, paths, skipped = _load_tables(args)
+    out_dir = Path(args.out_dir) / "plots"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    runs = tables["runs"]
+    if runs.empty:
+        raise SystemExit("No run data available.")
+
+    backend = "plotly" if args.interactive else args.backend
+    metric = args.metric
+    if metric not in runs.columns:
+        raise SystemExit(f"Unknown metric '{metric}'.")
+
+    group_col = args.group_by or "model_family_group"
+    hue_col = args.hue if hasattr(args, "hue") else None
+
+    fig = plot_boxplot(runs, metric=metric, group_col=group_col, hue_col=hue_col, backend=backend, title=f"{metric} by {group_col}")
+    save_figure(fig, out_dir / f"boxplot_{metric}_{group_col}", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+
+    write_manifest(Path(args.out_dir), {
+        "command": "boxplot",
+        "metric": metric,
+        "group_by": group_col,
+        "hue": hue_col,
+        "backend": backend,
+        "input_count": len(paths),
+        "skipped": skipped,
+    })
+
+
 def cmd_compare(args):
     tables, paths, skipped = _load_tables(args)
     base_out = Path(args.out_dir)
@@ -273,6 +321,17 @@ def cmd_compare(args):
 
     for name, df in tables.items():
         df.to_csv(tables_out / f"{name}.csv", index=False)
+
+    # Boxplots by model_family_group and is_local (if data available)
+    for box_group in ["model_family_group", "is_local", "cost_tier"]:
+        if box_group in runs.columns and runs[box_group].notna().any():
+            for box_metric in default_metrics:
+                if box_metric in runs.columns:
+                    try:
+                        fig = plot_boxplot(runs, metric=box_metric, group_col=box_group, backend=backend, title=f"{box_metric} by {box_group}")
+                        save_figure(fig, plots_out / f"boxplot_{box_metric}_{box_group}", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+                    except Exception:
+                        pass
 
     # Always produce error summary tables in compare
     confusion_df = tables["confusion"]
@@ -332,6 +391,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_err.add_argument("--top-n", type=int, default=10)
     p_err.add_argument("--error-columns-only", action="store_true", help="subset to columns with any errors")
     p_err.set_defaults(func=cmd_errors)
+
+    p_box = sub.add_parser("boxplot", help="Generate box-and-whisker plot by group")
+    _common_parser(p_box)
+    p_box.add_argument("--metric", default="avg_value_accuracy_excl_empty")
+    p_box.add_argument("--hue", default=None)
+    p_box.set_defaults(func=cmd_boxplot)
 
     p_cmp = sub.add_parser("compare", help="Generate full comparison bundle")
     _common_parser(p_cmp)

@@ -3,6 +3,31 @@ from __future__ import annotations
 import pandas as pd
 
 
+def apply_cost_bins(df: pd.DataFrame, bin_edges: list[float] | None = None) -> pd.DataFrame:
+    """Apply custom cost tier bins based on pricing_prompt_per_million_tokens."""
+    if df.empty or "pricing_prompt_per_million_tokens" not in df.columns:
+        return df
+    out = df.copy()
+    if bin_edges is None:
+        return out
+    labels = []
+    for i in range(len(bin_edges) - 1):
+        lo, hi = bin_edges[i], bin_edges[i + 1]
+        if lo == 0:
+            labels.append("free")
+        elif hi == float("inf"):
+            labels.append(f">${lo}")
+        else:
+            labels.append(f"${lo}-{hi}")
+    out["cost_tier"] = pd.cut(
+        out["pricing_prompt_per_million_tokens"].fillna(-1),
+        bins=bin_edges,
+        labels=labels,
+        include_lowest=True,
+    )
+    return out
+
+
 def apply_filters(df: pd.DataFrame, include_runs: str | None = None, exclude_runs: str | None = None) -> pd.DataFrame:
     if df.empty:
         return df

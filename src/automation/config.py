@@ -115,6 +115,20 @@ class ContextManagementConfig:
 
 
 @dataclass
+class ModelMetadataConfig:
+    """Model metadata from registry, attached at config generation time."""
+    pricing_prompt_per_million_tokens: float = 0.0
+    pricing_completion_per_million_tokens: float = 0.0
+    context_length: Optional[int] = None
+    parameter_count_b: Optional[float] = None
+    model_family_group: Optional[str] = None
+    modalities: Optional[list[str]] = None
+    supports_tools: Optional[bool] = None
+    supports_structured_output: Optional[bool] = None
+    source: Optional[str] = None
+
+
+@dataclass
 class ExperimentConfig:
     """Complete experiment configuration."""
     name: str
@@ -133,6 +147,8 @@ class ExperimentConfig:
     dataset_metadata: Optional[str] = None
     # Beaker context to use: "bdikit_context", "code_context", or "codeact_context"
     context: Optional[str] = None
+    # Model metadata from registry (pricing, capabilities, etc.)
+    model_metadata: ModelMetadataConfig = field(default_factory=ModelMetadataConfig)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig":
@@ -224,6 +240,19 @@ class ExperimentConfig:
             archytas=archytas_config,
         )
 
+        mm_data = data.get("model_metadata", {})
+        model_metadata = ModelMetadataConfig(
+            pricing_prompt_per_million_tokens=float(mm_data.get("pricing_prompt_per_million_tokens", 0.0)),
+            pricing_completion_per_million_tokens=float(mm_data.get("pricing_completion_per_million_tokens", 0.0)),
+            context_length=mm_data.get("context_length"),
+            parameter_count_b=mm_data.get("parameter_count_b"),
+            model_family_group=mm_data.get("model_family_group"),
+            modalities=mm_data.get("modalities"),
+            supports_tools=mm_data.get("supports_tools"),
+            supports_structured_output=mm_data.get("supports_structured_output"),
+            source=mm_data.get("source"),
+        )
+
         return cls(
             name=exp.get("name", "unnamed_experiment"),
             description=exp.get("description", ""),
@@ -238,6 +267,7 @@ class ExperimentConfig:
             manual_mode=manual_mode,
             dataset_metadata=exp.get("dataset_metadata"),
             context=exp.get("context"),
+            model_metadata=model_metadata,
         )
 
 

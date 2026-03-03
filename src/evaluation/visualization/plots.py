@@ -87,6 +87,37 @@ def plot_heatmap(matrix_df: pd.DataFrame, backend: str = "seaborn", title: str |
     return fig
 
 
+def plot_boxplot(df: pd.DataFrame, metric: str, group_col: str = "model_family_group", hue_col: str | None = None, backend: str = "seaborn", title: str | None = None, palette: str = "tab10"):
+    _require_backend(backend)
+    data = df.dropna(subset=[metric]).copy()
+    if backend == "seaborn":
+        sns.set_theme(style="whitegrid")
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.boxplot(
+            data=data,
+            x=group_col,
+            y=metric,
+            hue=hue_col if hue_col and hue_col in data.columns else None,
+            ax=ax,
+            palette=palette,
+        )
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha="right")
+        ax.set_ylim(0, max(1.0, float(data[metric].max()) * 1.1))
+        ax.set_title(title or f"{metric} by {group_col}")
+        return fig
+
+    fig = px.box(
+        data,
+        x=group_col,
+        y=metric,
+        color=hue_col if hue_col and hue_col in data.columns else None,
+        title=title or f"{metric} by {group_col}",
+        hover_data=[c for c in ["model_label", "context", "model_family", "run_id"] if c in data.columns],
+    )
+    fig.update_layout(xaxis_tickangle=-35)
+    return fig
+
+
 def _collapse_to_top_labels(df: pd.DataFrame, top_n: int = 20) -> pd.DataFrame:
     expected_top = df.groupby("expected_value")["count"].sum().nlargest(top_n).index
     predicted_top = df.groupby("predicted_value")["count"].sum().nlargest(top_n).index
