@@ -359,6 +359,7 @@ harmonia/
 ├── calculate_metrics.py      # CLI entry point for standalone metrics calculation
 ├── generate_jobs.py          # Script to generate SLURM job scripts
 ├── generate_env.py           # Generate .env files from experiment configs
+├── manage_configs.py         # CLI tool for listing, querying, updating, cloning, and validating experiment configs
 │
 ├── # Container files (NEW and LEGACY)
 ├── harmonia_beaker_LLM_agent_environment_apptainer.def  # NEW: Apptainer definition with litellm
@@ -1203,6 +1204,43 @@ For Ollama providers, also writes `OLLAMA_CONTEXT_LENGTH` if `context_length` is
 | `HARMONIA_STATE_VAR_WHITELIST` | `context_management.python_kernel.var_whitelist` (comma-separated) | FETCH_STATE_CODE patch |
 
 The `exec_apptainer_harmonia.sh` script also exports `OLLAMA_NUM_CTX` alongside `OLLAMA_CONTEXT_LENGTH` (Ollama uses both depending on version), calculates `HARMONIA_STATE_TOTAL_BUDGET` from percentage × context_length, and pre-pulls Ollama summarization models if configured.
+
+---
+
+### 4b. Config Management CLI (`manage_configs.py`)
+
+Standalone CLI tool for listing, querying, updating, cloning, and validating experiment YAML configs. Uses only stdlib + PyYAML. Designed for use by both automated agents and humans maintaining the experiment matrix.
+
+**Subcommands:**
+
+| Subcommand | Purpose |
+|---|---|
+| `list` | Display all configs with key metadata (name, context, provider, model, context_window_override). Supports `--format table\|json`. |
+| `get` | Read a field value using dotted path (e.g. `llm.model`, `context_management.archytas.max_react_steps`). |
+| `set` | Update a field in one or more configs. Supports `--dry-run`, `--filter` for selective updates. |
+| `clone` | Create a new config from a base with `--model`, `--provider`, `--context` overrides. Also updates `bdikit_models` when model is changed. |
+| `regenerate` | Re-run `generate_env.py` for a config to rebuild its associated `.env` file. |
+| `validate` | Parse all configs and report errors (PARSE_ERROR, MISSING_FIELD, TYPE_ERROR, LOAD_ERROR). Uses `load_config()` from `src/automation/config.py`. |
+
+**Usage examples:**
+```bash
+# List all automated configs
+.venv/bin/python manage_configs.py list
+
+# Get the model for all Claude configs
+.venv/bin/python manage_configs.py get --field llm.model --filter claude
+
+# Dry-run update temperature for GLM configs
+.venv/bin/python manage_configs.py set --field llm.temperature --value 0.5 --filter glm --dry-run
+
+# Clone a config for a new model
+.venv/bin/python manage_configs.py clone --base experiments/.../config.yaml --output-dir experiments/.../configs/automated/ --model google/gemini-2.0-flash --provider openrouter
+
+# Validate all configs
+.venv/bin/python manage_configs.py validate
+```
+
+**Exit codes:** 0 = full success, 1 = partial failure, 2 = complete failure.
 
 ---
 

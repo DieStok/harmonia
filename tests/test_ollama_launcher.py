@@ -16,7 +16,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from automation.ollama_launcher import estimate_vram_usage, get_ollama_port
 
-
 # ---------------------------------------------------------------------------
 # get_ollama_port tests
 # ---------------------------------------------------------------------------
