@@ -67,3 +67,9 @@ Implemented Work Package G: added pre-commit hooks with ruff/shellcheck/yamllint
 ## Files Modified
 - `pyproject.toml` (added ruff config + pytest config)
 - ~30 source files under `src/` (ruff auto-fix: unused import removal + isort)
+
+## Commit Note
+All WP-G changes (new files, ruff cleanups, pyproject.toml config) were initially swept into
+a shared commit by another parallel work package (WP-F, commit 01e1638) because all 7 WPs share
+the same working directory. A follow-up WP-G-specific commit is created to provide the correct
+attribution and commit message.

@@ -2,6 +2,7 @@ experiment:
   name: dou_harmonization_step-3.5-flash
   description: Harmonize dou.csv to GDC schema using similarity method (Step-3.5-Flash
     via OpenRouter)
+  context: bdikit_context
 llm:
   provider: openrouter
   model: stepfun/step-3.5-flash:free
@@ -84,11 +85,11 @@ messages:
   decision_mode: auto_accept
 - content: 'Please create a final harmonized table based on the discovered column
 
-    and value mappings and save it as "results/dou_harmonized.csv".
+    and value mappings and save it as "dou_harmonized.csv".
 
     '
   wait_seconds: 600
-- content: 'Now save the column mapping you used as "results/column_mapping.json".
+- content: 'Now save the column mapping you used as "column_mapping.json".
 
     The format should be a JSON object where each key is the original source
 
@@ -99,7 +100,7 @@ messages:
     Include all columns, even those that were not mapped (set value to null).
 
 
-    Also save the value mapping as "results/value_mapping.json".
+    Also save the value mapping as "value_mapping.json".
 
     The format should be a JSON object where each key is the original source
 
