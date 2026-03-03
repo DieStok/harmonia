@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "13f996a119a3",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".pre-commit-config.yaml",
+    "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-B_wire_archytas_config_and_entrypoint_implementation_progress.md",
+    "manage_configs.py",
+    "src/automation/ollama_launcher.py",
+    "src/bdikit_context/llm/provider_prefixes.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/13/f996a119a3/0/metadata.json",
+      "transcript": "/13/f996a119a3/0/full.jsonl",
+      "context": "/13/f996a119a3/0/context.md",
+      "content_hash": "/13/f996a119a3/0/content_hash.txt",
+      "prompt": "/13/f996a119a3/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 19,
+    "cache_creation_tokens": 61738,
+    "cache_read_tokens": 659411,
+    "output_tokens": 29985,
+    "api_call_count": 15
+  }
+}
