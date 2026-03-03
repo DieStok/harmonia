@@ -44,3 +44,7 @@ Could you also:
 
 Continue
 
+### Prompt 8
+
+Can you now also: download one Qwen 3.5 local model in ollama (be sure to search for where ollama is installed and what to run to download new models), then make a config for it in all 3 contexts, and then run the experiment for those 3 configs?
+

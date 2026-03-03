@@ -12,11 +12,11 @@
     "LLM_associated_metadata/openrouter_models_parameter_meanings.json",
     "check_archytas.py",
     "code_development_tools_agents/monitoring_and_evaluation/diagnose_interactive_beaker_session.py",
+    "code_development_tools_agents/ollama_management/manage_ollama.sh",
     "diagnose_interactive_beaker_session.py",
     "diagnose_llm.py",
     "documentation/codebase_descriptions/how_this_codebase_works_03_03_2026.md",
     "documentation/my_instructions/03_03_2026_1335_get_openrouter_model_info.md",
-    "documentation/my_instructions/03_03_2026_1605_make_trace_visualization.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-C_provider_prefix_and_generate_jobs_implementation_progress.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-D_manage_configs_cli_implementation_progress.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-F_ollama_python_launcher_implementation_progress.md",
@@ -73,10 +73,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 3466,
-    "cache_creation_tokens": 491341,
-    "cache_read_tokens": 17455274,
-    "output_tokens": 77847,
-    "api_call_count": 223
+    "input_tokens": 218,
+    "cache_creation_tokens": 300467,
+    "cache_read_tokens": 19087332,
+    "output_tokens": 58707,
+    "api_call_count": 198
   }
 }
