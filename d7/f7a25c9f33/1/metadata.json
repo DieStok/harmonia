@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "d7f7a25c9f33",
+  "session_id": "2929bcbc-5f33-4aa2-b8f8-6a325b18ef57",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-03T13:50:12.49486898Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "check_archytas.py",
+    "diagnose_interactive_beaker_session.py",
+    "diagnose_llm.py",
+    "documentation/plans/03_03_2026_1448_add_LLM_model_specific_metadata_fetch_openrouter_ollama.md",
+    "jobs/dou_harmonization.sh",
+    "jobs/dou_harmonization_anyllm_openrouter.sh",
+    "quick_test.py",
+    "src/bdikit_context/llm/litellm_direct.py",
+    "test_anyllm_adapter.py",
+    "test_anyllm_basic.py"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "8d947b77-53b1-45ba-a760-06e1b621361e",
+  "token_usage": {
+    "input_tokens": 39,
+    "cache_creation_tokens": 64182,
+    "cache_read_tokens": 1901326,
+    "output_tokens": 13418,
+    "api_call_count": 33
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-03T13:50:10.457626949Z",
+    "agent_lines": 0,
+    "human_added": 2188,
+    "human_modified": 350,
+    "human_removed": 0,
+    "total_committed": 2536,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/2929bcbc-5f33-4aa2-b8f8-6a325b18ef57.jsonl"
+}
