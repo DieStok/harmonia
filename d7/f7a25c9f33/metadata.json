@@ -6,15 +6,17 @@
   "checkpoints_count": 6,
   "files_touched": [
     "LLM_associated_metadata/fetch_ollama_models.py",
+    "LLM_associated_metadata/fetch_openrouter.py",
     "LLM_associated_metadata/fetch_openrouter_models.py",
     "LLM_associated_metadata/lookup_model.py",
-    "LLM_associated_metadata/openrouter_models.json",
+    "LLM_associated_metadata/openrouter_models_parameter_meanings.json",
     "check_archytas.py",
     "code_development_tools_agents/monitoring_and_evaluation/diagnose_interactive_beaker_session.py",
     "diagnose_interactive_beaker_session.py",
     "diagnose_llm.py",
     "documentation/codebase_descriptions/how_this_codebase_works_03_03_2026.md",
     "documentation/my_instructions/03_03_2026_1335_get_openrouter_model_info.md",
+    "documentation/my_instructions/03_03_2026_1605_make_trace_visualization.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-C_provider_prefix_and_generate_jobs_implementation_progress.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-D_manage_configs_cli_implementation_progress.md",
     "documentation/parallel_codebase_upgrade_outputs/03_03_2026_1253_WP-F_ollama_python_launcher_implementation_progress.md",
@@ -71,10 +73,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 247,
-    "cache_creation_tokens": 346912,
-    "cache_read_tokens": 18918478,
-    "output_tokens": 80661,
-    "api_call_count": 225
+    "input_tokens": 3466,
+    "cache_creation_tokens": 491341,
+    "cache_read_tokens": 17455274,
+    "output_tokens": 77847,
+    "api_call_count": 223
   }
 }
