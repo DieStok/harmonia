@@ -19,10 +19,15 @@ As a first step, I want to brainstorm about the possible options here. LLM obser
 
 I want you to dive into these separate topics:
 
-- analyze exactly what is logged in the LLM turns now in the codebase. How do these trace.json files look, do they correctly contain everything, are any interactions not logged and what is missing or could be improved? The final answer to this should be a clear list of Current Functionality with what is present, and Desiderata of what would serve to optimally give context to my experiments.
-- analyze the landscape of LLM agent observeability: what open source packages exist, what out-of-the-box solutions are there for GUIs or visualisations to compare multi-turn LLM conversations. Here investigate at least langchain, langfuse, Arize Phoenix and Opik. For initial research, see file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/my_instructions/initial_info_LLM_tracing.md
-- given the above findings of what is currently implemented, important desiderata, and what each of the frameworks does, make a full report in documentation/possible_features/<DATETIME>_research_into_LLM_tracing.md
-- Dispatch 4 subagents, one per candidate framework identified as most promising in the research report. Each subagent runs in a fresh context and receives the same structured brief below, with only the framework name swapped. Each subagent outputs its plan to:
+- Before beginning any analysis, read the following files into context to ground your findings in the actual codebase: automation/logger.py, prompt_logging.py, an example trace.json from a completed results directory, an example full_prompt_composition.json, and the document at documentation/my_instructions/initial_info_LLM_tracing.md. Do not speculate about file contents — inspect them first.
+
+- Analyze exactly what is logged in the LLM turns now in the codebase. How do these trace.json files look, do they correctly contain everything, are any interactions not logged and what is missing or could be improved? The final answer to this should be a clear list of Current Functionality with what is present, and Desiderata of what would serve to optimally give context to my experiments.
+
+- Analyze the landscape of LLM agent observeability: what open source packages exist, what out-of-the-box solutions are there for GUIs or visualisations to compare multi-turn LLM conversations. Here investigate at least langchain, langfuse, Arize Phoenix and Opik. For initial research, see file: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/my_instructions/initial_info_LLM_tracing.md
+
+- Given the above findings of what is currently implemented, important desiderata, and what each of the frameworks does, make a full report in documentation/possible_features/<DATETIME>_research_into_LLM_tracing.md. The report must contain three sections: (1) Current Logging — what is captured and what is missing, with references to the actual source files and example outputs you inspected; (2) Desiderata — what an ideal tracing and visualisation system would provide for this project; (3) Framework Landscape — a structured comparison of the candidate frameworks against those desiderata. This report will be the primary input for all subagents, so it must be self-contained.
+
+- Dispatch 4 subagents, one per candidate framework. Three are pinned: Langfuse, Arize Phoenix, and Opik. Select one additional framework based on the research report findings (e.g., a custom Dash/Streamlit approach, or another promising candidate that emerged from the landscape analysis). Each subagent must run in its own independent context so that findings do not bleed between them. Each subagent receives the same structured brief below, with only the framework name swapped. Each subagent outputs its plan to:
   documentation/possible_features/<SUBAGENT_ID>_<FRAMEWORKNAME>_improve_tracing_plan.md
 
   <subagent_brief>
@@ -83,38 +88,94 @@ I want you to dive into these separate topics:
   - Any limitations of {FRAMEWORK_NAME} that would require custom workarounds, and what those workarounds look like.
   </section_4_effort_and_risks>
 
-  Write the plan in markdown. Be thorough but not redundant — aim for 1500–3500 words.
+  Write the plan in markdown. Aim for 1500–2500 words; do not exceed 3500.
   </subagent_brief>
-- Finally, dispatch a critic agent in a fresh context. Provide it with all 4 subagent plan files
-  and the research report as input. Use the system prompt defined in
-  critic_agent_prompt.md. The critic agent should compare all plans, score them on
-  the 6 evaluation criteria, and output a single recommendation with suggested
-  amendments. Save its output to:
+
+- After all 4 subagent plans are complete, dispatch a critic subagent in its own independent context. Provide it with all 4 plan files and the research report. The critic should compare all plans, score them on the evaluation criteria below, and output a single recommendation with suggested amendments. Save its output to:
   documentation/possible_features/<DATETIME>_critic_evaluation.md
-  Give it this user prompt, filled in properly:
+
+  Use the following as the system prompt for the critic subagent:
+
+  <critic_system_prompt>
+  You are a senior technical reviewer acting as an independent critic. Your job is to compare competing implementation plans for adding LLM agent observability and tracing to an existing Python codebase, then select the single best option. You will receive 4 detailed plans — one per candidate framework — each written by a separate subagent. You have no loyalty to any plan; your only goal is to surface the option that best serves the project's needs.
+
+  <evaluation_context>
+  The project ("Harmonia") benchmarks different LLMs on a metadata harmonisation task. An orchestrator launches containerised LLM agents (via Archytas/Beaker inside Apptainer) that write and execute code to harmonise biomedical metadata tables. The codebase already has custom logging (automation/logger.py, prompt_logging.py) producing trace.json, full_prompt_composition.json, and conversation.md per run. The team now needs:
+
+  1. Rich, structured tracing of every LLM turn (prompts, completions, tool calls, code execution, errors, latencies, token counts).
+  2. An interactive GUI where traces can be explored turn-by-turn, compared side-by-side across models, and cross-referenced with quantitative performance metrics/plots already produced by the evaluation pipeline.
+  3. Minimal disruption to the existing automation and logging code — the solution must integrate cleanly.
+  4. The system runs on an HPC cluster inside Apptainer containers; network access, persistence, and deployment constraints matter.
+  </evaluation_context>
+
+  <evaluation_criteria>
+  Evaluate each plan along ALL of the following dimensions. Weight them in this order of importance:
+
+  1. **Trace completeness** — Does the plan capture every interaction (system prompt composition, each LLM turn with full prompt + response, tool/function calls and results, code execution outputs, errors and retries, token usage, latencies)? Are there gaps?
+  2. **Visualisation and comparison UX** — How well does the proposed GUI support (a) stepping through a single trace turn-by-turn, (b) side-by-side comparison of traces from different models on the same task, and (c) cross-referencing traces with quantitative metric plots?
+  3. **Integration cost** — How many existing code paths change? How invasive are the changes? Is the mapping of current logging to the new framework's data model clean or forced?
+  4. **Deployment feasibility** — Can it run on an HPC cluster inside Apptainer? Does it need a persistent server, external database, or network access that may not be available? How complex is setup?
+  5. **Maintenance and ecosystem** — Is the framework actively maintained? Is the community large enough for long-term support? Are there lock-in risks?
+  6. **Extensibility** — How easy is it to add new trace fields, custom metadata, or new visualisation views later?
+  </evaluation_criteria>
+
+  <output_format>
+  Structure your response exactly as follows:
+
+  ### Per-Plan Analysis
+  For each of the 4 plans, produce a section with:
+  - **Framework**: name
+  - **Summary**: 2–3 sentence distillation of the plan's approach
+  - **Strengths**: bulleted list, each item no more than 2 sentences, referencing specific evaluation criteria
+  - **Weaknesses**: bulleted list, same format, being concrete about what is missing or risky
+  - **Open questions**: anything the plan left unresolved or underspecified
+
+  ### Comparative Matrix
+  A markdown table with frameworks as rows and the 6 evaluation criteria as columns. Use a 1–5 score per cell with a one-word qualifier (e.g., "4 — strong").
+
+  ### Head-to-Head Trade-offs
+  Identify the 2–3 most consequential trade-offs between the top candidates. For each, explain what you gain and what you lose concretely.
+
+  ### Recommendation
+  State your single recommended framework. Justify the choice by referencing the comparative matrix and the most important trade-offs. If appropriate, note whether a hybrid approach (e.g., framework X for tracing + framework Y's UI component) would outperform any single option, but only if genuinely warranted — do not hedge for the sake of hedging.
+
+  ### Suggested Amendments
+  List up to 5 specific, actionable improvements to the winning plan that would address its identified weaknesses. Reference concrete code paths or integration points where possible.
+  </output_format>
+
+  <guidelines>
+  - Be direct and opinionated. The orchestrator needs a clear decision, not a balanced "they're all good" summary.
+  - Ground every claim in specifics from the plans. Do not introduce framework features that are not mentioned in the plans unless you flag them explicitly as "not covered in plan, but worth noting."
+  - If a plan is vague or hand-wavy on a criterion, penalise it — specificity is a signal of quality.
+  - Consider second-order effects: e.g., a framework that is easy to set up but hard to customise may score well on integration cost but poorly on extensibility.
+  - Keep the total response under 3500 words. Conciseness is valued.
+  </guidelines>
+  </critic_system_prompt>
+
+  Give the critic this user prompt, with the plan contents and research report filled in:
+
   Below are 4 implementation plans for adding LLM observability and tracing to the Harmonia metadata harmonisation benchmarking project. Each plan was produced by an independent subagent that investigated a specific framework. Evaluate and compare them according to your instructions, then select the best option.
 
-<plan_1>
-{CONTENT OF SUBAGENT 1 PLAN}
-</plan_1>
+  <plan_1>
+  {content of subagent 1 plan}
+  </plan_1>
 
-<plan_2>
-{CONTENT OF SUBAGENT 2 PLAN}
-</plan_2>
+  <plan_2>
+  {content of subagent 2 plan}
+  </plan_2>
 
-<plan_3>
-{CONTENT OF SUBAGENT 3 PLAN}
-</plan_3>
+  <plan_3>
+  {content of subagent 3 plan}
+  </plan_3>
 
-<plan_4>
-{CONTENT OF SUBAGENT 4 PLAN}
-</plan_4>
+  <plan_4>
+  {content of subagent 4 plan}
+  </plan_4>
 
-<research_report>
-{CONTENT OF THE MAIN RESEARCH REPORT from documentation/possible_features/<DATETIME>_research_into_LLM_tracing.md — this gives the critic shared context on current logging, desiderata, and framework landscape}
-</research_report>
+  <research_report>
+  {content of the research report}
+  </research_report>
 
-Now perform your evaluation.
+  Now perform your evaluation.
 
-- Finally, Surface the critic's recommendation and top-3 amendments to the user as the
-  final response.
+- After the critic completes, surface its output to me as the final response. The final output must contain: (a) the winning framework name, (b) a 3–5 sentence justification, (c) the critic's top 3 suggested amendments to the winning plan, and (d) links to all generated documents (the research report, the 4 subagent plans, and the critic evaluation).
