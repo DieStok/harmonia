@@ -3,15 +3,21 @@
   "checkpoint_id": "f5110341200f",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
+    "documentation/codebase_descriptions/how_this_codebase_works_05_03_2026.md",
     "documentation/possible_features/03_03_2026_critic_evaluation.md",
     "documentation/possible_features/03_03_2026_final_report_tracing_tools_orchestrator.md",
     "documentation/possible_features/03_03_2026_research_into_LLM_tracing.md",
     "documentation/possible_features/custom_dash_improve_tracing_plan.md",
     "documentation/possible_features/langfuse_improve_tracing_plan.md",
     "documentation/possible_features/opik_improve_tracing_plan.md",
-    "documentation/possible_features/phoenix_improve_tracing_plan.md"
+    "documentation/possible_features/phoenix_improve_tracing_plan.md",
+    "exec_apptainer_harmonia.sh",
+    "generate_env.py",
+    "src/automation/config.py",
+    "src/bdikit_context/context.py",
+    "src/code_context/context.py"
   ],
   "sessions": [
     {
@@ -20,13 +26,20 @@
       "context": "/f5/110341200f/0/context.md",
       "content_hash": "/f5/110341200f/0/content_hash.txt",
       "prompt": "/f5/110341200f/0/prompt.txt"
+    },
+    {
+      "metadata": "/f5/110341200f/1/metadata.json",
+      "transcript": "/f5/110341200f/1/full.jsonl",
+      "context": "/f5/110341200f/1/context.md",
+      "content_hash": "/f5/110341200f/1/content_hash.txt",
+      "prompt": "/f5/110341200f/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1911,
-    "cache_creation_tokens": 182067,
-    "cache_read_tokens": 2520318,
-    "output_tokens": 23563,
-    "api_call_count": 36
+    "input_tokens": 2059,
+    "cache_creation_tokens": 423048,
+    "cache_read_tokens": 17672998,
+    "output_tokens": 59350,
+    "api_call_count": 166
   }
 }
