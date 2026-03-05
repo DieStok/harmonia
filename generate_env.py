@@ -229,6 +229,7 @@ def generate_env_from_config(config_path: Path, base_env_path: Path, output_dir:
         'tool_output_snippet_size': ('ARCHYTAS_TOOL_SNIPPET_SIZE', None),
         'max_react_steps': ('ARCHYTAS_MAX_REACT_STEPS', None),
         'max_errors': ('ARCHYTAS_MAX_ERRORS', None),
+        'max_consecutive_tool_errors': ('ARCHYTAS_MAX_CONSECUTIVE_TOOL_ERRORS', None),
         'max_tokens': ('LLM_MAX_TOKENS', None),
     }
     for yaml_key, (env_var, _) in arch_vars.items():

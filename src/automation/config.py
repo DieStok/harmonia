@@ -103,6 +103,7 @@ class ArchytasContextConfig:
     tool_output_snippet_size: int = 1000           # informational -- not in Archytas API
     max_react_steps: Optional[int] = 30            # WIRED -- sets agent.max_react_steps via ARCHYTAS_MAX_REACT_STEPS env var
     max_errors: int = 3                            # WIRED -- sets agent.max_errors via ARCHYTAS_MAX_ERRORS env var
+    max_consecutive_tool_errors: Optional[int] = 3  # WIRED -- sets agent.max_consecutive_tool_errors via ARCHYTAS_MAX_CONSECUTIVE_TOOL_ERRORS env var
     summarization_model: Optional[str] = None      # informational -- not in Archytas API
     summarization_model_provider: Optional[str] = None  # informational -- not in Archytas API
 
@@ -232,6 +233,7 @@ class ExperimentConfig:
             tool_output_snippet_size=arch_data.get("tool_output_snippet_size", 1000),
             max_react_steps=arch_data.get("max_react_steps", 30),
             max_errors=arch_data.get("max_errors", 3),
+            max_consecutive_tool_errors=arch_data.get("max_consecutive_tool_errors", 3),
             summarization_model=arch_data.get("summarization_model"),
             summarization_model_provider=arch_data.get("summarization_model_provider"),
         )

@@ -34,7 +34,7 @@ RESULTS_DIR=""
 OLLAMA_DIR="/hpc/compgen/projects/ollama/ollama_run/analysis/dstoker"
 # Dynamic Ollama port per SLURM job for isolation
 # Python-backed port calculation (see src/automation/ollama_launcher.py)
-OLLAMA_PORT=$(python3 "${SCRIPT_DIR}/src/automation/ollama_launcher.py" get-port --job-id "${SLURM_JOB_ID:-}") || {
+OLLAMA_PORT=$("${SCRIPT_DIR}/.venv/bin/python" "${SCRIPT_DIR}/src/automation/ollama_launcher.py" get-port --job-id "${SLURM_JOB_ID:-}") || {
     # Fallback to original bash logic if Python fails
     if [ -n "$SLURM_JOB_ID" ]; then
         OLLAMA_PORT=$((11434 + 1 + (SLURM_JOB_ID % 200)))
@@ -479,8 +479,10 @@ start_ollama_server() {
                 echo "   Ollama log: ${OLLAMA_LOG_FILE}"
                 echo "[$(date)] Ollama server already running on $(hostname) with model ${LLM_MODEL}" > "${OLLAMA_LOG_FILE}"
 
-                export LLM_BASE_URL="http://$(hostname):${OLLAMA_PORT}"
-                export OLLAMA_HOST="http://$(hostname):${OLLAMA_PORT}"
+                LLM_BASE_URL="http://$(hostname):${OLLAMA_PORT}"
+                export LLM_BASE_URL
+                OLLAMA_HOST="http://$(hostname):${OLLAMA_PORT}"
+                export OLLAMA_HOST
                 echo "   LLM_BASE_URL: ${LLM_BASE_URL}"
                 echo "   OLLAMA_HOST:  ${OLLAMA_HOST}"
 
@@ -564,8 +566,10 @@ start_ollama_server() {
     OLLAMA_STARTED_BY_US=true
 
     # Set environment variables for the container
-    export LLM_BASE_URL="http://$(hostname):${OLLAMA_PORT}"
-    export OLLAMA_HOST="http://$(hostname):${OLLAMA_PORT}"
+    LLM_BASE_URL="http://$(hostname):${OLLAMA_PORT}"
+    export LLM_BASE_URL
+    OLLAMA_HOST="http://$(hostname):${OLLAMA_PORT}"
+    export OLLAMA_HOST
 
     echo "   LLM_BASE_URL: ${LLM_BASE_URL}"
     echo "   OLLAMA_HOST:  ${OLLAMA_HOST}"
@@ -666,7 +670,7 @@ except:
         # VRAM estimation: show GPU memory usage and estimate peak with full KV cache
         # Python-backed VRAM estimation (see src/automation/ollama_launcher.py)
         if [ -n "$OLLAMA_CONTEXT_LENGTH" ]; then
-            python3 "${SCRIPT_DIR}/src/automation/ollama_launcher.py" estimate-vram \
+            "${SCRIPT_DIR}/.venv/bin/python" "${SCRIPT_DIR}/src/automation/ollama_launcher.py" estimate-vram \
                 --model "$LLM_MODEL" --context "${OLLAMA_CONTEXT_LENGTH:-8192}" || \
                 estimate_vram_usage "$OLLAMA_CONTEXT_LENGTH"
         fi
@@ -692,7 +696,7 @@ except:
 stop_ollama_server() {
     # Kill the tail process if running
     if [ -n "$OLLAMA_TAIL_PID" ]; then
-        kill $OLLAMA_TAIL_PID 2>/dev/null || true
+        kill "$OLLAMA_TAIL_PID" 2>/dev/null || true
     fi
 
     if [ "$OLLAMA_STARTED_BY_US" = true ]; then
@@ -704,11 +708,12 @@ stop_ollama_server() {
 
         if [ -n "$SLURM_JOB_ID" ] && [ -n "$OLLAMA_PID_FILE" ] && [ -f "$OLLAMA_PID_FILE" ]; then
             # Per-job cleanup: kill our specific process only
-            local pid=$(cat "$OLLAMA_PID_FILE")
+            local pid
+            pid=$(cat "$OLLAMA_PID_FILE")
             echo "   Killing Ollama PID $pid (job-specific)..."
-            kill $pid 2>/dev/null || true
+            kill "$pid" 2>/dev/null || true
             sleep 2
-            kill -9 $pid 2>/dev/null || true
+            kill -9 "$pid" 2>/dev/null || true
             rm -f "$OLLAMA_PID_FILE"
             # Clean up per-job monitor PID file too
             rm -f "${OLLAMA_PID_FILE%.pid}_monitor.pid"
@@ -738,6 +743,7 @@ fi
 
 # Read context management env vars from .env for display and budget calculation
 HARMONIA_STATE_BUDGET_PCT=$(grep "^HARMONIA_STATE_BUDGET_PCT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
+# shellcheck disable=SC2034  # used for display/logging, not referenced in this script
 ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT=$(grep "^ARCHYTAS_SUMMARIZATION_THRESHOLD_PCT=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2)
 ARCHYTAS_SUMMARIZATION_MODEL_CONFIG=$(grep "^ARCHYTAS_SUMMARIZATION_MODEL_CONFIG=" "$ENV_FILE" 2>/dev/null | cut -d '=' -f2-)
 
@@ -1053,6 +1059,13 @@ APPTAINER_CMD="$APPTAINER_CMD --env XDG_RUNTIME_DIR=/workspace/results/.jupyter_
 APPTAINER_CMD="$APPTAINER_CMD --env BEAKER_RUN_PATH=/workspace/results/.beaker_runtime"
 APPTAINER_CMD="$APPTAINER_CMD --env IPYTHONDIR=/workspace/results/.ipython"
 
+# Redirect HuggingFace model cache to writable location inside the container.
+# Without this, HF defaults to a host path under /hpc/compgen/users which is
+# read-only inside the Apptainer container, causing BDI-Kit's Magneto matcher
+# (sentence-transformers) to crash with OSError [Errno 30].
+APPTAINER_CMD="$APPTAINER_CMD --env HF_HOME=/workspace/results/.cache/huggingface"
+APPTAINER_CMD="$APPTAINER_CMD --env TRANSFORMERS_CACHE=/workspace/results/.cache/huggingface"
+
 # Pass run metadata into container for structured prompt logging
 APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_RUN_ID=${RUN_ID}"
 APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_EXPERIMENT_NAME=${EXPERIMENT_NAME}"
@@ -1109,10 +1122,10 @@ echo "🗂  Workspace directory tree (as seen by the LLM inside the container):"
 echo "   pwd = /workspace"
 echo ""
 apptainer exec \
-    --bind ${DATA_BASE_DIR}:/workspace/data:ro \
-    --bind ${RESULTS_DIR}:/workspace/results \
+    --bind "${DATA_BASE_DIR}":/workspace/data:ro \
+    --bind "${RESULTS_DIR}":/workspace/results \
     --pwd /workspace \
-    ${SIF_IMAGE} \
+    "${SIF_IMAGE}" \
     find /workspace -maxdepth 4 2>/dev/null | sort | sed 's|^|   |' \
     || echo "   (could not list workspace)"
 echo ""
@@ -1129,15 +1142,15 @@ if [ "$MONITOR_MODE" = true ]; then
     echo ""
 
     # Start Beaker server in background, logging to file
-    eval $APPTAINER_CMD 2>&1 | tee -a "${BEAKER_LOG_FILE}" &
+    eval "$APPTAINER_CMD" 2>&1 | tee -a "${BEAKER_LOG_FILE}" &
     BEAKER_PID=$!
 
     # Trap to clean up Beaker and Ollama when monitor exits
     cleanup() {
         echo ""
         echo "Shutting down Beaker server (PID: $BEAKER_PID)..."
-        kill $BEAKER_PID 2>/dev/null || true
-        wait $BEAKER_PID 2>/dev/null || true
+        kill "$BEAKER_PID" 2>/dev/null || true
+        wait "$BEAKER_PID" 2>/dev/null || true
         stop_ollama_server
         echo "Done."
     }
@@ -1178,7 +1191,7 @@ if [ "$MONITOR_MODE" = true ]; then
     apptainer exec \
         --bind "${SCRIPT_DIR}:/harmonia:ro" \
         --bind "${RESULTS_DIR}:/results" \
-        ${SIF_IMAGE} \
+        "${SIF_IMAGE}" \
         python3 /harmonia/run_manual_experiment.py \
         --config "/harmonia/${CONFIG_REL_PATH}" \
         --server "http://localhost:${PORT}" \
@@ -1194,5 +1207,5 @@ else
     trap cleanup_normal EXIT INT TERM
 
     # Run Beaker, logging to file while also showing in terminal
-    eval $APPTAINER_CMD 2>&1 | tee -a "${BEAKER_LOG_FILE}"
+    eval "$APPTAINER_CMD" 2>&1 | tee -a "${BEAKER_LOG_FILE}"
 fi

@@ -30,6 +30,7 @@ context_management:
     summarization_threshold_pct: 50
     context_window_override: 1000000
     max_react_steps: 30
+    max_consecutive_tool_errors: 3
 output:
   base_dir: ./results
   save_artifacts:

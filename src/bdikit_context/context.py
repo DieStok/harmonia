@@ -55,6 +55,10 @@ class BDIKitContext(BeakerContext):
         if _max_errors:
             self.agent.max_errors = int(_max_errors)
             print(f"  [HarmoniaConfig] max_errors = {self.agent.max_errors}")
+        _max_consecutive = os.environ.get("ARCHYTAS_MAX_CONSECUTIVE_TOOL_ERRORS")
+        if _max_consecutive:
+            self.agent.max_consecutive_tool_errors = int(_max_consecutive)
+            print(f"  [HarmoniaConfig] max_consecutive_tool_errors = {self.agent.max_consecutive_tool_errors}")
         # NOTE: context_window_override, tool_output_summarization_threshold,
         # tool_output_snippet_size, summarization_model are not exposed in the
         # installed Archytas ReActAgent API and remain informational in the YAML config.
