@@ -15,6 +15,7 @@ from evaluation.visualization.normalize import build_tables
 from evaluation.visualization.plots import (
     plot_boxplot,
     plot_confusion,
+    plot_cross_model_comparison,
     plot_global_bars,
     plot_heatmap,
     save_figure,
@@ -170,6 +171,37 @@ def cmd_heatmap(args):
     })
 
 
+def _generate_all_confusion_matrices(confusion_df, runs_df, plots_out, backend, figure_format, dpi, max_unique, normalize, top_n_labels):
+    """Generate confusion matrices for every run x column, organized by model subfolder."""
+    generated = 0
+    for _, run in runs_df.iterrows():
+        run_id = run["run_id"]
+        model_label = run.get("model_label", run_id)
+        context = run.get("context", "")
+        folder_name = model_label.replace("/", "_").replace(" ", "_")
+        model_dir = plots_out / "confusion_matrices" / folder_name
+
+        columns = confusion_df[confusion_df["run_id"] == run_id]["column_name"].unique()
+        for col in columns:
+            n_unique = confusion_df[
+                (confusion_df["run_id"] == run_id) & (confusion_df["column_name"] == col)
+            ]["expected_value"].nunique()
+            if n_unique > max_unique:
+                continue
+
+            try:
+                fig = plot_confusion(
+                    confusion_df, run_id=run_id, column_name=col,
+                    normalize=normalize, top_n_labels=top_n_labels, backend=backend,
+                )
+                fname = f"confusion_{run_id}_{context}_{col}"
+                save_figure(fig, model_dir / fname, backend=backend, figure_format=figure_format, dpi=dpi)
+                generated += 1
+            except Exception:
+                pass
+    return generated
+
+
 def cmd_confusion(args):
     tables, paths, skipped = _load_tables(args)
     out_dir = Path(args.out_dir) / "plots"
@@ -179,6 +211,28 @@ def cmd_confusion(args):
     confusion_df = tables["confusion"]
     if confusion_df.empty:
         raise SystemExit("No confusion data available.")
+
+    if args.all_runs:
+        runs_df = tables["runs"]
+        if runs_df.empty:
+            raise SystemExit("No run data available.")
+        max_unique = args.max_unique_values
+        generated = _generate_all_confusion_matrices(
+            confusion_df, runs_df, out_dir,
+            backend, args.figure_format, args.dpi,
+            max_unique, args.normalize, args.top_n_labels,
+        )
+        print(f"Generated {generated} confusion matrices")
+        write_manifest(Path(args.out_dir), {
+            "command": "confusion",
+            "mode": "all_runs",
+            "max_unique_values": max_unique,
+            "generated": generated,
+            "backend": backend,
+            "input_count": len(paths),
+            "skipped": skipped,
+        })
+        return
 
     run_id = args.run_id or sorted(confusion_df["run_id"].unique())[0]
     candidates = confusion_df[confusion_df["run_id"] == run_id]["column_name"].unique().tolist()
@@ -285,6 +339,54 @@ def cmd_boxplot(args):
     })
 
 
+def cmd_cross_compare(args):
+    tables, paths, skipped = _load_tables(args)
+    out_dir = Path(args.out_dir) / "plots"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    backend = "plotly" if args.interactive else args.backend
+
+    row_values = tables.get("row_values")
+    if row_values is None or (hasattr(row_values, "empty") and row_values.empty):
+        raise SystemExit(
+            "No row_values data available. Run calculate_metrics.py with latest code "
+            "(or with --backfill-row-values for existing runs) to generate row_values.csv."
+        )
+
+    columns = [args.column] if args.column else sorted(row_values["column_name"].unique())
+
+    generated = 0
+    for col in columns:
+        try:
+            fig = plot_cross_model_comparison(
+                row_values,
+                column_name=col,
+                backend=backend,
+                errors_only=args.errors_only,
+                max_rows=args.max_rows,
+                title=f"Cross-model comparison: {col}",
+            )
+            save_figure(
+                fig, out_dir / f"cross_compare_{col}",
+                backend=backend, figure_format=args.figure_format, dpi=args.dpi,
+            )
+            generated += 1
+        except ValueError as e:
+            print(f"Skipping {col}: {e}")
+
+    print(f"Generated {generated} cross-model comparison plots")
+
+    write_manifest(Path(args.out_dir), {
+        "command": "cross-compare",
+        "columns": columns,
+        "errors_only": bool(args.errors_only),
+        "generated": generated,
+        "backend": backend,
+        "input_count": len(paths),
+        "skipped": skipped,
+    })
+
+
 def cmd_compare(args):
     tables, paths, skipped = _load_tables(args)
     base_out = Path(args.out_dir)
@@ -383,6 +485,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_conf.add_argument("--column")
     p_conf.add_argument("--normalize", choices=["none", "rows"], default="none")
     p_conf.add_argument("--top-n-labels", type=int, default=20)
+    p_conf.add_argument("--all-runs", action="store_true", help="Generate confusion matrices for all runs and columns")
+    p_conf.add_argument("--max-unique-values", type=int, default=25, help="Skip columns with more unique values than this (default: 25)")
     p_conf.set_defaults(func=cmd_confusion)
 
     p_err = sub.add_parser("errors", help="Print top errors per column")
@@ -404,6 +508,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument("--columns-mode", choices=["union", "intersection"], default="union")
     p_cmp.add_argument("--error-columns-only", action="store_true", help="restrict per-column plots to columns with errors")
     p_cmp.set_defaults(func=cmd_compare)
+
+    p_cross = sub.add_parser("cross-compare", help="Cross-model comparison heatmap per column")
+    _common_parser(p_cross)
+    p_cross.add_argument("--column", help="Specific column to compare (default: all)")
+    p_cross.add_argument("--errors-only", action="store_true", help="Show only rows with at least one error")
+    p_cross.add_argument("--max-rows", type=int, help="Maximum rows to display")
+    p_cross.set_defaults(func=cmd_cross_compare)
 
     return parser
 

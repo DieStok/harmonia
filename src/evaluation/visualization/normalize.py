@@ -324,9 +324,55 @@ def build_tables(bundle: list[tuple[Path, dict[str, Any]]], labels_df: pd.DataFr
             how="left",
         )
 
-    return {
+    tables = {
         "runs": runs_df,
         "column_mapping": mapping_df,
         "column_values": columns_df,
         "confusion": confusion_df,
     }
+
+    # Add row_values if any row_values.csv files exist
+    if not runs_df.empty:
+        row_values_df = build_row_values_table(runs_df)
+        if not row_values_df.empty:
+            tables["row_values"] = row_values_df
+
+    return tables
+
+
+def build_row_values_table(runs_df: pd.DataFrame) -> pd.DataFrame:
+    """Discover and concatenate row_values.csv files from each run's results_dir.
+
+    Merges in run metadata (model_label, context, display_label).
+
+    Returns long-format DataFrame with columns:
+        run_id, model_label, context, display_label, column_name,
+        source_column_name, row_index, gold_value, predicted_value,
+        classification, error_type
+    """
+    frames = []
+    for _, run in runs_df.iterrows():
+        results_dir = run.get("results_dir")
+        if not results_dir:
+            continue
+        rv_path = Path(results_dir) / "row_values.csv"
+        if not rv_path.exists():
+            continue
+        df = pd.read_csv(rv_path, dtype=str)
+        df["run_id"] = run["run_id"]
+        frames.append(df)
+
+    if not frames:
+        return pd.DataFrame()
+
+    row_values = pd.concat(frames, ignore_index=True)
+
+    # Merge run metadata
+    merge_cols = ["run_id", "model_label", "context", "display_label"]
+    merge_cols = [c for c in merge_cols if c in runs_df.columns]
+    row_values = row_values.merge(
+        runs_df[merge_cols],
+        on="run_id",
+        how="left",
+    )
+    return row_values

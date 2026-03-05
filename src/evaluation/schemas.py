@@ -17,6 +17,15 @@ class Misclassification(BaseModel):
     error_type: str = Field(..., description="Type of error: whitespace_only, case_only, whitespace_and_case, or genuine")
 
 
+class RowComparison(BaseModel):
+    """Per-row comparison result for a single cell."""
+    row_index: int = Field(..., description="Row number (0-indexed)")
+    gold_value: str = Field(..., description="Normalized gold standard value (stripped, empty→'')")
+    predicted_value: str = Field(..., description="Normalized LLM-predicted value (stripped, empty→'')")
+    classification: str = Field(..., description="One of: correct, empty_empty, hallucination, omission, error")
+    error_type: Optional[str] = Field(None, description="Error subtype if classification=='error': whitespace_only, case_only, whitespace_and_case, genuine")
+
+
 class ErrorCategorization(BaseModel):
     """Breakdown of errors by type."""
     total_errors: int = Field(..., description="Total number of misclassified values")
@@ -70,6 +79,10 @@ class ColumnValueMetrics(BaseModel):
     misclassifications: list[Misclassification] = Field(
         ...,
         description="List of all misclassified cells with details"
+    )
+    row_comparisons: list[RowComparison] = Field(
+        default_factory=list,
+        description="Complete per-row comparison results (all cells, not just errors)"
     )
 
 

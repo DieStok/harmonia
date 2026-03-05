@@ -5,7 +5,20 @@
 
 ---
 
-## Update Summary (05-03-2026)
+## Update Summary (05-03-2026, second update)
+
+- **Per-row comparison data and cross-model visualization:**
+  - `schemas.py`: New `RowComparison` model (row_index, gold_value, predicted_value, classification, error_type). Added `row_comparisons: list[RowComparison]` field to `ColumnValueMetrics` (backward-compatible via `default_factory=list`).
+  - `metrics.py`: `calculate_column_value_metrics()` now collects complete per-row comparison data alongside existing counter increments and misclassification tracking. Classifications: correct, empty_empty, hallucination, omission, error.
+  - `calculate_metrics.py`: Emits `row_values.csv` per run after metrics calculation (1 row per cell = rows × columns). `row_comparisons` excluded from `metrics.json` serialization to keep JSON clean. New `backfill_row_values()` function and `--backfill-row-values` CLI flag to regenerate `row_values.csv` for existing runs from original data files.
+  - `normalize.py`: New `build_row_values_table()` discovers and concatenates `row_values.csv` files across runs with metadata merge. `build_tables()` now includes `row_values` key when available.
+  - `plots.py`: New `plot_cross_model_comparison()` function — colored heatmap showing each model's prediction per row for a given column, green for correct, red for incorrect. Supports seaborn and plotly backends, `errors_only` filtering, row subsetting.
+  - `plots.py`: `plot_confusion()` updated to use Blues colormap with number annotations (matching sklearn ConfusionMatrixDisplay style), dynamic figure sizing.
+  - `visualize_metrics_cli.py`: New `cross-compare` subcommand for cross-model comparison heatmaps. `confusion` subcommand gains `--all-runs` mode (generates confusion matrices for all runs × columns, organized in per-model subfolders) and `--max-unique-values` filter.
+  - New script: `src/evaluation/make_standard_evaluation_plots.py` — orchestration script that generates the full standard set of evaluation plots (bar charts, heatmap, boxplots, confusion matrices, cross-model comparisons) with optional row_values backfill.
+  - `.gitignore`: Added `analysis/` to prevent committing generated plots and tables.
+
+## Update Summary (05-03-2026, first update)
 
 - **HuggingFace cache fix (P0 bugfix):**
   - `exec_apptainer_harmonia.sh` now sets `HF_HOME` and `TRANSFORMERS_CACHE` to `/workspace/results/.cache/huggingface` inside the Apptainer container. Previously, HF model downloads (used by BDI-Kit's Magneto matcher / sentence-transformers) attempted to write to `/hpc/compgen/users` which is read-only inside the container, causing `OSError [Errno 30]` on every `match_schema()` call.
@@ -110,7 +123,7 @@ This update captures major reliability, observability, and analysis changes impl
   - Added reusable metrics-visualization package under `src/evaluation/visualization/`:
     - `io.py`, `enrich.py`, `normalize.py`, `aggregate.py`, `plots.py`, `report.py`
   - Added CLI: `src/evaluation/visualize_metrics_cli.py` with subcommands:
-    - `summarize`, `bars`, `heatmap`, `confusion`, `errors`, `compare`, `boxplot`
+    - `summarize`, `bars`, `heatmap`, `confusion`, `errors`, `compare`, `boxplot`, `cross-compare`
   - Supports both static and interactive plotting backends:
     - `--backend seaborn|plotly`
     - `--interactive` shortcut
@@ -346,8 +359,17 @@ harmonia/
 │   │
 │   ├── evaluation/            # Metrics evaluation pipeline
 │   │   ├── __init__.py
-│   │   ├── schemas.py         # Pydantic schemas for metrics.json (v1.1)
-│   │   └── metrics.py         # Core metrics calculation functions
+│   │   ├── schemas.py         # Pydantic schemas for metrics.json (v1.1) + RowComparison
+│   │   ├── metrics.py         # Core metrics calculation functions (+ per-row comparison collection)
+│   │   ├── make_standard_evaluation_plots.py  # Orchestration: generate all standard plots
+│   │   └── visualization/     # Reusable metrics visualization package
+│   │       ├── __init__.py
+│   │       ├── io.py          # Metrics file discovery and loading
+│   │       ├── enrich.py      # Run metadata enrichment from .experiment_id / config
+│   │       ├── normalize.py   # Table building (runs, columns, confusion, row_values)
+│   │       ├── aggregate.py   # Heatmap matrix construction
+│   │       ├── plots.py       # Plot functions (bars, heatmap, confusion, cross-compare, boxplot)
+│   │       └── report.py      # Manifest/report writing
 │   │
 │   ├── prompt_logging.py      # Prompt composition logging (stdout + JSON)
 │   │
@@ -1585,7 +1607,8 @@ Pydantic models that define the structure of `metrics.json` output:
 - **`ExperimentMetadata`** - experiment name, timestamp, LLM provider/model, timing
 - **`ColumnMappingMetrics`** - schema mapping quality with dual precision (`precision_excl_null`, `precision_incl_null`), recall, accuracy
 - **`ColumnMappingDetail`** - per-column mapping details (correct, wrong, missing, explicitly null)
-- **`ColumnValueMetrics`** - per-column value harmonization quality (accuracy, macro-averaged precision/recall/F1 both incl/excl empty)
+- **`ColumnValueMetrics`** - per-column value harmonization quality (accuracy, macro-averaged precision/recall/F1 both incl/excl empty), includes `row_comparisons: list[RowComparison]` for complete per-row data
+- **`RowComparison`** - per-row comparison result: row_index, gold_value, predicted_value, classification (correct/empty_empty/hallucination/omission/error), error_type
 - **`ErrorCategorization`** - breakdown of errors (whitespace_only, case_only, whitespace_and_case, genuine)
 - **`Misclassification`** - individual error details with row index
 - **`OverallSummary`** - aggregate statistics across all columns
@@ -1615,7 +1638,33 @@ python calculate_metrics.py \
   --verbose
 ```
 
+Outputs:
+
+- `metrics.json` — structured evaluation results (excludes `row_comparisons` to keep JSON compact)
+- `row_values.csv` — complete per-row comparison data (column_name, source_column_name, row_index, gold_value, predicted_value, classification, error_type)
+
+Backfill mode for existing runs missing `row_values.csv`:
+
+```bash
+python calculate_metrics.py --results-dir results/<experiment_dir> --backfill-row-values
+```
+
+The backfill reads paths from `.experiment_id` or falls back to inferring gold standard paths from `metrics.json`.
+
 Metrics are also automatically calculated at the end of `run_experiment.py` and `run_manual_experiment.py` if evaluation config is present.
+
+### Standard Plots Script (`src/evaluation/make_standard_evaluation_plots.py`)
+
+Orchestration script that generates the full set of evaluation plots after experiments:
+
+```bash
+python src/evaluation/make_standard_evaluation_plots.py \
+  --metrics-glob "results/*/metrics.json" \
+  --out-dir analysis/plots_YYYYMMDD_HHMM \
+  --backfill-row-values
+```
+
+Generates: global bar charts, per-column accuracy heatmap, boxplots by model family/cost tier, confusion matrices per run × column (organized in model subfolders), and cross-model comparison heatmaps per column (when `row_values.csv` available).
 
 ---
 
@@ -1756,6 +1805,7 @@ After a successful experiment run:
 - `results/<name>_<timestamp>_<run_id>/.experiment_id` - JSON metadata linking run_id, logs, config
 - `results/<name>_<timestamp>_<run_id>/harmonized_table.csv` - Harmonized output
 - `results/<name>_<timestamp>_<run_id>/metrics.json` - Evaluation metrics (if gold standard configured)
+- `results/<name>_<timestamp>_<run_id>/row_values.csv` - Per-row comparison data for all columns (if gold standard configured)
 - `results/<name>_<timestamp>_<run_id>/metrics_calculation.log` - Metrics calculation log (if run via calculate_metrics.py)
 - `results/<name>_<timestamp>_<run_id>/full_prompt_composition.json` - Structured prompt layers with content hashes (written on first LLM call)
 - `logs/<DD-MM-YYYY_HHMM>_<name>_<jobid>_<run_id>.out/.err` - SLURM job logs (automated, with run_id)

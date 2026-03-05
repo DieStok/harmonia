@@ -1,8 +1,0 @@
-{
-  "command": "heatmap",
-  "metric": "accuracy_excl_empty",
-  "error_columns_only": true,
-  "backend": "seaborn",
-  "input_count": 2,
-  "skipped": []
-}

@@ -25,3 +25,6 @@ results/
 
 # Archived Claude Code session transcripts and summaries
 documentation/full_conversations/
+
+# Generated analysis plots and tables (large, reproducible from results/)
+analysis/

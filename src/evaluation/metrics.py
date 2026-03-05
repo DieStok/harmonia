@@ -20,6 +20,7 @@ from .schemas import (
     MetricsResult,
     Misclassification,
     OverallSummary,
+    RowComparison,
 )
 
 logger = logging.getLogger(__name__)
@@ -210,6 +211,7 @@ def calculate_column_value_metrics(
 
     # Detailed tracking
     misclassifications = []
+    row_comparisons: list[RowComparison] = []
     confusion_matrix: dict[str, dict[str, int]] = {}
 
     # For multi-class metrics
@@ -229,14 +231,22 @@ def calculate_column_value_metrics(
         all_classes.add(gold_normalized)
         all_classes.add(llm_normalized)
 
+        # Per-row classification tracking
+        row_classification = None
+        row_error_type = None
+
         if gold_empty and llm_empty:
             empty_empty += 1
+            row_classification = "empty_empty"
         elif gold_empty and not llm_empty:
             hallucination += 1
+            row_classification = "hallucination"
         elif not gold_empty and llm_empty:
             omission += 1
+            row_classification = "omission"
         elif gold_normalized == llm_normalized:
             correct_filled += 1
+            row_classification = "correct"
         else:
             # Try numeric comparison if tolerance is set
             if numeric_tolerance is not None:
@@ -245,18 +255,28 @@ def calculate_column_value_metrics(
                     llm_num = float(llm_normalized)
                     if abs(gold_num - llm_num) <= numeric_tolerance:
                         correct_filled += 1
+                        row_classification = "correct"
                         # Update confusion matrix and skip error categorization
                         if gold_normalized not in confusion_matrix:
                             confusion_matrix[gold_normalized] = {}
                         if llm_normalized not in confusion_matrix[gold_normalized]:
                             confusion_matrix[gold_normalized][llm_normalized] = 0
                         confusion_matrix[gold_normalized][llm_normalized] += 1
+                        row_comparisons.append(RowComparison(
+                            row_index=i,
+                            gold_value=gold_normalized,
+                            predicted_value=llm_normalized,
+                            classification=row_classification,
+                            error_type=None,
+                        ))
                         continue
                 except (ValueError, TypeError):
                     pass  # Not numeric, fall through to error categorization
 
             # Misclassification - categorize the error
             error_type = _categorize_error(gold_val, llm_val)
+            row_classification = "error"
+            row_error_type = error_type
 
             if error_type == "whitespace_only":
                 whitespace_only_errors += 1
@@ -280,6 +300,14 @@ def calculate_column_value_metrics(
         if llm_normalized not in confusion_matrix[gold_normalized]:
             confusion_matrix[gold_normalized][llm_normalized] = 0
         confusion_matrix[gold_normalized][llm_normalized] += 1
+
+        row_comparisons.append(RowComparison(
+            row_index=i,
+            gold_value=gold_normalized,
+            predicted_value=llm_normalized,
+            classification=row_classification,
+            error_type=row_error_type,
+        ))
 
     # Calculate per-class TP, FP, FN for macro-averaging
     for class_label in all_classes:
@@ -389,6 +417,7 @@ def calculate_column_value_metrics(
         error_categorization=error_categorization,
         confusion_matrix=confusion_matrix,
         misclassifications=misclassifications,
+        row_comparisons=row_comparisons,
     )
 
 

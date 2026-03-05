@@ -1,3 +1,0 @@
-run_id,experiment_name,model_label,context,model_family,column_mapping_accuracy,avg_value_accuracy_excl_empty,avg_value_f1_excl_empty,timing_seconds
-9a482697,dou_harmonization_bdikit-tools_gemini-3-flash-preview,google/gemini-3-flash-preview,bdikit_context,frontier,1.0,0.8862061141472907,0.8991530208921513,
-495062d5,dou_harmonization_codeact_gemini-3-flash-preview,google/gemini-3-flash-preview,codeact_context,frontier,0.7272727272727273,0.3156089193825043,0.1930484290332364,
