@@ -11,6 +11,8 @@
     "documentation/plans/09_03_2026_1201_create_plotly_plots_phoenix_traces_dashboard.md",
     "documentation/plans/09_03_2026_1201_implement_improved_tracing.md",
     "exec_apptainer_harmonia.sh",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_ollama.yaml",
+    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_openrouter.yaml",
     "sbatch_template.sh",
     "sbatch_template_gpu.sh",
     "scripts/ensure_phoenix_server.py",
@@ -38,10 +40,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 6894,
-    "cache_creation_tokens": 405498,
-    "cache_read_tokens": 21662299,
-    "output_tokens": 75752,
-    "api_call_count": 226
+    "input_tokens": 6730,
+    "cache_creation_tokens": 315633,
+    "cache_read_tokens": 5000537,
+    "output_tokens": 43383,
+    "api_call_count": 68
   }
 }
