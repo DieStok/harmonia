@@ -1,0 +1,9 @@
+Please implement this in full: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans/09_03_2026_fix_data_mounting.md
+
+---
+
+Do we need to rebuild the container or not?
+
+---
+
+All right. Then commit and test with Qwen please.
