@@ -25,6 +25,7 @@
   - `archytas/agent.py`: new `_turn_usage_records: list[dict]` accumulator in `__init__()`. After `usage_metadata` extraction in `execute()`, appends `{input_tokens, output_tokens, total_tokens}` dict. New `get_and_reset_usage_records()` method returns accumulated records and resets.
   - `beaker_kernel/kernel.py`: in `llm_request()`, after `result = await task`, calls `agent.get_and_reset_usage_records()`. Attaches `usage_records` list to `llm_response`, `code_cell`, and JSON decode fallback `stream_content` dicts.
   - Data flow: LLM API → AIMessage.usage_metadata → Archytas accumulator → Beaker WebSocket message → client.py raw_messages → tracing.py `extract_usage_records()` → OTel spans + TurnRecord.
+  - **Important:** Beaker sends `beaker__execute_input`/`beaker__execute_reply` msg_types (not standard Jupyter `execute_input`/`execute_result`). The extraction functions in `tracing.py` handle both variants. Usage records are attached to `llm_response` and `code_cell` messages; `extract_usage_records()` collects from all messages in a turn.
 
 - **New Python dependencies (project .venv, outside container):**
   - `arize-phoenix`, `arize-phoenix-otel`, `opentelemetry-api`, `opentelemetry-sdk`, `opentelemetry-exporter-otlp-proto-http`, `openinference-semantic-conventions`.
