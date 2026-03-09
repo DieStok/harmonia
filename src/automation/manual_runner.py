@@ -17,15 +17,30 @@ Usage:
 """
 
 import asyncio
+import os
+import shutil
 import signal
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import aiohttp
+import yaml
 
 from .config import ExperimentConfig, load_config
 from .logger import ConversationLogger, TraceLogger
+from .tracing import (
+    calculate_turn_cost,
+    experiment_span,
+    extract_code_executions,
+    extract_usage_records,
+    init_tracing,
+    llm_call_span,
+    set_llm_usage,
+    tool_span,
+    turn_span,
+)
 
 
 class ManualExperimentRunner:
@@ -59,13 +74,39 @@ class ManualExperimentRunner:
 
         # Set up output directory
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        self.run_id = os.environ.get("RUN_ID", "")
         base_dir = Path(output_dir or config.output.base_dir)
-        self.output_dir = base_dir / f"{config.name}_{timestamp}"
+        if self.run_id:
+            self.output_dir = base_dir / f"{config.name}_{timestamp}_{self.run_id}"
+        else:
+            self.output_dir = base_dir / f"{config.name}_{timestamp}"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize loggers
         self.trace_logger = TraceLogger(self.output_dir)
         self.conversation_logger = ConversationLogger(self.output_dir)
+
+        # Snapshot config to results directory
+        if config.config_source_path:
+            try:
+                shutil.copy2(config.config_source_path, self.output_dir / "config_snapshot.yaml")
+            except Exception:
+                try:
+                    config_dict = asdict(config)
+                    with open(self.output_dir / "config_snapshot.yaml", "w") as f:
+                        yaml.dump(config_dict, f, default_flow_style=False)
+                except Exception:
+                    pass
+
+        # Initialize tracing
+        self.tracer = None
+        self.tracing_active = False
+        if config.tracing.enabled:
+            self.tracer, self.tracing_active = init_tracing(
+                phoenix_endpoint=config.tracing.phoenix_endpoint,
+                run_id=self.run_id,
+                experiment_name=config.name,
+            )
 
         # State
         self.session: Optional[aiohttp.ClientSession] = None
@@ -76,6 +117,10 @@ class ManualExperimentRunner:
 
         # Track pending requests (msg_id -> user_message)
         self._pending_requests: dict[str, dict] = {}
+
+        # Root span reference (for manual cleanup)
+        self._root_span = None
+        self._root_span_ctx = None
 
     async def start(self) -> None:
         """
@@ -93,6 +138,13 @@ class ManualExperimentRunner:
             llm_provider=self.config.llm.provider,
             llm_model=self.config.llm.model,
         )
+        # Attach config snapshot to trace
+        if hasattr(self.trace_logger, 'trace') and self.trace_logger.trace:
+            try:
+                self.trace_logger.trace.config_snapshot = asdict(self.config)
+            except Exception:
+                pass
+
         self.conversation_logger.start_experiment(
             experiment_name=self.config.name,
             description=self.config.description,
@@ -114,21 +166,36 @@ class ManualExperimentRunner:
         print(f"Experiment: {self.config.name}")
         print(f"LLM: {self.config.llm.provider}/{self.config.llm.model}")
         print(f"Output: {self.output_dir}")
+        if self.tracing_active:
+            print(f"Tracing: enabled ({self.config.tracing.phoenix_endpoint})")
         print(f"{'='*60}")
         print("\nMonitoring Beaker session... Press Ctrl+C to stop and save logs.\n")
+
+        # Open root tracing span (manual lifecycle since monitoring is open-ended)
+        if self.tracing_active and self.tracer:
+            self._root_span_ctx = experiment_span(
+                self.tracer, self.config, self.run_id,
+            )
+            self._root_span = self._root_span_ctx.__enter__()
 
         try:
             await self._monitor_loop()
         except asyncio.CancelledError:
             pass
         finally:
+            # Close root span
+            if self._root_span_ctx is not None:
+                try:
+                    self._root_span_ctx.__exit__(None, None, None)
+                except Exception:
+                    pass
             await self._finalize()
 
     async def _connect_to_kernel(self) -> None:
         """Connect to existing Beaker kernel via WebSocket."""
         # Wait for a session to be created (user needs to open browser first)
         print("Waiting for Beaker session to be created...")
-        print("  → Open the Beaker URL in your browser to create a session")
+        print("  \u2192 Open the Beaker URL in your browser to create a session")
 
         sessions = []
         wait_time = 0
@@ -223,6 +290,30 @@ class ManualExperimentRunner:
                 agent_response = content.get("text", "")
                 duration = asyncio.get_event_loop().time() - pending["start_time"]
 
+                # Extract token usage and code executions
+                usage_records = extract_usage_records(pending["raw_messages"])
+                code_execs = extract_code_executions(pending["raw_messages"])
+                pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
+                pricing_completion = self.config.model_metadata.pricing_completion_per_million_tokens
+                input_tokens, output_tokens, cost_usd = calculate_turn_cost(
+                    usage_records, pricing_prompt, pricing_completion
+                )
+
+                # Create tracing spans
+                if self.tracing_active and self.tracer:
+                    with turn_span(self.tracer, self.current_turn, pending["user_message"]) as tspan:
+                        for i, usage in enumerate(usage_records):
+                            with llm_call_span(self.tracer, i, self.config.llm.model) as lspan:
+                                set_llm_usage(lspan, usage, pricing_prompt, pricing_completion)
+                        for exec_data in code_execs:
+                            with tool_span(self.tracer, "beaker_execute", exec_data.get("code", "")) as ts:
+                                if ts is not None:
+                                    ts.set_attribute("output.value", exec_data.get("stdout", ""))
+                                    ts.set_attribute("tool.status", exec_data.get("status", "unknown"))
+                        if tspan is not None:
+                            tspan.set_attribute("output.value", agent_response)
+                            tspan.set_attribute("harmonia.duration_seconds", duration)
+
                 self.trace_logger.log_turn(
                     turn=self.current_turn,
                     user_message=pending["user_message"],
@@ -231,6 +322,11 @@ class ManualExperimentRunner:
                     tool_calls=pending["tool_calls"],
                     duration_seconds=duration,
                     raw_messages=pending["raw_messages"],
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_usd,
+                    code_executions=code_execs,
+                    usage_records=usage_records,
                 )
                 self.conversation_logger.log_turn(
                     turn=self.current_turn,
@@ -253,6 +349,26 @@ class ManualExperimentRunner:
                 code = content.get("code", "")
                 duration = asyncio.get_event_loop().time() - pending["start_time"]
 
+                # Extract token usage and code executions
+                usage_records = extract_usage_records(pending["raw_messages"])
+                code_execs = extract_code_executions(pending["raw_messages"])
+                pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
+                pricing_completion = self.config.model_metadata.pricing_completion_per_million_tokens
+                input_tokens, output_tokens, cost_usd = calculate_turn_cost(
+                    usage_records, pricing_prompt, pricing_completion
+                )
+
+                # Create tracing spans
+                if self.tracing_active and self.tracer:
+                    with turn_span(self.tracer, self.current_turn, pending["user_message"]) as tspan:
+                        for i, usage in enumerate(usage_records):
+                            with llm_call_span(self.tracer, i, self.config.llm.model) as lspan:
+                                set_llm_usage(lspan, usage, pricing_prompt, pricing_completion)
+                        if tspan is not None:
+                            tspan.set_attribute("output.value", code)
+                            tspan.set_attribute("harmonia.response_type", "code_cell")
+                            tspan.set_attribute("harmonia.duration_seconds", duration)
+
                 self.trace_logger.log_turn(
                     turn=self.current_turn,
                     user_message=pending["user_message"],
@@ -261,6 +377,11 @@ class ManualExperimentRunner:
                     tool_calls=pending["tool_calls"],
                     duration_seconds=duration,
                     raw_messages=pending["raw_messages"],
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_usd,
+                    code_executions=code_execs,
+                    usage_records=usage_records,
                 )
                 self.conversation_logger.log_turn(
                     turn=self.current_turn,

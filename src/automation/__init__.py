@@ -10,18 +10,29 @@ This module provides tools to:
 """
 
 from .client import BeakerClient
-from .config import ExperimentConfig, load_config
+from .config import ExperimentConfig, TracingConfig, load_config
 from .logger import ConversationLogger, TraceLogger
 from .manual_runner import ManualExperimentRunner, run_manual_experiment
 from .runner import ExperimentRunner
+from .tracing import (
+    calculate_turn_cost,
+    extract_code_executions,
+    extract_usage_records,
+    init_tracing,
+)
 
 __all__ = [
     "load_config",
     "ExperimentConfig",
+    "TracingConfig",
     "BeakerClient",
     "ExperimentRunner",
     "ManualExperimentRunner",
     "run_manual_experiment",
     "TraceLogger",
     "ConversationLogger",
+    "init_tracing",
+    "extract_usage_records",
+    "extract_code_executions",
+    "calculate_turn_cost",
 ]

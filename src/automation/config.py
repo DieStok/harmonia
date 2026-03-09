@@ -116,6 +116,13 @@ class ContextManagementConfig:
 
 
 @dataclass
+class TracingConfig:
+    """Configuration for Phoenix/OTel tracing."""
+    enabled: bool = False
+    phoenix_endpoint: str = "http://localhost:6006"
+
+
+@dataclass
 class ModelMetadataConfig:
     """Model metadata from registry, attached at config generation time."""
     pricing_prompt_per_million_tokens: float = 0.0
@@ -150,6 +157,10 @@ class ExperimentConfig:
     context: Optional[str] = None
     # Model metadata from registry (pricing, capabilities, etc.)
     model_metadata: ModelMetadataConfig = field(default_factory=ModelMetadataConfig)
+    # Phoenix/OTel tracing configuration
+    tracing: TracingConfig = field(default_factory=TracingConfig)
+    # Path to the source YAML config file (set by load_config)
+    config_source_path: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ExperimentConfig":
@@ -255,6 +266,12 @@ class ExperimentConfig:
             source=mm_data.get("source"),
         )
 
+        tracing_data = data.get("tracing", {})
+        tracing = TracingConfig(
+            enabled=tracing_data.get("enabled", False),
+            phoenix_endpoint=tracing_data.get("phoenix_endpoint", "http://localhost:6006"),
+        )
+
         return cls(
             name=exp.get("name", "unnamed_experiment"),
             description=exp.get("description", ""),
@@ -270,6 +287,7 @@ class ExperimentConfig:
             dataset_metadata=exp.get("dataset_metadata"),
             context=exp.get("context"),
             model_metadata=model_metadata,
+            tracing=tracing,
         )
 
 
@@ -282,7 +300,9 @@ def load_config(config_path: str | Path) -> ExperimentConfig:
     with open(path) as f:
         data = yaml.safe_load(f)
 
-    return ExperimentConfig.from_dict(data)
+    config = ExperimentConfig.from_dict(data)
+    config.config_source_path = str(path.resolve())
+    return config
 
 
 def load_conversation(conversation_path: str | Path) -> list[MessageConfig]:

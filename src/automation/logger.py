@@ -20,6 +20,11 @@ class TurnRecord:
     duration_seconds: float = 0.0
     raw_messages: list[dict] = field(default_factory=list)
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    input_tokens: int = 0
+    output_tokens: int = 0
+    cost_usd: float = 0.0
+    code_executions: list[dict] = field(default_factory=list)
+    usage_records: list[dict] = field(default_factory=list)
 
 
 @dataclass
@@ -35,6 +40,7 @@ class ExperimentTrace:
     total_duration_seconds: float = 0.0
     status: str = "running"  # running, completed, failed, timeout
     error_message: Optional[str] = None
+    config_snapshot: Optional[dict] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
@@ -54,6 +60,7 @@ class ExperimentTrace:
             },
             "status": self.status,
             "error_message": self.error_message,
+            "config_snapshot": self.config_snapshot,
             "turns": [asdict(t) for t in self.turns],
         }
 
@@ -97,6 +104,11 @@ class TraceLogger:
         tool_calls: list[dict] = None,
         duration_seconds: float = 0.0,
         raw_messages: list[dict] = None,
+        input_tokens: int = 0,
+        output_tokens: int = 0,
+        cost_usd: float = 0.0,
+        code_executions: list[dict] = None,
+        usage_records: list[dict] = None,
     ) -> None:
         """Log a conversation turn."""
         if self.trace is None:
@@ -110,6 +122,11 @@ class TraceLogger:
             tool_calls=tool_calls or [],
             duration_seconds=duration_seconds,
             raw_messages=raw_messages or [],
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+            code_executions=code_executions or [],
+            usage_records=usage_records or [],
         )
         self.trace.turns.append(record)
 

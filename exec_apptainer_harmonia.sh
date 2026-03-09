@@ -191,6 +191,33 @@ BEAKER_RUNTIME_DIR_HOST="${RESULTS_DIR}/.beaker_runtime"
 IPYTHON_DIR_HOST="${RESULTS_DIR}/.ipython"
 mkdir -p "$BEAKER_RUNTIME_DIR_HOST" "$IPYTHON_DIR_HOST"
 
+# --- Phoenix tracing server ---
+if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+    TRACING_ENABLED=$(python3 -c "
+import yaml, sys
+with open('$CONFIG_FILE') as f:
+    cfg = yaml.safe_load(f)
+print(cfg.get('tracing', {}).get('enabled', False))
+" 2>/dev/null)
+
+    if [ "$TRACING_ENABLED" = "True" ]; then
+        PHOENIX_INFO=""
+        if PHOENIX_INFO=$("${SCRIPT_DIR}/.venv/bin/python" "${SCRIPT_DIR}/scripts/ensure_phoenix_server.py" \
+            --phoenix-dir "${SCRIPT_DIR}/.phoenix" \
+            --mode "${PHOENIX_MODE:-submit}" \
+            --port "${PHOENIX_PORT:-6006}" \
+            2>&1); then
+            PHOENIX_ENDPOINT=""
+            PHOENIX_ENDPOINT=$(echo "$PHOENIX_INFO" | grep "PHOENIX_ENDPOINT=" | cut -d= -f2)
+            export PHOENIX_ENDPOINT
+            echo "Phoenix tracing: $PHOENIX_ENDPOINT"
+        else
+            echo "Warning: Could not start Phoenix server. Tracing disabled for this run."
+            echo "$PHOENIX_INFO"
+        fi
+    fi
+fi
+
 # If config file specified, generate .env from it
 if [ -n "$CONFIG_FILE" ]; then
     if [ ! -f "$CONFIG_FILE" ]; then

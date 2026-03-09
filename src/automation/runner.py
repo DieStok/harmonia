@@ -5,13 +5,28 @@ Experiment runner for automated Beaker experiments.
 import asyncio
 import os
 import re
+import shutil
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
+import yaml
+
 from .client import AgentResponse, BeakerClient
 from .config import ExperimentConfig, MessageConfig
 from .logger import ConversationLogger, TraceLogger
+from .tracing import (
+    calculate_turn_cost,
+    experiment_span,
+    extract_code_executions,
+    extract_usage_records,
+    init_tracing,
+    llm_call_span,
+    set_llm_usage,
+    tool_span,
+    turn_span,
+)
 
 
 class ExperimentRunner:
@@ -39,10 +54,10 @@ class ExperimentRunner:
 
         # Set up output directory (includes RUN_ID if available from environment)
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        run_id = os.environ.get("RUN_ID", "")
+        self.run_id = os.environ.get("RUN_ID", "")
         base_dir = Path(output_dir or config.output.base_dir)
-        if run_id:
-            self.output_dir = base_dir / f"{config.name}_{timestamp}_{run_id}"
+        if self.run_id:
+            self.output_dir = base_dir / f"{config.name}_{timestamp}_{self.run_id}"
         else:
             self.output_dir = base_dir / f"{config.name}_{timestamp}"
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -50,6 +65,35 @@ class ExperimentRunner:
         # Initialize loggers
         self.trace_logger = TraceLogger(self.output_dir)
         self.conversation_logger = ConversationLogger(self.output_dir)
+
+        # Snapshot config to trace logger and results directory
+        try:
+            config_dict = asdict(config)
+            self.trace_logger.trace_config_snapshot = config_dict
+        except Exception:
+            pass
+
+        if config.config_source_path:
+            try:
+                shutil.copy2(config.config_source_path, self.output_dir / "config_snapshot.yaml")
+            except Exception:
+                # Fallback: serialize config to YAML
+                try:
+                    config_dict = asdict(config)
+                    with open(self.output_dir / "config_snapshot.yaml", "w") as f:
+                        yaml.dump(config_dict, f, default_flow_style=False)
+                except Exception:
+                    pass
+
+        # Initialize tracing
+        self.tracer = None
+        self.tracing_active = False
+        if config.tracing.enabled:
+            self.tracer, self.tracing_active = init_tracing(
+                phoenix_endpoint=config.tracing.phoenix_endpoint,
+                run_id=self.run_id,
+                experiment_name=config.name,
+            )
 
         # State
         self.current_turn = 0
@@ -75,6 +119,13 @@ class ExperimentRunner:
             llm_provider=self.config.llm.provider,
             llm_model=self.config.llm.model,
         )
+        # Attach config snapshot to trace
+        if hasattr(self.trace_logger, 'trace') and self.trace_logger.trace:
+            try:
+                self.trace_logger.trace.config_snapshot = asdict(self.config)
+            except Exception:
+                pass
+
         self.conversation_logger.start_experiment(
             experiment_name=self.config.name,
             description=self.config.description,
@@ -96,28 +147,19 @@ class ExperimentRunner:
         status = "completed"
         error_message = None
 
-        try:
-            for msg_config in self.config.messages:
-                if not self.is_running:
-                    status = "cancelled"
-                    break
-
-                await self._run_turn(msg_config)
-
-                if interactive:
-                    # Pause for interactive mode
-                    print(f"\n[Turn {self.current_turn} complete. Press Enter to continue...]")
-                    await asyncio.get_event_loop().run_in_executor(None, input)
-
-        except asyncio.CancelledError:
-            status = "cancelled"
-        except asyncio.TimeoutError as e:
-            status = "timeout"
-            error_message = str(e)
-        except Exception as e:
-            status = "failed"
-            error_message = str(e)
-            self.conversation_logger.log_error(error_message)
+        # Wrap experiment in root tracing span
+        if self.tracing_active and self.tracer:
+            with experiment_span(
+                self.tracer,
+                self.config,
+                self.run_id,
+            ) as root_span:
+                status, error_message = await self._run_experiment_loop(interactive)
+                if error_message:
+                    from opentelemetry.trace import StatusCode
+                    root_span.set_status(StatusCode.ERROR, error_message)
+        else:
+            status, error_message = await self._run_experiment_loop(interactive)
 
         # Finalize logging
         self.trace_logger.end_experiment(status=status, error_message=error_message)
@@ -147,18 +189,90 @@ class ExperimentRunner:
         self.is_running = False
         return self.output_dir
 
+    async def _run_experiment_loop(self, interactive: bool) -> tuple[str, Optional[str]]:
+        """Run the main experiment message loop. Returns (status, error_message)."""
+        status = "completed"
+        error_message = None
+
+        try:
+            for msg_config in self.config.messages:
+                if not self.is_running:
+                    status = "cancelled"
+                    break
+
+                await self._run_turn(msg_config)
+
+                if interactive:
+                    print(f"\n[Turn {self.current_turn} complete. Press Enter to continue...]")
+                    await asyncio.get_event_loop().run_in_executor(None, input)
+
+        except asyncio.CancelledError:
+            status = "cancelled"
+        except asyncio.TimeoutError as e:
+            status = "timeout"
+            error_message = str(e)
+        except Exception as e:
+            status = "failed"
+            error_message = str(e)
+            self.conversation_logger.log_error(error_message)
+
+        return status, error_message
+
     async def _run_turn(self, msg_config: MessageConfig) -> AgentResponse:
         """Run a single conversation turn."""
         self.current_turn += 1
         main_turn = self.current_turn
 
+        # Wrap turn in tracing span
+        if self.tracing_active and self.tracer:
+            with turn_span(self.tracer, main_turn, msg_config.content) as t_span:
+                response = await self._run_turn_inner(msg_config, main_turn, t_span)
+        else:
+            response = await self._run_turn_inner(msg_config, main_turn, None)
+
+        return response
+
+    async def _run_turn_inner(
+        self, msg_config: MessageConfig, main_turn: int, t_span
+    ) -> AgentResponse:
+        """Inner turn logic with tracing support."""
         # Send message and get response
         response = await self._send_with_retries(
             msg_config.content,
             timeout=float(msg_config.wait_seconds),
         )
 
-        # Log the primary turn response first (before any auto-decision follow-up)
+        # Extract token usage and code executions from raw messages
+        usage_records = extract_usage_records(response.raw_messages)
+        code_execs = extract_code_executions(response.raw_messages)
+
+        # Calculate aggregated token counts and cost
+        pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
+        pricing_completion = self.config.model_metadata.pricing_completion_per_million_tokens
+        input_tokens, output_tokens, cost_usd = calculate_turn_cost(
+            usage_records, pricing_prompt, pricing_completion
+        )
+
+        # Create child LLM spans for each usage record
+        if self.tracing_active and self.tracer:
+            for i, usage in enumerate(usage_records):
+                with llm_call_span(self.tracer, i, self.config.llm.model) as lspan:
+                    set_llm_usage(lspan, usage, pricing_prompt, pricing_completion)
+
+            # Create child TOOL spans for each code execution
+            for exec_data in code_execs:
+                with tool_span(self.tracer, "beaker_execute", exec_data.get("code", "")) as tspan:
+                    if tspan is not None:
+                        tspan.set_attribute("output.value", exec_data.get("stdout", ""))
+                        tspan.set_attribute("tool.status", exec_data.get("status", "unknown"))
+
+            # Set turn span output
+            if t_span is not None:
+                t_span.set_attribute("output.value", response.content)
+                t_span.set_attribute("harmonia.response_type", response.response_type)
+                t_span.set_attribute("harmonia.duration_seconds", response.duration_seconds)
+
+        # Log the primary turn response
         self.trace_logger.log_turn(
             turn=main_turn,
             user_message=msg_config.content,
@@ -167,6 +281,11 @@ class ExperimentRunner:
             tool_calls=response.tool_calls,
             duration_seconds=response.duration_seconds,
             raw_messages=response.raw_messages,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+            code_executions=code_execs,
+            usage_records=usage_records,
         )
         self.conversation_logger.log_turn(
             turn=main_turn,
@@ -183,6 +302,13 @@ class ExperimentRunner:
             self.current_turn += 1
             decision_turn = self.current_turn
 
+            # Extract usage for decision turn too
+            decision_usage = extract_usage_records(decision_response.raw_messages)
+            decision_code_execs = extract_code_executions(decision_response.raw_messages)
+            d_input, d_output, d_cost = calculate_turn_cost(
+                decision_usage, pricing_prompt, pricing_completion
+            )
+
             self.trace_logger.log_turn(
                 turn=decision_turn,
                 user_message=f"[AUTO-DECISION: {decision_mode}] {decision}",
@@ -191,6 +317,11 @@ class ExperimentRunner:
                 tool_calls=decision_response.tool_calls,
                 duration_seconds=decision_response.duration_seconds,
                 raw_messages=decision_response.raw_messages,
+                input_tokens=d_input,
+                output_tokens=d_output,
+                cost_usd=d_cost,
+                code_executions=decision_code_execs,
+                usage_records=decision_usage,
             )
             self.conversation_logger.log_turn(
                 turn=decision_turn,
@@ -303,9 +434,20 @@ class ExperimentRunner:
             attempt += 1
             delay = max(self.config.retry_policy.retry_delay_seconds, 0.0) * attempt
             print(
-                f"  ↻ Retrying turn after {error_code} "
+                f"  \u21bb Retrying turn after {error_code} "
                 f"({attempt}/{budget}) in {delay:.1f}s"
             )
+
+            # Create retry span for tracing
+            if self.tracing_active and self.tracer:
+                with llm_call_span(self.tracer, attempt, self.config.llm.model) as rspan:
+                    if rspan is not None:
+                        from opentelemetry.trace import StatusCode
+                        rspan.set_status(StatusCode.ERROR, error_code)
+                        rspan.set_attribute("harmonia.error_code", error_code)
+                        rspan.set_attribute("harmonia.retry_attempt", attempt)
+                        rspan.set_attribute("harmonia.retry_delay_seconds", delay)
+
             await asyncio.sleep(delay)
 
     def _find_predefined_response(self, agent_content: str) -> Optional[str]:

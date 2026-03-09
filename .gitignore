@@ -28,3 +28,6 @@ documentation/full_conversations/
 
 # Generated analysis plots and tables (large, reproducible from results/)
 analysis/
+
+# Phoenix tracing data (SQLite, managed by ensure_phoenix_server.py)
+.phoenix/
