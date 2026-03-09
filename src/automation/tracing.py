@@ -264,16 +264,18 @@ def extract_usage_records(raw_messages: list[dict]) -> list[dict]:
     """
     Extract usage_records from raw WebSocket messages.
 
-    Scans messages in reverse for the first message containing usage_records.
+    Collects usage_records from all messages (code_cell, llm_response, etc.)
+    since the Beaker kernel attaches them to the final response of each ReAct turn.
     Returns list of dicts with keys: input_tokens, output_tokens, total_tokens.
     """
-    for msg in reversed(raw_messages):
+    all_records = []
+    for msg in raw_messages:
         content = msg.get("content", {})
         if isinstance(content, dict) and "usage_records" in content:
             records = content["usage_records"]
             if isinstance(records, list):
-                return records
-    return []
+                all_records.extend(records)
+    return all_records
 
 
 def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
@@ -281,7 +283,8 @@ def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
     Parse raw WebSocket messages to extract structured code executions.
 
     Returns list of dicts with keys: code, stdout, stderr, status.
-    Looks for execute_input -> execute_result/stream/error sequences.
+    Handles both standard Jupyter msg_types (execute_input, execute_result) and
+    Beaker-prefixed msg_types (beaker__execute_input, beaker__execute_reply).
     """
     executions = []
     current_exec = None
@@ -290,7 +293,7 @@ def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
         msg_type = msg.get("msg_type", "")
         content = msg.get("content", {})
 
-        if msg_type == "execute_input":
+        if msg_type in ("execute_input", "beaker__execute_input"):
             if current_exec is not None:
                 executions.append(current_exec)
             current_exec = {
@@ -308,12 +311,19 @@ def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
             else:
                 current_exec["stdout"] += text
 
-        elif msg_type == "execute_result" and current_exec is not None:
-            data = content.get("data", {})
-            text = data.get("text/plain", "")
-            if text:
-                current_exec["stdout"] += text
-            current_exec["status"] = "ok"
+        elif msg_type in ("execute_result", "beaker__execute_reply") and current_exec is not None:
+            if msg_type == "execute_result":
+                # Standard Jupyter: output in data.text/plain
+                data = content.get("data", {})
+                text = data.get("text/plain", "")
+                if text:
+                    current_exec["stdout"] += text
+            # Both types carry status directly in content
+            status = content.get("status", "")
+            if status:
+                current_exec["status"] = status
+            elif current_exec["status"] == "unknown":
+                current_exec["status"] = "ok"
 
         elif msg_type == "error" and current_exec is not None:
             current_exec["status"] = "error"
