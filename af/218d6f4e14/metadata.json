@@ -19,7 +19,6 @@
     "plans/09_03_2026_fix_data_mounting.md",
     "sbatch_template.sh",
     "sbatch_template_gpu.sh",
-    "scripts/dashboard.sh",
     "scripts/ensure_phoenix_server.py",
     "src/automation/__init__.py",
     "src/automation/config.py",
@@ -27,20 +26,6 @@
     "src/automation/manual_runner.py",
     "src/automation/runner.py",
     "src/automation/tracing.py",
-    "src/dashboard/__init__.py",
-    "src/dashboard/app.py",
-    "src/dashboard/components/__init__.py",
-    "src/dashboard/components/diff_card.py",
-    "src/dashboard/components/run_table.py",
-    "src/dashboard/components/span_waterfall.py",
-    "src/dashboard/components/turn_accordion.py",
-    "src/dashboard/data_loader.py",
-    "src/dashboard/tabs/__init__.py",
-    "src/dashboard/tabs/comparison.py",
-    "src/dashboard/tabs/metrics.py",
-    "src/dashboard/tabs/overview.py",
-    "src/dashboard/tabs/token_cost.py",
-    "src/dashboard/tabs/trace_explorer.py",
     "src/evaluation/visualization/normalize.py"
   ],
   "sessions": [
@@ -81,10 +66,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 6868,
-    "cache_creation_tokens": 745210,
-    "cache_read_tokens": 15148738,
-    "output_tokens": 126539,
-    "api_call_count": 170
+    "input_tokens": 6845,
+    "cache_creation_tokens": 798380,
+    "cache_read_tokens": 14421663,
+    "output_tokens": 94223,
+    "api_call_count": 145
   }
 }
