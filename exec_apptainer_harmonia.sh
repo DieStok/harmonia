@@ -183,13 +183,11 @@ fi
 
 # Create results directory if it doesn't exist
 mkdir -p "$RESULTS_DIR"
-# Keep Jupyter runtime artifacts inside the per-run results directory
-RUNTIME_DIR_HOST="${RESULTS_DIR}/.jupyter_runtime"
-mkdir -p "$RUNTIME_DIR_HOST"
-# Keep Beaker runtime and IPython history/checkpoints in per-run storage
-BEAKER_RUNTIME_DIR_HOST="${RESULTS_DIR}/.beaker_runtime"
-IPYTHON_DIR_HOST="${RESULTS_DIR}/.ipython"
-mkdir -p "$BEAKER_RUNTIME_DIR_HOST" "$IPYTHON_DIR_HOST"
+# Runtime artifacts go to .runtime/ — mounted at /runtime inside container
+# This keeps /workspace/results clean (LLM only sees its own output)
+RUNTIME_HOST_DIR="${RESULTS_DIR}/.runtime"
+mkdir -p "${RUNTIME_HOST_DIR}/jupyter" "${RUNTIME_HOST_DIR}/beaker" \
+         "${RUNTIME_HOST_DIR}/ipython" "${RUNTIME_HOST_DIR}/cache/huggingface"
 
 # --- Phoenix tracing server ---
 if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
@@ -333,7 +331,7 @@ LOGEOF
     )
 fi
 
-cat > "${RESULTS_DIR}/.experiment_id" <<EXPEOF
+cat > "${RUNTIME_HOST_DIR}/.experiment_id" <<EXPEOF
 {
   "schema_version": "1.0",
   "run_id": "${RUN_ID}",
@@ -351,7 +349,7 @@ cat > "${RESULTS_DIR}/.experiment_id" <<EXPEOF
 ${LOG_FILES_JSON}
 }
 EXPEOF
-echo "Wrote .experiment_id to ${RESULTS_DIR}/.experiment_id"
+echo "Wrote .experiment_id to ${RUNTIME_HOST_DIR}/.experiment_id"
 
 # =============================================================================
 # Check if this is a local LLM provider that needs Ollama
@@ -977,24 +975,78 @@ APPTAINER_CMD="apptainer exec"
 WORKSPACE_HOST_DIR="${SCRIPT_DIR}/workspace_mount"
 mkdir -p "$WORKSPACE_HOST_DIR"
 
-# Bind workspace structure into container
-# We bind to /workspace which becomes the working directory
-APPTAINER_CMD="$APPTAINER_CMD --bind ${DATA_BASE_DIR}:/workspace/data:ro"
+# =============================================================================
+# Data mounting: per-file isolation from config YAML
+# =============================================================================
+if [ -n "$CONFIG_FILE" ] && [ -f "$CONFIG_FILE" ]; then
+    # Read data.files from config — MANDATORY
+    if ! DATA_MOUNT_JSON=$("${SCRIPT_DIR}/.venv/bin/python" -c "
+import yaml, json, sys
+with open('${CONFIG_FILE}') as f:
+    cfg = yaml.safe_load(f)
+data = cfg.get('data')
+if not data:
+    print('ERROR: Config YAML is missing required \"data\" section.', file=sys.stderr)
+    print('Add a data section specifying which files the LLM should see:', file=sys.stderr)
+    print('  data:', file=sys.stderr)
+    print('    base_dir: /hpc/.../datasets_harmonia', file=sys.stderr)
+    print('    files:', file=sys.stderr)
+    print('      - source: one_metadata_table_gdc_schema/data/dou.csv', file=sys.stderr)
+    print('        mount_as: dou.csv', file=sys.stderr)
+    sys.exit(1)
+files = data.get('files', [])
+base = data.get('base_dir', '')
+if not files or not base:
+    print('ERROR: data section must have base_dir and at least one file entry.', file=sys.stderr)
+    sys.exit(1)
+print(json.dumps({'base_dir': base, 'files': files}))
+" 2>&1); then
+        echo "$DATA_MOUNT_JSON"
+        exit 1
+    fi
+
+    # Generate and validate bind specs
+    if ! BIND_SPECS=$("${SCRIPT_DIR}/.venv/bin/python" -c "
+import json, sys, os
+info = json.loads(sys.argv[1])
+base = info['base_dir']
+for f in info['files']:
+    src = os.path.join(base, f['source'])
+    if not os.path.exists(src):
+        print(f'ERROR: Data file not found: {src}', file=sys.stderr)
+        sys.exit(1)
+    dst = '/workspace/data/' + f['mount_as']
+    print(f'{src}:{dst}:ro')
+" "$DATA_MOUNT_JSON" 2>&1); then
+        echo "$BIND_SPECS"
+        exit 1
+    fi
+
+    echo "📂 Data mounting (per-file isolation):"
+    while IFS= read -r bind_spec; do
+        APPTAINER_CMD="$APPTAINER_CMD --bind ${bind_spec}"
+        echo "   ${bind_spec}"
+    done <<< "$BIND_SPECS"
+else
+    # No config file at all — this path is for bare exec without --config
+    # Still mount full dir for backward compat in configless mode
+    echo "📂 Data mounting (no config file: entire directory)"
+    APPTAINER_CMD="$APPTAINER_CMD --bind ${DATA_BASE_DIR}:/workspace/data:ro"
+fi
+
+# Results and working directory
 APPTAINER_CMD="$APPTAINER_CMD --bind ${RESULTS_DIR}:/workspace/results"
 APPTAINER_CMD="$APPTAINER_CMD --pwd /workspace"
 
+echo ""
 echo "📂 Workspace structure (LLM working directory):"
 echo "   /workspace/           ← pwd (working directory)"
-echo "   ├── data/    → ${DATA_BASE_DIR} (read-only)"
+echo "   ├── data/             (see mounted files above)"
 echo "   └── results/ → ${RESULTS_DIR} (read-write)"
 echo ""
 echo "   Example paths for LLM:"
-echo "   - Input:  data/one_metadata_table_gdc_schema/data/dou.csv"
+echo "   - Input:  data/ (see mounted files above)"
 echo "   - Output: results/"
-echo ""
-echo "   Or with absolute paths:"
-echo "   - Input:  /workspace/data/one_metadata_table_gdc_schema/data/dou.csv"
-echo "   - Output: /workspace/results/"
 
 # Add SSL cert binding if available
 if [ -n "$HOST_SSL_CERT" ]; then
@@ -1089,17 +1141,21 @@ APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_SERVER=http://localhost:${PORT}"
 APPTAINER_CMD="$APPTAINER_CMD --env DATA_DIR=/workspace/data"
 APPTAINER_CMD="$APPTAINER_CMD --env RESULTS_DIR=/workspace/results"
 APPTAINER_CMD="$APPTAINER_CMD --env WORKSPACE_DIR=/workspace"
-APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_RUNTIME_DIR=/workspace/results/.jupyter_runtime"
-APPTAINER_CMD="$APPTAINER_CMD --env XDG_RUNTIME_DIR=/workspace/results/.jupyter_runtime"
-APPTAINER_CMD="$APPTAINER_CMD --env BEAKER_RUN_PATH=/workspace/results/.beaker_runtime"
-APPTAINER_CMD="$APPTAINER_CMD --env IPYTHONDIR=/workspace/results/.ipython"
+# Mount runtime directory separately from results
+APPTAINER_CMD="$APPTAINER_CMD --bind ${RUNTIME_HOST_DIR}:/runtime"
+
+# Point runtime env vars to /runtime (NOT /workspace/results)
+APPTAINER_CMD="$APPTAINER_CMD --env JUPYTER_RUNTIME_DIR=/runtime/jupyter"
+APPTAINER_CMD="$APPTAINER_CMD --env XDG_RUNTIME_DIR=/runtime/jupyter"
+APPTAINER_CMD="$APPTAINER_CMD --env BEAKER_RUN_PATH=/runtime/beaker"
+APPTAINER_CMD="$APPTAINER_CMD --env IPYTHONDIR=/runtime/ipython"
 
 # Redirect HuggingFace model cache to writable location inside the container.
 # Without this, HF defaults to a host path under /hpc/compgen/users which is
 # read-only inside the Apptainer container, causing BDI-Kit's Magneto matcher
 # (sentence-transformers) to crash with OSError [Errno 30].
-APPTAINER_CMD="$APPTAINER_CMD --env HF_HOME=/workspace/results/.cache/huggingface"
-APPTAINER_CMD="$APPTAINER_CMD --env TRANSFORMERS_CACHE=/workspace/results/.cache/huggingface"
+APPTAINER_CMD="$APPTAINER_CMD --env HF_HOME=/runtime/cache/huggingface"
+APPTAINER_CMD="$APPTAINER_CMD --env TRANSFORMERS_CACHE=/runtime/cache/huggingface"
 
 # Pass run metadata into container for structured prompt logging
 APPTAINER_CMD="$APPTAINER_CMD --env HARMONIA_RUN_ID=${RUN_ID}"
@@ -1156,9 +1212,18 @@ echo ""
 echo "🗂  Workspace directory tree (as seen by the LLM inside the container):"
 echo "   pwd = /workspace"
 echo ""
-apptainer exec \
-    --bind "${DATA_BASE_DIR}":/workspace/data:ro \
-    --bind "${RESULTS_DIR}":/workspace/results \
+# Re-use the same bind mounts as the main container for the tree preview
+TREE_BINDS="--bind ${RESULTS_DIR}:/workspace/results"
+if [ -n "$BIND_SPECS" ]; then
+    while IFS= read -r bind_spec; do
+        TREE_BINDS="$TREE_BINDS --bind ${bind_spec}"
+    done <<< "$BIND_SPECS"
+else
+    TREE_BINDS="$TREE_BINDS --bind ${DATA_BASE_DIR}:/workspace/data:ro"
+fi
+# shellcheck disable=SC2086  # TREE_BINDS contains multiple --bind args, word splitting intended
+eval apptainer exec \
+    ${TREE_BINDS} \
     --pwd /workspace \
     "${SIF_IMAGE}" \
     find /workspace -maxdepth 4 2>/dev/null | sort | sed 's|^|   |' \

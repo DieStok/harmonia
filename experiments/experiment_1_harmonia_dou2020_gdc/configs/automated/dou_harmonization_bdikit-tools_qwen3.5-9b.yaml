@@ -1,6 +1,7 @@
 experiment:
   name: dou_harmonization_bdikit-tools_qwen3.5-9b
-  description: Harmonize dou.csv to GDC schema using similarity method (bdikit_context + qwen3.5:9b via Ollama)
+  description: Harmonize dou.csv to GDC schema using similarity method (bdikit_context
+    + qwen3.5:9b via Ollama)
   context: bdikit_context
 llm:
   provider: ollama
@@ -67,10 +68,9 @@ retry_policy:
 tracing:
   enabled: true
   phoenix_endpoint: http://hpcs05:6006
-
 messages:
-- content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe and subset it to the following
-    columns:
+- content: 'Load the file /workspace/data/dou.csv as a dataframe and subset it to
+    the following columns:
 
     Country, Histologic_Grade_FIGO, Histologic_type, FIGO_stage, BMI, Age,
 
@@ -129,9 +129,11 @@ messages:
 
     value to its harmonized target value.
 
-    For example: {"Histologic_Grade_FIGO": {"FIGO grade 1": "G1", "FIGO grade 2": "G2"}, ...}
+    For example: {"Histologic_Grade_FIGO": {"FIGO grade 1": "G1", "FIGO grade 2":
+    "G2"}, ...}
 
-    For columns where values were not changed, use the string "__identity__" instead of
+    For columns where values were not changed, use the string "__identity__" instead
+    of
 
     the mapping object.'
   wait_seconds: 300
@@ -142,3 +144,8 @@ messages:
 
     '
   wait_seconds: 120
+data:
+  base_dir: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia
+  files:
+  - source: one_metadata_table_gdc_schema/data/dou.csv
+    mount_as: dou.csv

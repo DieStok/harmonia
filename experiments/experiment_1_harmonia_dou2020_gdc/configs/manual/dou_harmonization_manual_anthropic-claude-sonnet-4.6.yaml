@@ -1,69 +1,35 @@
-# =============================================================================
-# Manual Experiment - anthropic/claude-sonnet-4.6 via any-llm (OpenRouter)
-# =============================================================================
-# This is a MANUAL experiment config - no automated messages.
-# Start Beaker with these LLM settings and interact via the web UI.
-#
-# Usage:
-#   1. Copy llm settings to your .env file (see env_settings below)
-#   2. Ensure OPENROUTER_API_KEY is set in .env
-#   3. cd to data directory: cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data
-#   4. Run: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/exec_apptainer_harmonia.sh
-#   5. Connect via browser and interact manually
-#   6. Data file dou.csv will be in the working directory
-#
-# Dataset: Dou 2020 - Proteogenomic Characterization of Endometrial Carcinoma
-# Based on the Harmonia paper: https://arxiv.org/pdf/2502.07132
-# =============================================================================
-
 experiment:
-  name: "dou_harmonization_manual_anthropic-claude-sonnet-4.6"
-  description: "Manual harmonization of dou.csv to GDC schema (anthropic/claude-sonnet-4.6 via any-llm/OpenRouter)"
+  name: dou_harmonization_manual_anthropic-claude-sonnet-4.6
+  description: Manual harmonization of dou.csv to GDC schema (anthropic/claude-sonnet-4.6
+    via any-llm/OpenRouter)
   manual_mode: true
-  dataset_metadata: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/experiment_metadata.yaml"
-
+  dataset_metadata: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/experiment_metadata.yaml
 llm:
   provider: openrouter
-  # OpenRouter model context window: 1000000 tokens
   model: anthropic/claude-sonnet-4.6
   temperature: 0.0
-
-# bdi-kit internal LLM configuration for schema/value matching.
-# These default to the top-level llm.model if not specified.
-# Set explicitly here so each config documents which LLM bdi-kit uses internally.
 bdikit_models:
   instance_matching_llm: anthropic/claude-sonnet-4.6
   numeric_instance_matching_llm: anthropic/claude-sonnet-4.6
-  # embedding_model_for_instance_matching: bert-base-multilingual-cased  # default, not an LLM
   schema_matching_llm: anthropic/claude-sonnet-4.6
   magneto_zero_shot_schema_matching_llm: anthropic/claude-sonnet-4.6
   magneto_fine_tuned_schema_matching_llm: anthropic/claude-sonnet-4.6
 output:
-  base_dir: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results"
-
-# Environment variables to set in .env before running exec_apptainer_harmonia.sh
+  base_dir: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results
 env_settings:
-  LLM_SERVICE_PROVIDER: "openrouter"
-  LLM_SERVICE_MODEL: "anthropic/claude-sonnet-4.6"
-  LLM_TEMPERATURE: "0.0"
-  # Required: OPENROUTER_API_KEY=your_key_here
-
-# Data locations
+  LLM_SERVICE_PROVIDER: openrouter
+  LLM_SERVICE_MODEL: anthropic/claude-sonnet-4.6
+  LLM_TEMPERATURE: '0.0'
 data:
-  working_directory: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data"
-  source_file: "dou.csv"
-  source_file_absolute: "/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema/data/dou.csv"
-  target_schema: "gdc"
-  paper_reference: "https://doi.org/10.1016/j.cell.2020.01.026"
-
-# No messages - this is for manual interaction
-# messages: []
+  base_dir: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia
+  files:
+  - source: one_metadata_table_gdc_schema/data/dou.csv
+    mount_as: dou.csv
 context_management:
   archytas:
     summarization_threshold_pct: 50
     context_window_override: 1000000
     max_react_steps: 30
-
 tracing:
   enabled: true
   phoenix_endpoint: http://hpcs05:6006

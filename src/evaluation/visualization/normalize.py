@@ -48,10 +48,18 @@ def _project_root() -> Path:
 
 
 def _find_experiment_id_file(metrics_path: Path, run_id: str) -> Path | None:
+    # New location: .runtime/.experiment_id
+    new_path = metrics_path.parent / ".runtime" / ".experiment_id"
+    if new_path.exists():
+        return new_path
+    # Old location: .experiment_id directly in results dir
     direct = metrics_path.parent / ".experiment_id"
     if direct.exists():
         return direct
     results_root = metrics_path.parent.parent
+    for candidate in sorted(results_root.glob(f"*_{run_id}/.runtime/.experiment_id")):
+        if candidate.exists():
+            return candidate
     for candidate in sorted(results_root.glob(f"*_{run_id}/.experiment_id")):
         if candidate.exists():
             return candidate

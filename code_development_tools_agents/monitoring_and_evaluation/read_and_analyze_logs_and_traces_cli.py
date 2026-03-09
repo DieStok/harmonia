@@ -226,7 +226,7 @@ class DiscoveredResults:
         self.run_id = run_id
         self.has_trace = (path / "trace.json").exists()
         self.has_metrics = (path / "metrics.json").exists()
-        self.has_experiment_id = (path / ".experiment_id").exists()
+        self.has_experiment_id = (path / ".runtime" / ".experiment_id").exists() or (path / ".experiment_id").exists()
 
 
 def discover_auto_logs(log_dir: Path) -> list[DiscoveredLog]:
@@ -418,8 +418,10 @@ def read_metrics(results: DiscoveredResults) -> Optional[dict]:
 
 
 def read_experiment_id(results: DiscoveredResults) -> Optional[dict]:
-    """Read .experiment_id metadata file if present."""
-    eid_path = results.path / ".experiment_id"
+    """Read .experiment_id metadata file if present (new .runtime/ or old location)."""
+    eid_path = results.path / ".runtime" / ".experiment_id"
+    if not eid_path.exists():
+        eid_path = results.path / ".experiment_id"
     if not eid_path.exists():
         return None
     try:
@@ -1390,7 +1392,7 @@ def format_human_readable(report: AnalysisReport) -> str:
 
         # Verbose per-turn output
         if run.turns:
-            lines.append(f"  Per-turn analysis:")
+            lines.append("  Per-turn analysis:")
             for ta in run.turns:
                 if ta.response_type == "llm_response":
                     status = "EMPTY" if ta.agent_response_empty else "OK"

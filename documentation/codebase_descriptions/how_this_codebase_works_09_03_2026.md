@@ -54,7 +54,7 @@
 ## Update Summary (05-03-2026, first update)
 
 - **HuggingFace cache fix (P0 bugfix):**
-  - `exec_apptainer_harmonia.sh` now sets `HF_HOME` and `TRANSFORMERS_CACHE` to `/workspace/results/.cache/huggingface` inside the Apptainer container. Previously, HF model downloads (used by BDI-Kit's Magneto matcher / sentence-transformers) attempted to write to `/hpc/compgen/users` which is read-only inside the container, causing `OSError [Errno 30]` on every `match_schema()` call.
+  - `exec_apptainer_harmonia.sh` now sets `HF_HOME` and `TRANSFORMERS_CACHE` to `/runtime/cache/huggingface` inside the Apptainer container (previously `/workspace/results/.cache/huggingface`). Previously, HF model downloads (used by BDI-Kit's Magneto matcher / sentence-transformers) attempted to write to `/hpc/compgen/users` which is read-only inside the container, causing `OSError [Errno 30]` on every `match_schema()` call.
 
 - **Consecutive tool error guardrail (P1 feature):**
   - Archytas `ReActAgent` (in `/hpc/compgen/projects/llm_GEO_project/archytas/archytas/react.py`) now tracks consecutive failures of the same tool via `max_consecutive_tool_errors` attribute. If a tool fails N times in a row (default 3), the ReAct loop raises `FailedTaskError` instead of burning all `max_react_steps` on identical errors.
@@ -132,12 +132,15 @@ This update captures major reliability, observability, and analysis changes impl
 
 - **Run-isolated storage and runtime paths:**
   - SBATCH launch path now explicitly passes per-run `--results-dir` into `exec_apptainer_harmonia.sh`.
-  - Runtime artifacts are redirected into run-local paths under `/workspace/results`:
-    - `JUPYTER_RUNTIME_DIR`
-    - `XDG_RUNTIME_DIR`
-    - `BEAKER_RUN_PATH`
-    - `IPYTHONDIR`
+  - Runtime artifacts are now mounted at `/runtime` inside the container (backed by `${RESULTS_DIR}/.runtime/` on the host), completely separated from `/workspace/results`. This means the LLM cannot see `.jupyter_runtime`, `.beaker_runtime`, `.ipython`, `.cache`, or `.experiment_id` in its working directory. Env vars (`JUPYTER_RUNTIME_DIR`, `XDG_RUNTIME_DIR`, `BEAKER_RUN_PATH`, `IPYTHONDIR`, `HF_HOME`, `TRANSFORMERS_CACHE`) all point to `/runtime/...` subdirs.
+  - `.experiment_id` is now written to `.runtime/.experiment_id`. Host-side reader scripts (`calculate_metrics.py`, `normalize.py`, `read_and_analyze_logs_and_traces_cli.py`) check `.runtime/.experiment_id` first, falling back to the old `.experiment_id` location for backward compatibility with pre-existing results.
   - This fixes home-directory spillover (`~/.local/share/beaker`, `~/.ipython`) and reduces ENOSPC-related startup failures.
+
+- **Per-file data isolation (LLM can no longer see gold standards):**
+  - Experiment config YAMLs now have a mandatory `data` section specifying exactly which files to mount. The exec script reads `data.base_dir` and `data.files` and creates individual `--bind` mounts for each file at `/workspace/data/<mount_as>`. Configs without a `data` section fail with a descriptive error.
+  - The LLM now only sees explicitly listed files (e.g., `/workspace/data/dou.csv`), not the entire `datasets_harmonia/` directory. Gold standard files, other experiments, and unrelated data files are no longer accessible.
+  - Configless exec mode (bare `./exec_apptainer_harmonia.sh` without `--config`) still mounts the full data directory for quick debugging.
+  - All 51 experiment configs (38 automated, 13 manual) were updated with the `data` section and automated message paths changed from `/workspace/data/one_metadata_table_gdc_schema/data/dou.csv` to `/workspace/data/dou.csv`.
 
 - **Prompt/path and automation correctness fixes:**
   - Automated config prompt text for input files was aligned with actual in-container paths (`/workspace/data/...`).
@@ -1482,8 +1485,9 @@ srun -J apptainer_build_claude-code --time=02:30:00 --mem=50G --gres=tmpspace:10
 **Bind Mounts (automatic):**
 The execution script automatically binds:
 - Current directory → `/jupyter` (source code access)
-- Data directory → same path (read-only): `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia`
-- Results directory → same path (read-write): `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results`
+- Per-file data mounts → `/workspace/data/<mount_as>` (read-only, from config `data.files`). Only files explicitly listed in the config YAML are visible to the LLM. Without `--config`, falls back to full data directory mount.
+- Results directory → `/workspace/results` (read-write)
+- Runtime directory → `/runtime` (backed by `${RESULTS_DIR}/.runtime/` on host — Jupyter, Beaker, IPython, HF cache, `.experiment_id`)
 - SSL certificate (if available)
 
 **Context Registration:**

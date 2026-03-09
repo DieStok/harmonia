@@ -98,8 +98,10 @@ def backfill_row_values(results_dir: Path, verbose: bool = False) -> int:
     numeric_tolerance = None
     acceptable_columns_path = None
 
-    # Strategy 1: .experiment_id → config YAML
-    exp_id_file = results_dir / ".experiment_id"
+    # Strategy 1: .experiment_id → config YAML (check .runtime/ first, then old location)
+    exp_id_file = results_dir / ".runtime" / ".experiment_id"
+    if not exp_id_file.exists():
+        exp_id_file = results_dir / ".experiment_id"
     if exp_id_file.exists():
         exp_id = json.loads(exp_id_file.read_text())
         config_path = exp_id.get("config_path")
