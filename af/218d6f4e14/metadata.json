@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 7,
+  "checkpoints_count": 8,
   "files_touched": [
     ".gitignore",
     ".pre-commit-config.yaml",
@@ -19,6 +19,7 @@
     "plans/09_03_2026_fix_data_mounting.md",
     "sbatch_template.sh",
     "sbatch_template_gpu.sh",
+    "scripts/dashboard.sh",
     "scripts/ensure_phoenix_server.py",
     "src/automation/__init__.py",
     "src/automation/config.py",
@@ -26,6 +27,20 @@
     "src/automation/manual_runner.py",
     "src/automation/runner.py",
     "src/automation/tracing.py",
+    "src/dashboard/__init__.py",
+    "src/dashboard/app.py",
+    "src/dashboard/components/__init__.py",
+    "src/dashboard/components/diff_card.py",
+    "src/dashboard/components/run_table.py",
+    "src/dashboard/components/span_waterfall.py",
+    "src/dashboard/components/turn_accordion.py",
+    "src/dashboard/data_loader.py",
+    "src/dashboard/tabs/__init__.py",
+    "src/dashboard/tabs/comparison.py",
+    "src/dashboard/tabs/metrics.py",
+    "src/dashboard/tabs/overview.py",
+    "src/dashboard/tabs/token_cost.py",
+    "src/dashboard/tabs/trace_explorer.py",
     "src/evaluation/visualization/normalize.py"
   ],
   "sessions": [
@@ -56,13 +71,20 @@
       "context": "/af/218d6f4e14/3/context.md",
       "content_hash": "/af/218d6f4e14/3/content_hash.txt",
       "prompt": "/af/218d6f4e14/3/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/4/metadata.json",
+      "transcript": "/af/218d6f4e14/4/full.jsonl",
+      "context": "/af/218d6f4e14/4/context.md",
+      "content_hash": "/af/218d6f4e14/4/content_hash.txt",
+      "prompt": "/af/218d6f4e14/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 6817,
-    "cache_creation_tokens": 657623,
-    "cache_read_tokens": 11920501,
-    "output_tokens": 86376,
-    "api_call_count": 125
+    "input_tokens": 6868,
+    "cache_creation_tokens": 745210,
+    "cache_read_tokens": 15148738,
+    "output_tokens": 126539,
+    "api_call_count": 170
   }
 }
