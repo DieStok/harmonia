@@ -3,10 +3,20 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
+    ".gitignore",
+    "documentation/codebase_descriptions/how_this_codebase_works_09_03_2026.md",
     "documentation/plans/09_03_2026_1201_create_plotly_plots_phoenix_traces_dashboard.md",
-    "documentation/plans/09_03_2026_1201_implement_improved_tracing.md"
+    "documentation/plans/09_03_2026_1201_implement_improved_tracing.md",
+    "exec_apptainer_harmonia.sh",
+    "scripts/ensure_phoenix_server.py",
+    "src/automation/__init__.py",
+    "src/automation/config.py",
+    "src/automation/logger.py",
+    "src/automation/manual_runner.py",
+    "src/automation/runner.py",
+    "src/automation/tracing.py"
   ],
   "sessions": [
     {
@@ -15,13 +25,20 @@
       "context": "/af/218d6f4e14/0/context.md",
       "content_hash": "/af/218d6f4e14/0/content_hash.txt",
       "prompt": "/af/218d6f4e14/0/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/1/metadata.json",
+      "transcript": "/af/218d6f4e14/1/full.jsonl",
+      "context": "/af/218d6f4e14/1/context.md",
+      "content_hash": "/af/218d6f4e14/1/content_hash.txt",
+      "prompt": "/af/218d6f4e14/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 6689,
-    "cache_creation_tokens": 258033,
-    "cache_read_tokens": 3205037,
-    "output_tokens": 33665,
-    "api_call_count": 33
+    "input_tokens": 6778,
+    "cache_creation_tokens": 390110,
+    "cache_read_tokens": 11795965,
+    "output_tokens": 78947,
+    "api_call_count": 116
   }
 }
