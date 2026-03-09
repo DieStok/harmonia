@@ -74,3 +74,55 @@ Tell me exactly what these issues are and list proposed fixes. i.e. do the propo
 
 Yes implement all these fixes
 
+### Prompt 11
+
+Is the newest image not already the one witht he new archytas/beaker functions? It has been constructed just a few tens of minutes ago.
+
+### Prompt 12
+
+🗂  Workspace directory tree (as seen by the LLM inside the container):
+   pwd = /workspace
+
+   /workspace
+   /workspace/data
+   /workspace/data/one_metadata_table_gdc_schema
+   /workspace/data/one_metadata_table_gdc_schema/data
+   /workspace/data/one_metadata_table_gdc_schema/data/dou.csv
+   /workspace/data/one_metadata_table_gdc_schema/data/dou-ucec-discovery.csv
+   /workspace/data/one_metadata_table_gdc_schema/data/dou_with_index.csv
+   /workspace/data/one_metadata_table_gdc_schema/experime...
+
+### Prompt 13
+
+Okay, make a full implementation plan in plans/DATETIME_fix_data_mounting.md with enough context for a fresh Claude instance and with instructions to do a commit after the fixes have been implemented and then test it with one run of Qwen 3.5. 
+
+However: 
+I also see these files:
+/workspace/results/.beaker_runtime
+   /workspace/results/.experiment_id
+   /workspace/results/.ipython
+   /workspace/results/.jupyter_runtime
+
+They could be queried by an intrepid LLM. can I somehow make sure it cannot se...
+
+### Prompt 14
+
+[Request interrupted by user]
+
+### Prompt 15
+
+SO just to be sure:
+option 5 seems the best, but I want to also know what to do about thes other files. I want the LLM/beaker env to only see the minimum files that I fully specify and nothing else, while on the HPC in the specific results folder I may want other files to appear, such as .experiment_id with experiment metadata.
+
+### Prompt 16
+
+Make sure the plan has all details needed for a fresh Claude instance (e.g. for building the apptainer image again). Is it completely done for a fresh Claude instance or could it use more details/paths?
+
+### Prompt 17
+
+Thanks
+
+### Prompt 18
+
+[Request interrupted by user]
+

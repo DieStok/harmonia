@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 3,
+  "checkpoints_count": 4,
   "files_touched": [
     ".gitignore",
     ".pre-commit-config.yaml",
@@ -13,6 +13,7 @@
     "exec_apptainer_harmonia.sh",
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_ollama.yaml",
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_openrouter.yaml",
+    "plans/09_03_2026_fix_data_mounting.md",
     "sbatch_template.sh",
     "sbatch_template_gpu.sh",
     "scripts/ensure_phoenix_server.py",
@@ -40,10 +41,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 6730,
-    "cache_creation_tokens": 315633,
-    "cache_read_tokens": 5000537,
-    "output_tokens": 43383,
-    "api_call_count": 68
+    "input_tokens": 6742,
+    "cache_creation_tokens": 372733,
+    "cache_read_tokens": 7759971,
+    "output_tokens": 58138,
+    "api_call_count": 74
   }
 }
