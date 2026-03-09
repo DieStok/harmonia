@@ -1,0 +1,16 @@
+Please run 5 local model jobs on harmonizing the 1 table dou metadata task (use extant configs), wait until they are all done (or failed), analyze their logs comprehensively, generate the standard plots for this run, then generate plotly plots and run the interactive dashboard, and then:
+- surface to me what worked and what did not work in the logs (use /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py)
+- surface to me whether seaborn plots worked or not
+- surface to me whether generating plotly plots worked as expected
+- surface to me whether the dash app runs as expected, and where I can interact with it and how.
+- generate a jupyter notebook for each of these steps that allows me to rerun them and check results/plots/logs interactively. Save it in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/notebooks 
+
+Before starting the runs, please move all current logs and results subfolders to the old/older folders in their respective directories: we are starting fresh after a major refactor which touched both tracing and plotting. 
+
+Then wait for my feedback/questions.
+
+I gave the above instructions to another Claude Code instance but it kept crashing. Can you investigate what was done and what still needs doing? Thanks
+
+---
+
+The continue with the rest. IDeally don't use the NotebookEdit tool but construct the notebooks in some other way, perhaps with nbconvert.
