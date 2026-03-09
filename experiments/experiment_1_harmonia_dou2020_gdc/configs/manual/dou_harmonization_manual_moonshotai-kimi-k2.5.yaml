@@ -63,3 +63,7 @@ context_management:
     summarization_threshold_pct: 50
     context_window_override: 262000
     max_react_steps: 30
+
+tracing:
+  enabled: true
+  phoenix_endpoint: http://hpcs05:6006

@@ -134,16 +134,24 @@ def main():
 
 def _handle_submit_mode(args, phoenix_dir, session_name):
     """Handle submit-node mode: run Phoenix in a screen session on this node."""
-    endpoint = f"http://localhost:{args.port}"
+    import socket
+    hostname = socket.gethostname().split(".")[0]  # Short hostname (e.g., hpcs05)
+    # Use hostname so endpoint is reachable from compute nodes too
+    endpoint = f"http://{hostname}:{args.port}"
+    local_endpoint = f"http://localhost:{args.port}"
 
     # Check if already running
     if check_screen_session(session_name):
-        # Verify it's actually responding
-        if wait_for_http(endpoint, timeout=10):
+        # Verify it's actually responding (check locally first, faster)
+        if wait_for_http(local_endpoint, timeout=10):
+            print(f"Phoenix already running on {hostname}:{args.port} "
+                  f"(screen session: {session_name})", file=sys.stderr)
             print(f"PHOENIX_ENDPOINT={endpoint}")
             return 0
         else:
             # Screen exists but not responding — kill and restart
+            print(f"Screen session {session_name} exists but not responding, restarting...",
+                  file=sys.stderr)
             subprocess.run(["screen", "-S", session_name, "-X", "quit"],
                            capture_output=True)
             time.sleep(2)
@@ -157,17 +165,20 @@ def _handle_submit_mode(args, phoenix_dir, session_name):
 
     env = os.environ.copy()
     env["PHOENIX_WORKING_DIR"] = str(phoenix_dir)
+    env["PHOENIX_PORT"] = str(args.port)
 
     cmd = [
         "screen", "-dmS", session_name,
-        phoenix_cmd, "serve", "--port", str(args.port),
+        phoenix_cmd, "serve",
     ]
 
-    print(f"Starting Phoenix server on submit node (port {args.port})...", file=sys.stderr)
+    print(f"Starting Phoenix server on {hostname} (port {args.port})...", file=sys.stderr)
     subprocess.run(cmd, env=env)
 
     # Wait for server to be ready
-    if wait_for_http(endpoint, timeout=args.timeout):
+    if wait_for_http(local_endpoint, timeout=args.timeout):
+        print(f"Phoenix started on {hostname}:{args.port} "
+              f"(screen session: {session_name}, pid via 'screen -ls')", file=sys.stderr)
         print(f"PHOENIX_ENDPOINT={endpoint}")
         return 0
     else:
@@ -196,12 +207,15 @@ def _handle_slurm_mode(args, phoenix_dir, slurm_job_name, session_name):
 
     env = os.environ.copy()
     env["PHOENIX_WORKING_DIR"] = str(phoenix_dir)
+    env["PHOENIX_PORT"] = str(args.port)
 
     # Submit via screen + srun so it persists
+    # Phoenix uses PHOENIX_PORT env var (not --port CLI flag)
     srun_cmd = (
+        f"PHOENIX_WORKING_DIR={phoenix_dir} PHOENIX_PORT={args.port} "
         f"srun --job-name={slurm_job_name} --account=compgen "
         f"--time=08:00:00 --mem=2G --cpus-per-task=1 --nice=1000 "
-        f"{phoenix_cmd} serve --port {args.port}"
+        f"{phoenix_cmd} serve"
     )
 
     cmd = ["screen", "-dmS", session_name, "bash", "-c", srun_cmd]

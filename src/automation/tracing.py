@@ -25,7 +25,6 @@ try:
         OpenInferenceSpanKindValues,
         SpanAttributes,
     )
-    from opentelemetry import trace
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
@@ -69,15 +68,28 @@ def init_tracing(
     If Phoenix is unreachable or deps missing, returns a no-op tracer and False.
     """
     if not _TRACING_AVAILABLE:
-        logger.warning("Tracing dependencies not installed. Tracing disabled.")
-        return trace.get_tracer("harmonia-noop"), False
+        logger.warning(
+            "Tracing dependencies not installed (opentelemetry/openinference). "
+            "Tracing disabled. Install with: uv pip install opentelemetry-api "
+            "opentelemetry-sdk opentelemetry-exporter-otlp-proto-http "
+            "openinference-semantic-conventions"
+        )
+        return None, False
 
-    # Allow env var override
-    endpoint = os.environ.get("PHOENIX_ENDPOINT", phoenix_endpoint)
+    # Allow env var override (set by exec_apptainer_harmonia.sh via ensure_phoenix_server.py)
+    env_endpoint = os.environ.get("PHOENIX_ENDPOINT")
+    endpoint = env_endpoint or phoenix_endpoint
+    source = "PHOENIX_ENDPOINT env var" if env_endpoint else f"config ({phoenix_endpoint})"
+
+    import socket
+    this_host = socket.gethostname().split(".")[0]
 
     if not _check_phoenix_reachable(endpoint):
-        logger.warning(f"Phoenix server unreachable at {endpoint}. Tracing disabled.")
-        return trace.get_tracer("harmonia-noop"), False
+        logger.warning(
+            f"Phoenix server unreachable at {endpoint} (source: {source}, "
+            f"checked from host: {this_host}). Tracing disabled."
+        )
+        return None, False
 
     resource = Resource.create({
         "service.name": service_name,
@@ -91,7 +103,10 @@ def init_tracing(
 
     tracer = provider.get_tracer("harmonia", "1.0.0")
 
-    logger.info(f"Tracing initialized: {endpoint} (run_id={run_id})")
+    logger.info(
+        f"Tracing initialized: endpoint={endpoint} (source: {source}), "
+        f"run_id={run_id}, host={this_host}"
+    )
     return tracer, True
 
 

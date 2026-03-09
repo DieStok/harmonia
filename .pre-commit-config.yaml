@@ -9,7 +9,7 @@ repos:
     hooks:
       - id: shellcheck
         files: \.(sh)$
-        exclude: "^jobs/"
+        exclude: "^(jobs/|sbatch_template)"
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
     hooks:

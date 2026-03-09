@@ -59,6 +59,10 @@ retry_policy:
     timeout: 2
     aimessage_validation_error: 1
     default: 0
+tracing:
+  enabled: true
+  phoenix_endpoint: http://hpcs05:6006
+
 messages:
 - content: 'Load the file /workspace/data/one_metadata_table_gdc_schema/data/dou.csv as a dataframe and subset it to the following
     columns:

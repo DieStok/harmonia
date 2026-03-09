@@ -133,7 +133,7 @@ echo ""
 TOKEN=$(grep "^JUPYTER_TOKEN=" {{env_file}} | cut -d '=' -f2)
 
 # Run the experiment
-python run_experiment.py \
+.venv/bin/python run_experiment.py \
     --config {{config_path}} \
     --server http://localhost:$PORT \
     --token "$TOKEN" \

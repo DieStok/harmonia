@@ -201,20 +201,28 @@ print(cfg.get('tracing', {}).get('enabled', False))
 " 2>/dev/null)
 
     if [ "$TRACING_ENABLED" = "True" ]; then
+        THIS_HOST=$(hostname -s)
+        echo "Tracing enabled in config. Ensuring Phoenix server is running..."
+        echo "  Current host: ${THIS_HOST}"
         PHOENIX_INFO=""
         if PHOENIX_INFO=$("${SCRIPT_DIR}/.venv/bin/python" "${SCRIPT_DIR}/scripts/ensure_phoenix_server.py" \
             --phoenix-dir "${SCRIPT_DIR}/.phoenix" \
             --mode "${PHOENIX_MODE:-submit}" \
             --port "${PHOENIX_PORT:-6006}" \
-            2>&1); then
+            2>"${SCRIPT_DIR}/logs/phoenix_ensure_${RUN_ID:-unknown}.log"); then
             PHOENIX_ENDPOINT=""
             PHOENIX_ENDPOINT=$(echo "$PHOENIX_INFO" | grep "PHOENIX_ENDPOINT=" | cut -d= -f2)
             export PHOENIX_ENDPOINT
-            echo "Phoenix tracing: $PHOENIX_ENDPOINT"
+            echo "  Phoenix endpoint: ${PHOENIX_ENDPOINT} (resolved by ensure_phoenix_server.py)"
+            echo "  ensure_phoenix_server.py log: logs/phoenix_ensure_${RUN_ID:-unknown}.log"
         else
-            echo "Warning: Could not start Phoenix server. Tracing disabled for this run."
-            echo "$PHOENIX_INFO"
+            echo "  Warning: Could not start Phoenix server. Tracing disabled for this run."
+            echo "  ensure_phoenix_server.py stdout: $PHOENIX_INFO"
+            echo "  ensure_phoenix_server.py log: logs/phoenix_ensure_${RUN_ID:-unknown}.log"
+            cat "${SCRIPT_DIR}/logs/phoenix_ensure_${RUN_ID:-unknown}.log" 2>/dev/null
         fi
+    else
+        echo "Tracing not enabled in config (tracing.enabled != true)."
     fi
 fi
 
