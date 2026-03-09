@@ -41,10 +41,12 @@ class ExperimentTrace:
     status: str = "running"  # running, completed, failed, timeout
     error_message: Optional[str] = None
     config_snapshot: Optional[dict] = None
+    run_id: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
+            "run_id": self.run_id,
             "experiment": {
                 "name": self.experiment_name,
                 "description": self.description,
@@ -85,6 +87,7 @@ class TraceLogger:
         description: str,
         llm_provider: str,
         llm_model: str,
+        run_id: Optional[str] = None,
     ) -> None:
         """Start tracking a new experiment."""
         self.trace = ExperimentTrace(
@@ -93,6 +96,7 @@ class TraceLogger:
             llm_provider=llm_provider,
             llm_model=llm_model,
             start_time=datetime.utcnow().isoformat(),
+            run_id=run_id,
         )
 
     def log_turn(

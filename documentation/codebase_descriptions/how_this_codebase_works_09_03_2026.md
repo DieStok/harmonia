@@ -5,6 +5,29 @@
 
 ---
 
+## Update Summary (09-03-2026, second update)
+
+- **Dash experiment dashboard (`src/dashboard/`):**
+  - New web application: Plotly Dash dashboard for interactive visualization of Harmonia experiment data. Combines Phoenix trace data, `metrics.json`, and `trace.json` into a unified interface with 5 tabs.
+  - `src/dashboard/app.py` — Main Dash app entry point. CLI accepts `--phoenix-endpoint`, `--results-dir`, `--port`. Binds to `0.0.0.0` for SSH port forwarding. Includes port-in-use detection, `suppress_callback_exceptions=True` for lazy tab rendering, cross-tab state via `dcc.Store`. FLATLY bootstrap theme.
+  - `src/dashboard/data_loader.py` — `DashboardDataLoader` class. Dual-source discovery: scans `results/` directories AND queries Phoenix via `px.Client()`. Outer-joins on `run_id`. Thread-safe caching with `threading.Lock`. Handles duplicate run_id directories (prefers SLURM-job-ID format). Graceful degradation when Phoenix is unavailable. Schema version checking for `metrics.json`.
+  - `src/dashboard/tabs/overview.py` — Experiment Overview tab. AG Grid runs table (sortable, filterable, row-click navigates to Trace Explorer), summary cards (total runs, success rate, avg accuracy, cost, tokens), status pie chart.
+  - `src/dashboard/tabs/metrics.py` — Metrics Comparison tab. Accuracy bar chart (click-through to Trace Explorer), cost-vs-accuracy scatter, per-column accuracy heatmap, token usage bar chart, F1 radar chart (selectable runs), metrics detail AG Grid table.
+  - `src/dashboard/tabs/trace_explorer.py` — Trace Explorer tab. Run header card, span waterfall (Gantt chart from Phoenix data, hidden if Phoenix unavailable), token-per-turn stacked bar, cumulative cost line chart, paginated turn accordion (20 turns/page), error indicators.
+  - `src/dashboard/tabs/token_cost.py` — Token & Cost Analysis tab. Cost per model bar, tokens per model grouped bar, cost-vs-turns scatter, token efficiency scatter (tokens vs accuracy), cumulative cost over time, cost breakdown AG Grid table.
+  - `src/dashboard/tabs/comparison.py` — Side-by-Side Comparison tab. Two run selectors, diff summary card with delta badges, per-column accuracy grouped bar (union of column sets with N/A), per-turn token comparison, synchronized turn accordions, span waterfall comparison (if Phoenix available for both).
+  - `src/dashboard/components/run_table.py` — AG Grid configuration for runs table.
+  - `src/dashboard/components/span_waterfall.py` — Plotly Gantt-style chart for Phoenix span hierarchy.
+  - `src/dashboard/components/turn_accordion.py` — Accordion component for conversation turns with pagination.
+  - `src/dashboard/components/diff_card.py` — Summary diff card for two-run comparison.
+  - `scripts/dashboard.sh` — Start/stop/status convenience script. Supports submit-node (screen) and SLURM modes.
+  - New dependencies: `dash==2.18.2`, `dash-bootstrap-components==1.6.0`, `dash-ag-grid==31.2.0`, `plotly==5.24.1`.
+
+- **`run_id` added to `ExperimentTrace` (prerequisite for dashboard):**
+  - `logger.py`: `ExperimentTrace` now has `run_id: Optional[str]` field. `to_dict()` includes `run_id` at top level of `trace.json`. `TraceLogger.start_experiment()` accepts `run_id` parameter.
+  - `runner.py`: passes `run_id` to `trace_logger.start_experiment()`.
+  - `manual_runner.py`: passes `run_id` to `trace_logger.start_experiment()`.
+
 ## Update Summary (09-03-2026)
 
 - **Phoenix/OpenTelemetry tracing (Phase 1):**
@@ -131,7 +154,7 @@ This update captures dead code cleanup, liteLLM migration finalization, config c
 This update captures major reliability, observability, and analysis changes implemented today:
 
 - **Run-isolated storage and runtime paths:**
-  - SBATCH launch path now explicitly passes per-run `--results-dir` into `exec_apptainer_harmonia.sh`.
+  - Any `--config` invocation now auto-creates a per-experiment results subdirectory (unless `--results-dir` is explicitly provided). This applies to both SBATCH and direct CLI usage, ensuring the LLM never sees other experiments' output.
   - Runtime artifacts are now mounted at `/runtime` inside the container (backed by `${RESULTS_DIR}/.runtime/` on the host), completely separated from `/workspace/results`. This means the LLM cannot see `.jupyter_runtime`, `.beaker_runtime`, `.ipython`, `.cache`, or `.experiment_id` in its working directory. Env vars (`JUPYTER_RUNTIME_DIR`, `XDG_RUNTIME_DIR`, `BEAKER_RUN_PATH`, `IPYTHONDIR`, `HF_HOME`, `TRANSFORMERS_CACHE`) all point to `/runtime/...` subdirs.
   - `.experiment_id` is now written to `.runtime/.experiment_id`. Host-side reader scripts (`calculate_metrics.py`, `normalize.py`, `read_and_analyze_logs_and_traces_cli.py`) check `.runtime/.experiment_id` first, falling back to the old `.experiment_id` location for backward compatibility with pre-existing results.
   - This fixes home-directory spillover (`~/.local/share/beaker`, `~/.ipython`) and reduces ENOSPC-related startup failures.
@@ -1486,7 +1509,7 @@ srun -J apptainer_build_claude-code --time=02:30:00 --mem=50G --gres=tmpspace:10
 The execution script automatically binds:
 - Current directory → `/jupyter` (source code access)
 - Per-file data mounts → `/workspace/data/<mount_as>` (read-only, from config `data.files`). Only files explicitly listed in the config YAML are visible to the LLM. Without `--config`, falls back to full data directory mount.
-- Results directory → `/workspace/results` (read-write)
+- Results directory → `/workspace/results` (read-write). When `--config` is provided, an experiment-specific subdirectory is created automatically (unless `--results-dir` is explicitly given, e.g. by the SBATCH template), so the LLM only sees its own run's output.
 - Runtime directory → `/runtime` (backed by `${RESULTS_DIR}/.runtime/` on host — Jupyter, Beaker, IPython, HF cache, `.experiment_id`)
 - SSL certificate (if available)
 

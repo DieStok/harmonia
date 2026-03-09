@@ -118,6 +118,7 @@ class ExperimentRunner:
             description=self.config.description,
             llm_provider=self.config.llm.provider,
             llm_model=self.config.llm.model,
+            run_id=self.run_id or None,
         )
         # Attach config snapshot to trace
         if hasattr(self.trace_logger, 'trace') and self.trace_logger.trace:
