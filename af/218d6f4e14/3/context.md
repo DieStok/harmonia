@@ -1,0 +1,55 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Here is an implementation plan:
+REDACTED.md
+
+Please send a subagent to review the above plan using the prompt here: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/possible_features/critic_prompt_dash.md 
+
+Then, report back to me whether any changes need to be made to the plan or it is...
+
+### Prompt 2
+
+[Request interrupted by user for tool use]
+
+### Prompt 3
+
+How's the subagent doing?
+
+And report to me on your search so far before continuing.
+
+### Prompt 4
+
+Is the subagent done? Please before doing anything else give me 200 words of what you are doing and what you are aiming to do.
+
+### Prompt 5
+
+Yes
+
+### Prompt 6
+
+[Request interrupted by user for tool use]
+
+### Prompt 7
+
+Okay it seems like you should about finish. How long do I need to wait for the final analysis here?
+
+### Prompt 8
+
+Q1: the SLURM-job-ID-format I think. Note that we are still evolving the codebase, so an alternative answer is: the format that the 10 latest runs are in: that is the new format we will adhere to.
+Q2: no, phoenix should be implemented.
+Q3: pin to current versions for reproducibility 
+
+However: I did implement the tracing plan! Check again, if not, change the current plan to implement whatever is missing as well. Update the whole plan in a new file called [CURRENTNAME]_updated.md.
+
+### Prompt 9
+
+[Request interrupted by user]
+
+### Prompt 10
+
+Continue
+
