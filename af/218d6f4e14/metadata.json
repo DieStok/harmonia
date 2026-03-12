@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 19,
+  "checkpoints_count": 21,
   "files_touched": [
     ".claude/proposed_commit_message.md",
     ".gitignore",
@@ -291,6 +291,7 @@
     "src/dashboard/tabs/error_analysis.py",
     "src/dashboard/tabs/failure_analysis.py",
     "src/dashboard/tabs/metrics.py",
+    "src/dashboard/tabs/token_cost.py",
     "src/dashboard/tabs/trace_explorer.py",
     "src/evaluation/make_standard_evaluation_plots.py",
     "src/evaluation/visualization/failure_io.py",
@@ -392,13 +393,20 @@
       "context": "/af/218d6f4e14/12/context.md",
       "content_hash": "/af/218d6f4e14/12/content_hash.txt",
       "prompt": "/af/218d6f4e14/12/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/13/metadata.json",
+      "transcript": "/af/218d6f4e14/13/full.jsonl",
+      "context": "/af/218d6f4e14/13/context.md",
+      "content_hash": "/af/218d6f4e14/13/content_hash.txt",
+      "prompt": "/af/218d6f4e14/13/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 9722,
-    "cache_creation_tokens": 2014151,
-    "cache_read_tokens": 54314976,
-    "output_tokens": 254449,
-    "api_call_count": 629
+    "input_tokens": 11284,
+    "cache_creation_tokens": 2482030,
+    "cache_read_tokens": 70785917,
+    "output_tokens": 301441,
+    "api_call_count": 782
   }
 }
