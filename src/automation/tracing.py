@@ -278,11 +278,48 @@ def extract_usage_records(raw_messages: list[dict]) -> list[dict]:
     return all_records
 
 
-def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
-    """
-    Parse raw WebSocket messages to extract structured code executions.
+def classify_code_execution(code: str) -> str:
+    """Classify a code execution as agent code or Beaker internal.
 
-    Returns list of dicts with keys: code, stdout, stderr, status.
+    Detects two known Beaker kernel templates by stable string signatures
+    (from beaker_kernel/subkernels/python.py):
+      - FETCH_STATE_CODE: introspects kernel state into modules/variables/functions/classes
+      - SAVE_STATE_CODE: serializes variables to .pkl files via dill for checkpointing
+
+    Returns one of:
+      "fetch_state"      — matches FETCH_STATE_CODE template
+      "checkpoint_save"  — matches SAVE_STATE_CODE template
+      "unknown_internal" — contains _SubkernelStateEncoder but doesn't match known patterns
+      "agent"            — everything else (actual agent-authored code)
+    """
+    # FETCH_STATE_CODE: introspects kernel state into modules/variables/functions/classes
+    if '"modules": {}' in code and '"variables": {}' in code and '_SubkernelStateEncoder' in code:
+        return "fetch_state"
+
+    # SAVE_STATE_CODE: serializes variables to .pkl via dill
+    if '_dill.dump(_value, _f)' in code and '.pkl' in code and '_SubkernelStateEncoder' in code:
+        return "checkpoint_save"
+
+    # Catch-all for other Beaker internals: uses _SubkernelStateEncoder but didn't
+    # match either known pattern above (guards against future Beaker template variants)
+    if '_SubkernelStateEncoder' in code:
+        return "unknown_internal"
+
+    return "agent"
+
+
+def extract_code_executions(raw_messages: list[dict]) -> dict[str, list[dict]]:
+    """
+    Parse raw WebSocket messages to extract structured code executions,
+    classified into agent vs Beaker-internal.
+
+    Returns dict with keys:
+      - "agent_code_executions": list of agent code execution dicts
+        (keys: code, stdout, stderr, status)
+      - "internal_code_executions": list of Beaker-internal execution dicts
+        (keys: code, stdout, stderr, status, category)
+        where category is one of: fetch_state, checkpoint_save, unknown_internal
+
     Handles both standard Jupyter msg_types (execute_input, execute_result) and
     Beaker-prefixed msg_types (beaker__execute_input, beaker__execute_reply).
     """
@@ -341,7 +378,20 @@ def extract_code_executions(raw_messages: list[dict]) -> list[dict]:
     if current_exec is not None:
         executions.append(current_exec)
 
-    return executions
+    # Classify each execution as agent or internal
+    agent_execs = []
+    internal_execs = []
+    for exc in executions:
+        category = classify_code_execution(exc["code"])
+        if category == "agent":
+            agent_execs.append(exc)
+        else:
+            internal_execs.append({**exc, "category": category})
+
+    return {
+        "agent_code_executions": agent_execs,
+        "internal_code_executions": internal_execs,
+    }
 
 
 def calculate_turn_cost(

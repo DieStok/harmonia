@@ -154,7 +154,9 @@ The SBATCH template (or exec script in manual mode) is the single source of trut
 
 Top-level: `run_id`, `experiment` (name, description), `llm` (provider, model), `timing` (start_time, end_time, total_duration_seconds), `status`, `error_message`, `config_snapshot`, `turns[]`.
 
-Each turn: `turn`, `user_message`, `agent_response`, `response_type`, `tool_calls`, `duration_seconds`, `raw_messages`, `timestamp`, `input_tokens`, `output_tokens`, `cost_usd`, `code_executions`, `usage_records`.
+Each turn: `turn`, `user_message`, `agent_response`, `response_type`, `tool_calls`, `duration_seconds`, `raw_messages`, `timestamp`, `input_tokens`, `output_tokens`, `cost_usd`, `agent_code_executions`, `internal_code_executions`, `usage_records`.
+
+Code executions are classified at the `extract_code_executions()` layer in `src/automation/tracing.py`. Beaker kernel internal code (state introspection, checkpointing) is separated from agent-authored code using pattern matching on `_SubkernelStateEncoder` and other stable signatures. The `classify_code_execution()` function returns one of: `fetch_state`, `checkpoint_save`, `unknown_internal`, or `agent`. Agent code goes into `agent_code_executions`; internal code goes into `internal_code_executions` (with an extra `category` field). The dashboard shows agent code by default with a collapsible section for internals. OTel spans are only created for agent code. The migration CLI `code_development_tools_agents/monitoring_and_evaluation/enrich_traces.py` can retroactively classify old traces.
 
 ### metrics.json (schema v1.1)
 Top-level: `schema_version`, `metadata` (ExperimentMetadata), `column_mapping` (ColumnMappingMetrics), `column_values` (dict → ColumnValueMetrics), `extra_columns_count`, `extra_columns`, `overall_summary` (OverallSummary), `gold_standard_file`, `llm_output_file`.

@@ -254,7 +254,9 @@ class ExperimentRunner:
 
         # Extract token usage and code executions from raw messages
         usage_records = extract_usage_records(response.raw_messages)
-        code_execs = extract_code_executions(response.raw_messages)
+        classified_execs = extract_code_executions(response.raw_messages)
+        agent_execs = classified_execs["agent_code_executions"]
+        internal_execs = classified_execs["internal_code_executions"]
 
         # Calculate aggregated token counts and cost
         pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
@@ -269,8 +271,8 @@ class ExperimentRunner:
                 with llm_call_span(self.tracer, i, self.config.llm.model) as lspan:
                     set_llm_usage(lspan, usage, pricing_prompt, pricing_completion)
 
-            # Create child TOOL spans for each code execution
-            for exec_data in code_execs:
+            # Create child TOOL spans for agent code executions only
+            for exec_data in agent_execs:
                 with tool_span(self.tracer, "beaker_execute", exec_data.get("code", "")) as tspan:
                     if tspan is not None:
                         tspan.set_attribute("output.value", exec_data.get("stdout", ""))
@@ -294,7 +296,8 @@ class ExperimentRunner:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost_usd,
-            code_executions=code_execs,
+            agent_code_executions=agent_execs,
+            internal_code_executions=internal_execs,
             usage_records=usage_records,
         )
         self.conversation_logger.log_turn(
@@ -302,6 +305,7 @@ class ExperimentRunner:
             user_message=msg_config.content,
             agent_response=response.content,
             response_type=response.response_type,
+            agent_code_executions=agent_execs,
         )
 
         # Handle decision points as a distinct follow-up turn
@@ -314,7 +318,9 @@ class ExperimentRunner:
 
             # Extract usage for decision turn too
             decision_usage = extract_usage_records(decision_response.raw_messages)
-            decision_code_execs = extract_code_executions(decision_response.raw_messages)
+            decision_classified = extract_code_executions(decision_response.raw_messages)
+            d_agent_execs = decision_classified["agent_code_executions"]
+            d_internal_execs = decision_classified["internal_code_executions"]
             d_input, d_output, d_cost = calculate_turn_cost(
                 decision_usage, pricing_prompt, pricing_completion
             )
@@ -330,7 +336,8 @@ class ExperimentRunner:
                 input_tokens=d_input,
                 output_tokens=d_output,
                 cost_usd=d_cost,
-                code_executions=decision_code_execs,
+                agent_code_executions=d_agent_execs,
+                internal_code_executions=d_internal_execs,
                 usage_records=decision_usage,
             )
             self.conversation_logger.log_turn(
@@ -338,6 +345,7 @@ class ExperimentRunner:
                 user_message=f"[AUTO-DECISION] {decision}",
                 agent_response=decision_response.content,
                 response_type=decision_response.response_type,
+                agent_code_executions=d_agent_execs,
             )
             response = decision_response
 
