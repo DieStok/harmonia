@@ -1,23 +1,17 @@
 {
   "cli_version": "0.4.4",
   "checkpoint_id": "af218d6f4e14",
+  "session_id": "737d9a18-874d-42b6-824b-f9ba0f0b57e2",
   "strategy": "manual-commit",
+  "created_at": "2026-03-12T11:27:21.648676115Z",
   "branch": "main",
-  "checkpoints_count": 19,
+  "checkpoints_count": 2,
   "files_touched": [
-    ".gitignore",
-    ".pre-commit-config.yaml",
-    "analysis/march11_experiment_plots/dash_app.py",
-    "calculate_metrics.py",
     "code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py",
     "docs/brainstorms/2026-03-12-unified-result-directory-naming-brainstorm.md",
     "docs/brainstorms/2026-03-12-unified-visualization-pipeline-brainstorm.md",
     "docs/plans/2026-03-12-fix-unified-result-directory-naming-plan.md",
-    "documentation/codebase_descriptions/how_this_codebase_works_09_03_2026.md",
     "documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md",
-    "documentation/plans/09_03_2026_1201_create_plotly_plots_phoenix_traces_dashboard.md",
-    "documentation/plans/09_03_2026_1201_create_plotly_plots_phoenix_traces_dashboard_updated.md",
-    "documentation/plans/09_03_2026_1201_implement_improved_tracing.md",
     "documentation/plans/12_03_2026_1115_enhance_standard_plots_with_failure_modes.md",
     "documentation/plans/12_03_2026_1115_expand_dashboard_all_visualizations.md",
     "documentation/plans/12_03_2026_1115_post_experiment_watcher_orchestrator.md",
@@ -35,8 +29,6 @@
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_mistral-nemo.yaml",
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_qwen3.5-27b.yaml",
     "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/dou_harmonization_codeact_qwen3.5-4b.yaml",
-    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_ollama.yaml",
-    "experiments/experiment_1_harmonia_dou2020_gdc/configs/automated/test_tracing_openrouter.yaml",
     "jobs/dou_harmonization_anyllm_devstral.sh",
     "jobs/dou_harmonization_bdikit-tools_claude-sonnet-4.6.sh",
     "jobs/dou_harmonization_bdikit-tools_deepseek-v3.2.sh",
@@ -88,97 +80,36 @@
     "jobs/dou_harmonization_qwen3.5-flash.sh",
     "jobs/dou_harmonization_step-3.5-flash.sh",
     "jobs/pull_qwen3.5_models.sh",
-    "notebooks/_build_notebooks.py",
-    "plans/09_03_2026_fix_data_mounting.md",
     "run_manual_experiment.py",
     "sbatch_template.sh",
     "sbatch_template_gpu.sh",
-    "scripts/ensure_phoenix_server.py",
-    "src/automation/__init__.py",
-    "src/automation/config.py",
-    "src/automation/logger.py",
     "src/automation/manual_runner.py",
     "src/automation/runner.py",
-    "src/automation/tracing.py",
     "src/dashboard/data_loader.py",
     "src/evaluation/make_standard_evaluation_plots.py",
     "src/evaluation/visualization/failure_io.py",
-    "src/evaluation/visualization/normalize.py",
     "src/evaluation/visualization/plots.py",
     "src/evaluation/visualize_metrics_cli.py",
     "workspace/data",
     "workspace/results"
   ],
-  "sessions": [
-    {
-      "metadata": "/af/218d6f4e14/0/metadata.json",
-      "transcript": "/af/218d6f4e14/0/full.jsonl",
-      "context": "/af/218d6f4e14/0/context.md",
-      "content_hash": "/af/218d6f4e14/0/content_hash.txt",
-      "prompt": "/af/218d6f4e14/0/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/1/metadata.json",
-      "transcript": "/af/218d6f4e14/1/full.jsonl",
-      "context": "/af/218d6f4e14/1/context.md",
-      "content_hash": "/af/218d6f4e14/1/content_hash.txt",
-      "prompt": "/af/218d6f4e14/1/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/2/metadata.json",
-      "transcript": "/af/218d6f4e14/2/full.jsonl",
-      "context": "/af/218d6f4e14/2/context.md",
-      "content_hash": "/af/218d6f4e14/2/content_hash.txt",
-      "prompt": "/af/218d6f4e14/2/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/3/metadata.json",
-      "transcript": "/af/218d6f4e14/3/full.jsonl",
-      "context": "/af/218d6f4e14/3/context.md",
-      "content_hash": "/af/218d6f4e14/3/content_hash.txt",
-      "prompt": "/af/218d6f4e14/3/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/4/metadata.json",
-      "transcript": "/af/218d6f4e14/4/full.jsonl",
-      "context": "/af/218d6f4e14/4/context.md",
-      "content_hash": "/af/218d6f4e14/4/content_hash.txt",
-      "prompt": "/af/218d6f4e14/4/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/5/metadata.json",
-      "transcript": "/af/218d6f4e14/5/full.jsonl",
-      "context": "/af/218d6f4e14/5/context.md",
-      "content_hash": "/af/218d6f4e14/5/content_hash.txt",
-      "prompt": "/af/218d6f4e14/5/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/6/metadata.json",
-      "transcript": "/af/218d6f4e14/6/full.jsonl",
-      "context": "/af/218d6f4e14/6/context.md",
-      "content_hash": "/af/218d6f4e14/6/content_hash.txt",
-      "prompt": "/af/218d6f4e14/6/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/7/metadata.json",
-      "transcript": "/af/218d6f4e14/7/full.jsonl",
-      "context": "/af/218d6f4e14/7/context.md",
-      "content_hash": "/af/218d6f4e14/7/content_hash.txt",
-      "prompt": "/af/218d6f4e14/7/prompt.txt"
-    },
-    {
-      "metadata": "/af/218d6f4e14/8/metadata.json",
-      "transcript": "/af/218d6f4e14/8/full.jsonl",
-      "context": "/af/218d6f4e14/8/context.md",
-      "content_hash": "/af/218d6f4e14/8/content_hash.txt",
-      "prompt": "/af/218d6f4e14/8/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "d4ab8f08-5d56-479b-8d89-c709fb728dea",
   "token_usage": {
-    "input_tokens": 7442,
-    "cache_creation_tokens": 1624512,
-    "cache_read_tokens": 48705151,
-    "output_tokens": 237325,
-    "api_call_count": 567
-  }
+    "input_tokens": 237,
+    "cache_creation_tokens": 256538,
+    "cache_read_tokens": 12461405,
+    "output_tokens": 42209,
+    "api_call_count": 124
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-12T11:27:12.756719723Z",
+    "agent_lines": 7385,
+    "human_added": 0,
+    "human_modified": 20,
+    "human_removed": 4,
+    "total_committed": 7404,
+    "agent_percentage": 99.74338195569962
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/737d9a18-874d-42b6-824b-f9ba0f0b57e2.jsonl"
 }
