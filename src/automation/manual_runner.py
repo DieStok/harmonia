@@ -302,7 +302,9 @@ class ManualExperimentRunner:
 
                 # Extract token usage and code executions
                 usage_records = extract_usage_records(pending["raw_messages"])
-                code_execs = extract_code_executions(pending["raw_messages"])
+                classified_execs = extract_code_executions(pending["raw_messages"])
+                agent_execs = classified_execs["agent_code_executions"]
+                internal_execs = classified_execs["internal_code_executions"]
                 pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
                 pricing_completion = self.config.model_metadata.pricing_completion_per_million_tokens
                 input_tokens, output_tokens, cost_usd = calculate_turn_cost(
@@ -315,7 +317,7 @@ class ManualExperimentRunner:
                         for i, usage in enumerate(usage_records):
                             with llm_call_span(self.tracer, i, self.config.llm.model) as lspan:
                                 set_llm_usage(lspan, usage, pricing_prompt, pricing_completion)
-                        for exec_data in code_execs:
+                        for exec_data in agent_execs:
                             with tool_span(self.tracer, "beaker_execute", exec_data.get("code", "")) as ts:
                                 if ts is not None:
                                     ts.set_attribute("output.value", exec_data.get("stdout", ""))
@@ -335,7 +337,8 @@ class ManualExperimentRunner:
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     cost_usd=cost_usd,
-                    code_executions=code_execs,
+                    agent_code_executions=agent_execs,
+                    internal_code_executions=internal_execs,
                     usage_records=usage_records,
                 )
                 self.conversation_logger.log_turn(
@@ -343,6 +346,7 @@ class ManualExperimentRunner:
                     user_message=pending["user_message"],
                     agent_response=agent_response,
                     response_type="llm_response",
+                    agent_code_executions=agent_execs,
                 )
 
                 # Auto-save after each turn
@@ -361,7 +365,9 @@ class ManualExperimentRunner:
 
                 # Extract token usage and code executions
                 usage_records = extract_usage_records(pending["raw_messages"])
-                code_execs = extract_code_executions(pending["raw_messages"])
+                classified_execs = extract_code_executions(pending["raw_messages"])
+                agent_execs = classified_execs["agent_code_executions"]
+                internal_execs = classified_execs["internal_code_executions"]
                 pricing_prompt = self.config.model_metadata.pricing_prompt_per_million_tokens
                 pricing_completion = self.config.model_metadata.pricing_completion_per_million_tokens
                 input_tokens, output_tokens, cost_usd = calculate_turn_cost(
@@ -390,7 +396,8 @@ class ManualExperimentRunner:
                     input_tokens=input_tokens,
                     output_tokens=output_tokens,
                     cost_usd=cost_usd,
-                    code_executions=code_execs,
+                    agent_code_executions=agent_execs,
+                    internal_code_executions=internal_execs,
                     usage_records=usage_records,
                 )
                 self.conversation_logger.log_turn(
@@ -398,6 +405,7 @@ class ManualExperimentRunner:
                     user_message=pending["user_message"],
                     agent_response=f"```python\n{code}\n```",
                     response_type="code_cell",
+                    agent_code_executions=agent_execs,
                 )
 
                 self._save_intermediate()

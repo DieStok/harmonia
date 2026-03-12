@@ -63,11 +63,12 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
                 style={"backgroundColor": "#f1f8e9", "padding": "10px", "borderRadius": "4px", "marginBottom": "10px"},
             ))
 
-    # Code executions
-    code_execs = turn.get("code_executions", [])
-    if code_execs:
-        children.append(html.H6(f"Code Executions ({len(code_execs)})", className="text-muted mt-2"))
-        for j, ce in enumerate(code_execs[:5]):  # Limit display
+    # Agent code executions (shown by default)
+    # Backward-compatible: fall back to old "code_executions" field for un-migrated traces
+    agent_execs = turn.get("agent_code_executions", turn.get("code_executions", []))
+    if agent_execs:
+        children.append(html.H6(f"Code Executions ({len(agent_execs)})", className="text-muted mt-2"))
+        for j, ce in enumerate(agent_execs[:5]):  # Limit display
             children.append(html.Strong(f"Execution {j+1} [{ce.get('status', '?')}]"))
             if ce.get("code"):
                 children.append(_format_code_block(ce["code"][:1000]))
@@ -81,6 +82,23 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
                     ce["stderr"][:500],
                     style={"fontSize": "0.85em", "backgroundColor": "#ffebee", "padding": "6px", "color": "#c62828"},
                 ))
+
+    # Internal executions (collapsible, hidden by default)
+    internal_execs = turn.get("internal_code_executions", [])
+    if internal_execs:
+        internal_children = []
+        for j, ce in enumerate(internal_execs[:5]):
+            category = ce.get("category", "unknown")
+            internal_children.append(html.Strong(f"{category} [{ce.get('status', '?')}]"))
+            if ce.get("code"):
+                internal_children.append(_format_code_block(ce["code"][:500]))
+        children.append(html.Details([
+            html.Summary(
+                f"Internal Executions ({len(internal_execs)})",
+                style={"fontSize": "0.85em", "color": "#999", "cursor": "pointer"},
+            ),
+            html.Div(internal_children),
+        ], style={"marginTop": "8px"}))
 
     # Token details row
     children.append(html.Hr())

@@ -23,7 +23,8 @@ class TurnRecord:
     input_tokens: int = 0
     output_tokens: int = 0
     cost_usd: float = 0.0
-    code_executions: list[dict] = field(default_factory=list)
+    agent_code_executions: list[dict] = field(default_factory=list)
+    internal_code_executions: list[dict] = field(default_factory=list)
     usage_records: list[dict] = field(default_factory=list)
 
 
@@ -111,7 +112,8 @@ class TraceLogger:
         input_tokens: int = 0,
         output_tokens: int = 0,
         cost_usd: float = 0.0,
-        code_executions: list[dict] = None,
+        agent_code_executions: list[dict] = None,
+        internal_code_executions: list[dict] = None,
         usage_records: list[dict] = None,
     ) -> None:
         """Log a conversation turn."""
@@ -129,7 +131,8 @@ class TraceLogger:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost_usd,
-            code_executions=code_executions or [],
+            agent_code_executions=agent_code_executions or [],
+            internal_code_executions=internal_code_executions or [],
             usage_records=usage_records or [],
         )
         self.trace.turns.append(record)
@@ -252,6 +255,7 @@ class ConversationLogger:
         user_message: str,
         agent_response: str,
         response_type: str = "llm_response",
+        agent_code_executions: list[dict] = None,
     ) -> None:
         """Log a conversation turn."""
         self.lines.extend([
@@ -263,9 +267,40 @@ class ConversationLogger:
             "",
             agent_response,
             "",
-            "---",
-            "",
         ])
+
+        # Render agent code executions
+        if agent_code_executions:
+            self.lines.append(f"**Code Executions ({len(agent_code_executions)})**")
+            self.lines.append("")
+            for i, ce in enumerate(agent_code_executions):
+                status = ce.get("status", "?")
+                self.lines.extend([
+                    f"*Execution {i + 1}* [{status}]",
+                    "",
+                    "```python",
+                    ce.get("code", "").rstrip(),
+                    "```",
+                    "",
+                ])
+                if ce.get("stdout"):
+                    self.lines.extend([
+                        "Output:",
+                        "```",
+                        ce["stdout"].rstrip(),
+                        "```",
+                        "",
+                    ])
+                if ce.get("stderr"):
+                    self.lines.extend([
+                        "Stderr:",
+                        "```",
+                        ce["stderr"].rstrip(),
+                        "```",
+                        "",
+                    ])
+
+        self.lines.extend(["---", ""])
 
     def log_error(self, error_message: str) -> None:
         """Log an error."""

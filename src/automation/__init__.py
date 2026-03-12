@@ -16,6 +16,7 @@ from .manual_runner import ManualExperimentRunner, run_manual_experiment
 from .runner import ExperimentRunner
 from .tracing import (
     calculate_turn_cost,
+    classify_code_execution,
     extract_code_executions,
     extract_usage_records,
     init_tracing,
@@ -33,6 +34,7 @@ __all__ = [
     "ConversationLogger",
     "init_tracing",
     "extract_usage_records",
+    "classify_code_execution",
     "extract_code_executions",
     "calculate_turn_cost",
 ]
