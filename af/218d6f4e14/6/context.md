@@ -134,3 +134,7 @@ Read the output file to retrieve the result: REDACTED.output
 
 Could you pull these qwen models in ollama and rerun the jobs for them?
 
+### Prompt 20
+
+how far along are they?
+

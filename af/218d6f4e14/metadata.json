@@ -2,13 +2,13 @@
   "cli_version": "0.4.4",
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
-  "branch": "fix/unified-result-dir-naming",
-  "checkpoints_count": 21,
+  "branch": "feat/classify-trace-code-executions",
+  "checkpoints_count": 18,
   "files_touched": [
     ".gitignore",
     ".pre-commit-config.yaml",
-    "analysis/march11_experiment_plots/dash_app.py",
     "calculate_metrics.py",
+    "code_development_tools_agents/monitoring_and_evaluation/enrich_traces.py",
     "code_development_tools_agents/monitoring_and_evaluation/read_and_analyze_logs_and_traces_cli.py",
     "docs/brainstorms/2026-03-12-unified-result-directory-naming-brainstorm.md",
     "docs/brainstorms/2026-03-12-unified-visualization-pipeline-brainstorm.md",
@@ -196,10 +196,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 10635,
-    "cache_creation_tokens": 1762324,
-    "cache_read_tokens": 57124875,
-    "output_tokens": 277285,
-    "api_call_count": 652
+    "input_tokens": 10511,
+    "cache_creation_tokens": 1629489,
+    "cache_read_tokens": 52030119,
+    "output_tokens": 251276,
+    "api_call_count": 560
   }
 }
