@@ -242,7 +242,10 @@ def plot_failure_distribution(
     backend: str = "seaborn",
     title: str | None = None,
 ):
-    """Horizontal bar chart of failure reason counts."""
+    """Horizontal bar chart of failure reason counts.
+
+    Expects ``all_runs_df`` with ``has_output`` and ``failure_reason`` columns.
+    """
     _require_backend(backend)
 
     failed = all_runs_df[~all_runs_df["has_output"].astype(bool)].copy()
@@ -295,7 +298,10 @@ def plot_failure_sunburst(
     row_col: str = "model",
     col_col: str = "context",
 ):
-    """Sunburst (plotly) or grouped bar (seaborn) of failure breakdown."""
+    """Sunburst (plotly) or grouped bar (seaborn) of failure breakdown.
+
+    Hierarchy: failure_reason -> model -> context.
+    """
     _require_backend(backend)
 
     failed = all_runs_df[~all_runs_df["has_output"].astype(bool)].copy()
@@ -306,6 +312,7 @@ def plot_failure_sunburst(
     default_title = f"Failure Mode Breakdown ({n_fail} failed runs)"
 
     if backend == "seaborn":
+        # Sunburst not available in seaborn; use grouped bar instead
         counts = (
             failed.groupby(["failure_reason", row_col])
             .size()
@@ -350,6 +357,7 @@ def plot_error_breakdown(
     """
     _require_backend(backend)
 
+    # Prefer total counts; fall back to rates
     total_types = ["total_hallucinations", "total_omissions", "total_genuine_errors"]
     rate_types = ["avg_hallucination_rate", "avg_omission_rate"]
 
@@ -402,11 +410,13 @@ def plot_error_breakdown(
         "Genuine Errors": "#8e44ad",
         "Genuine": "#8e44ad",
     }
+    # Canonical ordering (works for both total and rate column names)
     canonical_order = ["Hallucinations", "Hallucination", "Omissions", "Omission",
                        "Genuine Errors", "Genuine"]
 
     if backend == "seaborn":
         sns.set_theme(style="whitegrid")
+        # Pivot for stacked bars
         pivot = edf.pivot_table(index="run", columns="error_type", values="count", fill_value=0)
         ordered_cols = [c for c in canonical_order if c in pivot.columns]
         pivot = pivot[ordered_cols]

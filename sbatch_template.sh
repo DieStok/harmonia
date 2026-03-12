@@ -104,7 +104,7 @@ trap cleanup EXIT
 
 # Wait for server to be ready
 echo "Waiting for server to start..."
-MAX_WAIT=90  # Increased timeout for potential model loading
+MAX_WAIT=600  # 10 min — Beaker + Phoenix startup can take 3-5 min on busy nodes
 WAITED=0
 while [ $WAITED -lt $MAX_WAIT ]; do
     if curl -s -o /dev/null -w "%{http_code}" "http://localhost:$PORT/api" 2>/dev/null | grep -q "200\|401"; then
