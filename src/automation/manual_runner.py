@@ -72,14 +72,23 @@ class ManualExperimentRunner:
         self.token = token
         self.config = config
 
-        # Set up output directory
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        # Use RESULTS_DIR env var if set (authoritative — set by exec_apptainer_harmonia.sh).
+        # Only construct our own path as fallback (e.g. running outside container).
         self.run_id = os.environ.get("RUN_ID", "")
-        base_dir = Path(output_dir or config.output.base_dir)
-        if self.run_id:
-            self.output_dir = base_dir / f"{config.name}_{timestamp}_{self.run_id}"
+        env_results_dir = os.environ.get("RESULTS_DIR")
+
+        if env_results_dir and Path(env_results_dir).is_dir():
+            self.output_dir = Path(env_results_dir)
+        elif output_dir:
+            self.output_dir = Path(output_dir)
         else:
-            self.output_dir = base_dir / f"{config.name}_{timestamp}"
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            slurm_id = os.environ.get("SLURM_JOB_ID", os.environ.get("SLURM_JOBID", "manual"))
+            base_dir = Path(config.output.base_dir)
+            if self.run_id:
+                self.output_dir = base_dir / f"{timestamp}_{config.name}_{slurm_id}_{self.run_id}"
+            else:
+                self.output_dir = base_dir / f"{timestamp}_{config.name}_{slurm_id}"
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize loggers

@@ -13,6 +13,7 @@ from typing import Optional
 
 import pandas as pd
 import yaml
+
 from evaluation.visualization.io import (
     RUN_ID_PATTERN,
 )
@@ -91,14 +92,11 @@ class DashboardDataLoader:
                 if len(dirs) == 1:
                     self._run_index[rid] = dirs[0]
                 else:
-                    # Prefer SLURM format: {name}_{job_id}_{run_id}
-                    # The segment before run_id in SLURM format is all digits
+                    # Multiple dirs for same run_id (legacy duplication).
+                    # Prefer the one that contains trace.json (the real results).
                     best = dirs[0]
                     for d in dirs:
-                        # Remove the run_id suffix, check preceding segment
-                        prefix = d.name[: -(len(rid) + 1)]  # remove _<run_id>
-                        parts = prefix.rsplit("_", 1)
-                        if len(parts) == 2 and _SLURM_JOB_ID_RE.match(parts[1]):
+                        if (d / "trace.json").exists():
                             best = d
                             break
                     self._run_index[rid] = best

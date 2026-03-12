@@ -43,7 +43,7 @@ from pathlib import Path
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
-from automation import load_config, ManualExperimentRunner
+from automation import ManualExperimentRunner, load_config
 
 
 def _load_json(path) -> dict | None:
@@ -119,8 +119,13 @@ def parse_args() -> argparse.Namespace:
 def create_experiment_output_dir(config, output_dir_override: Path = None) -> Path:
     """Create experiment-specific output directory."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    run_id = os.environ.get("RUN_ID", "")
+    slurm_id = os.environ.get("SLURM_JOB_ID", os.environ.get("SLURM_JOBID", "manual"))
     base_dir = Path(output_dir_override or config.output.base_dir)
-    output_dir = base_dir / f"{config.name}_{timestamp}"
+    name_parts = [timestamp, config.name, slurm_id]
+    if run_id:
+        name_parts.append(run_id)
+    output_dir = base_dir / "_".join(name_parts)
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
@@ -145,7 +150,7 @@ def start_beaker_server(
         "--job-name", results_dir.name,  # Use output dir name for log naming
     ]
 
-    print(f"Starting Beaker server...")
+    print("Starting Beaker server...")
     print(f"  Command: {' '.join(cmd)}")
     print(f"  Results dir: {results_dir}")
     print()
@@ -164,8 +169,8 @@ def start_beaker_server(
 
 def wait_for_server(server_url: str, token: str, timeout: int = 300) -> bool:
     """Wait for Beaker server to be ready."""
-    import urllib.request
     import urllib.error
+    import urllib.request
 
     start_time = time.time()
     check_url = f"{server_url}/api/sessions"
@@ -225,10 +230,9 @@ async def run_monitor(
 
         # Calculate metrics if evaluation config is present
         if config.evaluation and config.evaluation.gold_standard:
-            print(f"\nCalculating metrics...")
+            print("\nCalculating metrics...")
             try:
                 from evaluation.metrics import calculate_all_metrics
-                from evaluation.schemas import MetricsResult
 
                 # Load gold standard files
                 gold_column_mapping = _load_json(config.evaluation.gold_column_mapping)
@@ -267,10 +271,10 @@ async def run_monitor(
                     metrics_path = output_dir / "metrics.json"
                     metrics_path.write_text(result.model_dump_json(indent=2))
                     print(f"  ✓ Metrics saved to: {metrics_path}")
-                    print(f"  - metrics.json: Harmonization metrics")
+                    print("  - metrics.json: Harmonization metrics")
                 else:
                     print(f"  ⚠ LLM output CSV not found at {llm_output}")
-                    print(f"  Skipping metrics calculation.")
+                    print("  Skipping metrics calculation.")
             except Exception as e:
                 print(f"  ⚠ Error calculating metrics: {e}")
                 # Don't fail the whole experiment just because metrics failed
@@ -308,7 +312,7 @@ async def main() -> int:
     print(f"  LLM: {config.llm.provider}/{config.llm.model}")
 
     if config.manual_mode:
-        print(f"  Mode: Manual (interactive)")
+        print("  Mode: Manual (interactive)")
     else:
         print(f"  Mode: Automated ({len(config.messages)} messages)")
         print("")
@@ -328,7 +332,7 @@ async def main() -> int:
     else:
         # Use experiment-specific dir (recommended)
         results_dir = output_dir
-        print(f"  Using experiment-specific results dir")
+        print("  Using experiment-specific results dir")
 
     beaker_process = None
     server_output_lines = []

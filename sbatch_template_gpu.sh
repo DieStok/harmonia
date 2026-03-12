@@ -33,9 +33,10 @@ set -e
 # Generate unique run ID for linking logs to results
 RUN_ID=$(python3 -c "import secrets; print(secrets.token_hex(4))")
 export RUN_ID
+TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
 
 # Create deterministic per-run results directory
-RUN_RESULTS_DIR="results/{{experiment_name}}_${SLURM_JOB_ID}_${RUN_ID}"
+RUN_RESULTS_DIR="results/${TIMESTAMP}_{{experiment_name}}_${SLURM_JOB_ID}_${RUN_ID}"
 mkdir -p "$RUN_RESULTS_DIR"
 
 # Redirect all output to date-stamped log files (includes run_id)

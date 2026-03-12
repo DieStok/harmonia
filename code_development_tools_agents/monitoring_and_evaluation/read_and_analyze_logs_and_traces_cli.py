@@ -75,8 +75,13 @@ MANUAL_OLLAMA_LOG_PATTERN = re.compile(
     r"^(?:(.+?)_)?ollama_?(\d{8}_\d{6})(?:_([a-f0-9]{8}))?\.log$"
 )
 
-# Results folder pattern: {experiment_name}_{YYYYMMDD_HHMMSS}[_{run_id}]
-RESULTS_FOLDER_PATTERN = re.compile(
+# Results folder patterns (try new format first, fall back to old)
+# New: {YYYYMMDD_HHMMSS}_{experiment_name}_{SLURM_JOB_ID|manual}_{run_id}
+RESULTS_FOLDER_PATTERN_NEW = re.compile(
+    r"^(\d{8}_\d{6})_(.+?)_(\d+|manual)_([a-f0-9]{8})$"
+)
+# Old: {experiment_name}_{YYYYMMDD_HHMMSS}[_{run_id}]
+RESULTS_FOLDER_PATTERN_OLD = re.compile(
     r"^(.+?)_(\d{8}_\d{6})(?:_([a-f0-9]{8}))?$"
 )
 
@@ -219,11 +224,13 @@ class DiscoveredResults:
         experiment_name: str,
         timestamp_str: str,
         run_id: Optional[str] = None,
+        slurm_job_id: Optional[str] = None,
     ):
         self.path = path
         self.experiment_name = experiment_name
         self.timestamp_str = timestamp_str
         self.run_id = run_id
+        self.slurm_job_id = slurm_job_id
         self.has_trace = (path / "trace.json").exists()
         self.has_metrics = (path / "metrics.json").exists()
         self.has_experiment_id = (path / ".runtime" / ".experiment_id").exists() or (path / ".experiment_id").exists()
@@ -295,12 +302,24 @@ def discover_component_logs(log_dir: Path) -> list[DiscoveredLog]:
 
 
 def discover_results(results_dir: Path) -> list[DiscoveredResults]:
-    """Discover results folders."""
+    """Discover results folders (supports both new and old naming formats)."""
     results = []
     for d in results_dir.iterdir():
         if not d.is_dir():
             continue
-        m = RESULTS_FOLDER_PATTERN.match(d.name)
+        # Try new format first: {YYYYMMDD_HHMMSS}_{name}_{slurm_id}_{run_id}
+        m = RESULTS_FOLDER_PATTERN_NEW.match(d.name)
+        if m:
+            results.append(DiscoveredResults(
+                path=d,
+                experiment_name=m.group(2),
+                timestamp_str=m.group(1),
+                run_id=m.group(4),
+                slurm_job_id=m.group(3),
+            ))
+            continue
+        # Fall back to old format: {name}_{YYYYMMDD_HHMMSS}[_{run_id}]
+        m = RESULTS_FOLDER_PATTERN_OLD.match(d.name)
         if m:
             results.append(DiscoveredResults(
                 path=d,

@@ -174,7 +174,8 @@ echo "Run ID: ${RUN_ID}"
 # This ensures the LLM only sees its own run's output, not all past experiments.
 if [ -n "$CONFIG_FILE" ] && [ "$RESULTS_DIR" = "$DEFAULT_RESULTS_DIR" ]; then
     TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
-    RESULTS_DIR="${DEFAULT_RESULTS_DIR}/${EXPERIMENT_NAME}_${TIMESTAMP}_${RUN_ID}"
+    SLURM_ID="${SLURM_JOB_ID:-${SLURM_JOBID:-manual}}"
+    RESULTS_DIR="${DEFAULT_RESULTS_DIR}/${TIMESTAMP}_${EXPERIMENT_NAME}_${SLURM_ID}_${RUN_ID}"
     # Also set job name for consistent log naming
     if [ -z "$JOB_NAME" ]; then
         JOB_NAME="${EXPERIMENT_NAME}_${TIMESTAMP}"
