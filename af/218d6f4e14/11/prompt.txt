@@ -1,0 +1,2828 @@
+# Brainstorm a Feature or Improvement
+
+**Note: The current year is 2026.** Use this when dating brainstorm documents.
+
+Brainstorming helps answer **WHAT** to build through collaborative dialogue. It precedes `/ce:plan`, which answers **HOW** to build it.
+
+**Process knowledge:** Load the `brainstorming` skill for detailed question techniques, approach exploration patterns, and YAGNI principles.
+
+## Feature Description
+
+<feature_description> #I want to make improvements to the dashboard.
+
+First:
+- it is quite slow. Can this be sped up? In what different ways? For instance, start from loading only the last 5 runs and making their plotly plots, only make more when needed. Lazy loading? progressive querying of phoenix? What else?
+- on the main page I want the table of runs to be sorted by date, then model, then context on startup. I also want it bigger (it can fill the whole page), and have it by default use a page size of 100, and subset to runs from the last 5 days (with a toggle for show all runs/show last 5 days). 
+- I also want an element here where I can click-and-drag select certain runs (or a checkbox in front of the runs) and then the rest of the dashboard focuses only on those runs, until such time as I change the selection.
+- similarly, I want a selector widget where I can filter on whatever columns I want, on 'contains' or 'does not contain' whatever text I want, and define the selection to use for the dashboard in that way.
+- the overview should also have the experiment config file path, the results dir file path, and the analysis file path in this table.
+- in general each tab should have at the bottom some sort of raw/diagnostic information header that, when clicked, displays the results that are nicely rendered in a raw form, along with file path information etc.
+- in general, every tab could do with a panel of selectable options above. For instance, options could be to filter, which plots to show, etc. What boxes/options could these be and what would be sensible defaults?
+
+Call the dashboard GEO-LLM Experiment Dashboard. 
+
+Failure analysis tab:
+- make sure it also subsets to the runs selected on the overview tab. 
+- All failures are UNKNOWN categories for now, while I believe this is not what comes out of the cli_logs analysis. Check this.
+- have a Diagnostic/dev mode/verbose clickable expandable header below that points to file paths and what was run to obtain this.
+
+Metrics tab:
+- the metrics tab has not loaded for me once, meaning it is much too heavy and tries to do too much. Rework it to show some easy global metrics, and then have a panel where I can search and or click to get specific plots if I want to look at them. --> what plots are there on this page, how could such a panel look like?
+
+Error Analysis Tab:
+- should have a header 
+Trace explorer:
+- I should be able to search in a bar that I type in. 
+- besides the smooth waterfall plot or something, I also want a 'raw trace information' header at the bottom that I can click on, and when clicked on reveals an element that renders the JSON trace in a prettified way (i.e. code that has \n in it on newlines, etc.). That is: just full diagnostic information, separate from the conversation turns visualisation. </feature_description>
+
+**If the feature description above is empty, ask the user:** "What would you like to explore? Please describe the feature, problem, or improvement you're thinking about."
+
+Do not proceed until you have a feature description from the user.
+
+## Execution Flow
+
+### Phase 0: Assess Requirements Clarity
+
+Evaluate whether brainstorming is needed based on the feature description.
+
+**Clear requirements indicators:**
+- Specific acceptance criteria provided
+- Referenced existing patterns to follow
+- Described exact expected behavior
+- Constrained, well-defined scope
+
+**If requirements are already clear:**
+Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough to proceed directly to planning. Should I run `/ce:plan` instead, or would you like to explore the idea further?"
+
+### Phase 1: Understand the Idea
+
+#### 1.1 Repository Research (Lightweight)
+
+Run a quick repo scan to understand existing patterns:
+
+- Task repo-research-analyst("Understand existing patterns related to: <feature_description>")
+
+Focus on: similar features, established patterns, CLAUDE.md guidance.
+
+#### 1.2 Collaborative Dialogue
+
+Use the **AskUserQuestion tool** to ask questions **one at a time**.
+
+**Guidelines (see `brainstorming` skill for detailed techniques):**
+- Prefer multiple choice when natural options exist
+- Start broad (purpose, users) then narrow (constraints, edge cases)
+- Validate assumptions explicitly
+- Ask about success criteria
+
+**Exit condition:** Continue until the idea is clear OR user says "proceed"
+
+### Phase 2: Explore Approaches
+
+Propose **2-3 concrete approaches** based on research and conversation.
+
+For each approach, provide:
+- Brief description (2-3 sentences)
+- Pros and cons
+- When it's best suited
+
+Lead with your recommendation and explain why. Apply YAGNI—prefer simpler solutions.
+
+Use **AskUserQuestion tool** to ask which approach the user prefers.
+
+### Phase 3: Capture the Design
+
+Write a brainstorm document to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`.
+
+**Document structure:** See the `brainstorming` skill for the template format. Key sections: What We're Building, Why This Approach, Key Decisions, Open Questions.
+
+Ensure `docs/brainstorms/` directory exists before writing.
+
+**IMPORTANT:** Before proceeding to Phase 4, check if there are any Open Questions listed in the brainstorm document. If there are open questions, YOU MUST ask the user about each one using AskUserQuestion before offering to proceed to planning. Move resolved questions to a "Resolved Questions" section.
+
+### Phase 4: Handoff
+
+Use **AskUserQuestion tool** to present next steps:
+
+**Question:** "Brainstorm captured. What would you like to do next?"
+
+**Options:**
+1. **Review and refine** - Improve the document through structured self-review
+2. **Proceed to planning** - Run `/ce:plan` (will auto-detect this brainstorm)
+3. **Share to Proof** - Upload to Proof for collaborative review and sharing
+4. **Ask more questions** - I have more questions to clarify before moving on
+5. **Done for now** - Return later
+
+**If user selects "Share to Proof":**
+
+```bash
+CONTENT=$(cat docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md)
+TITLE="Brainstorm: <topic title>"
+RESPONSE=$(curl -s -X POST https://www.proofeditor.ai/share/markdown \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg title "$TITLE" --arg markdown "$CONTENT" --arg by "ai:compound" '{title: $title, markdown: $markdown, by: $by}')")
+PROOF_URL=$(echo "$RESPONSE" | jq -r '.tokenUrl')
+```
+
+Display the URL prominently: `View & collaborate in Proof: <PROOF_URL>`
+
+If the curl fails, skip silently. Then return to the Phase 4 options.
+
+**If user selects "Ask more questions":** YOU (Claude) return to Phase 1.2 (Collaborative Dialogue) and continue asking the USER questions one at a time to further refine the design. The user wants YOU to probe deeper - ask about edge cases, constraints, preferences, or areas not yet explored. Continue until the user is satisfied, then return to Phase 4.
+
+**If user selects "Review and refine":**
+
+Load the `document-review` skill and apply it to the brainstorm document.
+
+When document-review returns "Review complete", present next steps:
+
+1. **Move to planning** - Continue to `/ce:plan` with this document
+2. **Done for now** - Brainstorming complete. To start planning later: `/ce:plan [document-path]`
+
+## Output Summary
+
+When complete, display:
+
+```
+Brainstorm complete!
+
+Document: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md
+
+Key decisions:
+- [Decision 1]
+- [Decision 2]
+
+Next: Run `/ce:plan` when ready to implement.
+```
+
+## Important Guidelines
+
+- **Stay focused on WHAT, not HOW** - Implementation details belong in the plan
+- **Ask one question at a time** - Don't overwhelm
+- **Apply YAGNI** - Prefer simpler approaches
+- **Keep outputs concise** - 200-300 words per section max
+
+NEVER CODE! Just explore and document decisions.
+
+---
+
+# Create a plan for a new feature or bug fix
+
+## Introduction
+
+**Note: The current year is 2026.** Use this when dating plans and searching for recent documentation.
+
+Transform feature descriptions, bug reports, or improvement ideas into well-structured markdown files issues that follow project conventions and best practices. This command provides flexible detail levels to match your needs.
+
+## Feature Description
+
+<feature_description> #docs/brainstorms/2026-03-12-dashboard-improvements-brainstorm.md </feature_description>
+
+**If the feature description above is empty, ask the user:** "What would you like to plan? Please describe the feature, bug fix, or improvement you have in mind."
+
+Do not proceed until you have a clear feature description from the user.
+
+### 0. Idea Refinement
+
+**Check for brainstorm output first:**
+
+Before asking questions, look for recent brainstorm documents in `docs/brainstorms/` that match this feature:
+
+```bash
+ls -la docs/brainstorms/*.md 2>/dev/null | head -10
+```
+
+**Relevance criteria:** A brainstorm is relevant if:
+- The topic (from filename or YAML frontmatter) semantically matches the feature description
+- Created within the last 14 days
+- If multiple candidates match, use the most recent one
+
+**If a relevant brainstorm exists:**
+1. Read the brainstorm document **thoroughly** — every section matters
+2. Announce: "Found brainstorm from [date]: [topic]. Using as foundation for planning."
+3. Extract and carry forward **ALL** of the following into the plan:
+   - Key decisions and their rationale
+   - Chosen approach and why alternatives were rejected
+   - Constraints and requirements discovered during brainstorming
+   - Open questions (flag these for resolution during planning)
+   - Success criteria and scope boundaries
+   - Any specific technical choices or patterns discussed
+4. **Skip the idea refinement questions below** — the brainstorm already answered WHAT to build
+5. Use brainstorm content as the **primary input** to research and planning phases
+6. **Critical: The brainstorm is the origin document.** Throughout the plan, reference specific decisions with `(see brainstorm: docs/brainstorms/<filename>)` when carrying forward conclusions. Do not paraphrase decisions in a way that loses their original context — link back to the source.
+7. **Do not omit brainstorm content** — if the brainstorm discussed it, the plan must address it (even if briefly). Scan each brainstorm section before finalizing the plan to verify nothing was dropped.
+
+**If multiple brainstorms could match:**
+Use **AskUserQuestion tool** to ask which brainstorm to use, or whether to proceed without one.
+
+**If no brainstorm found (or not relevant), run idea refinement:**
+
+Refine the idea through collaborative dialogue using the **AskUserQuestion tool**:
+
+- Ask questions one at a time to understand the idea fully
+- Prefer multiple choice questions when natural options exist
+- Focus on understanding: purpose, constraints and success criteria
+- Continue until the idea is clear OR user says "proceed"
+
+**Gather signals for research decision.** During refinement, note:
+
+- **User's familiarity**: Do they know the codebase patterns? Are they pointing to examples?
+- **User's intent**: Speed vs thoroughness? Exploration vs execution?
+- **Topic risk**: Security, payments, external APIs warrant more caution
+- **Uncertainty level**: Is the approach clear or open-ended?
+
+**Skip option:** If the feature description is already detailed, offer:
+"Your description is clear. Should I proceed with research, or would you like to refine it further?"
+
+## Main Tasks
+
+### 1. Local Research (Always Runs - Parallel)
+
+<thinking>
+First, I need to understand the project's conventions, existing patterns, and any documented learnings. This is fast and local - it informs whether external research is needed.
+</thinking>
+
+Run these agents **in parallel** to gather local context:
+
+- Task repo-research-analyst(feature_description)
+- Task learnings-researcher(feature_description)
+
+**What to look for:**
+- **Repo research:** existing patterns, CLAUDE.md guidance, technology familiarity, pattern consistency
+- **Learnings:** documented solutions in `docs/solutions/` that might apply (gotchas, patterns, lessons learned)
+
+These findings inform the next step.
+
+### 1.5. Research Decision
+
+Based on signals from Step 0 and findings from Step 1, decide on external research.
+
+**High-risk topics → always research.** Security, payments, external APIs, data privacy. The cost of missing something is too high. This takes precedence over speed signals.
+
+**Strong local context → skip external research.** Codebase has good patterns, CLAUDE.md has guidance, user knows what they want. External research adds little value.
+
+**Uncertainty or unfamiliar territory → research.** User is exploring, codebase has no examples, new technology. External perspective is valuable.
+
+**Announce the decision and proceed.** Brief explanation, then continue. User can redirect if needed.
+
+Examples:
+- "Your codebase has solid patterns for this. Proceeding without external research."
+- "This involves payment processing, so I'll research current best practices first."
+
+### 1.5b. External Research (Conditional)
+
+**Only run if Step 1.5 indicates external research is valuable.**
+
+Run these agents in parallel:
+
+- Task best-practices-researcher(feature_description)
+- Task framework-docs-researcher(feature_description)
+
+### 1.6. Consolidate Research
+
+After all research steps complete, consolidate findings:
+
+- Document relevant file paths from repo research (e.g., `app/services/example_service.rb:42`)
+- **Include relevant institutional learnings** from `docs/solutions/` (key insights, gotchas to avoid)
+- Note external documentation URLs and best practices (if external research was done)
+- List related issues or PRs discovered
+- Capture CLAUDE.md conventions
+
+**Optional validation:** Briefly summarize findings and ask if anything looks off or missing before proceeding to planning.
+
+### 2. Issue Planning & Structure
+
+<thinking>
+Think like a product manager - what would make this issue clear and actionable? Consider multiple perspectives
+</thinking>
+
+**Title & Categorization:**
+
+- [ ] Draft clear, searchable issue title using conventional format (e.g., `feat: Add user authentication`, `fix: Cart total calculation`)
+- [ ] Determine issue type: enhancement, bug, refactor
+- [ ] Convert title to filename: add today's date prefix, strip prefix colon, kebab-case, add `-plan` suffix
+  - Example: `feat: Add User Authentication` → `2026-01-21-feat-add-user-authentication-plan.md`
+  - Keep it descriptive (3-5 words after prefix) so plans are findable by context
+
+**Stakeholder Analysis:**
+
+- [ ] Identify who will be affected by this issue (end users, developers, operations)
+- [ ] Consider implementation complexity and required expertise
+
+**Content Planning:**
+
+- [ ] Choose appropriate detail level based on issue complexity and audience
+- [ ] List all necessary sections for the chosen template
+- [ ] Gather supporting materials (error logs, screenshots, design mockups)
+- [ ] Prepare code examples or reproduction steps if applicable, name the mock filenames in the lists
+
+### 3. SpecFlow Analysis
+
+After planning the issue structure, run SpecFlow Analyzer to validate and refine the feature specification:
+
+- Task compound-engineering:workflow:spec-flow-analyzer(feature_description, research_findings)
+
+**SpecFlow Analyzer Output:**
+
+- [ ] Review SpecFlow analysis results
+- [ ] Incorporate any identified gaps or edge cases into the issue
+- [ ] Update acceptance criteria based on SpecFlow findings
+
+### 4. Choose Implementation Detail Level
+
+Select how comprehensive you want the issue to be, simpler is mostly better.
+
+#### 📄 MINIMAL (Quick Issue)
+
+**Best for:** Simple bugs, small improvements, clear features
+
+**Includes:**
+
+- Problem statement or feature description
+- Basic acceptance criteria
+- Essential context only
+
+**Structure:**
+
+````markdown
+---
+title: [Issue Title]
+type: [feat|fix|refactor]
+status: active
+date: YYYY-MM-DD
+origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from brainstorm, otherwise omit
+---
+
+# [Issue Title]
+
+[Brief problem/feature description]
+
+## Acceptance Criteria
+
+- [ ] Core requirement 1
+- [ ] Core requirement 2
+
+## Context
+
+[Any critical information]
+
+## MVP
+
+### test.rb
+
+```ruby
+class Test
+  def initialize
+    @name = "test"
+  end
+end
+```
+
+## Sources
+
+- **Origin brainstorm:** [docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md](path) — include if plan originated from a brainstorm
+- Related issue: #[issue_number]
+- Documentation: [relevant_docs_url]
+````
+
+#### 📋 MORE (Standard Issue)
+
+**Best for:** Most features, complex bugs, team collaboration
+
+**Includes everything from MINIMAL plus:**
+
+- Detailed background and motivation
+- Technical considerations
+- Success metrics
+- Dependencies and risks
+- Basic implementation suggestions
+
+**Structure:**
+
+```markdown
+---
+title: [Issue Title]
+type: [feat|fix|refactor]
+status: active
+date: YYYY-MM-DD
+origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from brainstorm, otherwise omit
+---
+
+# [Issue Title]
+
+## Overview
+
+[Comprehensive description]
+
+## Problem Statement / Motivation
+
+[Why this matters]
+
+## Proposed Solution
+
+[High-level approach]
+
+## Technical Considerations
+
+- Architecture impacts
+- Performance implications
+- Security considerations
+
+## System-Wide Impact
+
+- **Interaction graph**: [What callbacks/middleware/observers fire when this runs?]
+- **Error propagation**: [How do errors flow across layers? Do retry strategies align?]
+- **State lifecycle risks**: [Can partial failure leave orphaned/inconsistent state?]
+- **API surface parity**: [What other interfaces expose similar functionality and need the same change?]
+- **Integration test scenarios**: [Cross-layer scenarios that unit tests won't catch]
+
+## Acceptance Criteria
+
+- [ ] Detailed requirement 1
+- [ ] Detailed requirement 2
+- [ ] Testing requirements
+
+## Success Metrics
+
+[How we measure success]
+
+## Dependencies & Risks
+
+[What could block or complicate this]
+
+## Sources & References
+
+- **Origin brainstorm:** [docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md](path) — include if plan originated from a brainstorm
+- Similar implementations: [file_path:line_number]
+- Best practices: [documentation_url]
+- Related PRs: #[pr_number]
+```
+
+#### 📚 A LOT (Comprehensive Issue)
+
+**Best for:** Major features, architectural changes, complex integrations
+
+**Includes everything from MORE plus:**
+
+- Detailed implementation plan with phases
+- Alternative approaches considered
+- Extensive technical specifications
+- Resource requirements and timeline
+- Future considerations and extensibility
+- Risk mitigation strategies
+- Documentation requirements
+
+**Structure:**
+
+```markdown
+---
+title: [Issue Title]
+type: [feat|fix|refactor]
+status: active
+date: YYYY-MM-DD
+origin: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md  # if originated from brainstorm, otherwise omit
+---
+
+# [Issue Title]
+
+## Overview
+
+[Executive summary]
+
+## Problem Statement
+
+[Detailed problem analysis]
+
+## Proposed Solution
+
+[Comprehensive solution design]
+
+## Technical Approach
+
+### Architecture
+
+[Detailed technical design]
+
+### Implementation Phases
+
+#### Phase 1: [Foundation]
+
+- Tasks and deliverables
+- Success criteria
+- Estimated effort
+
+#### Phase 2: [Core Implementation]
+
+- Tasks and deliverables
+- Success criteria
+- Estimated effort
+
+#### Phase 3: [Polish & Optimization]
+
+- Tasks and deliverables
+- Success criteria
+- Estimated effort
+
+## Alternative Approaches Considered
+
+[Other solutions evaluated and why rejected]
+
+## System-Wide Impact
+
+### Interaction Graph
+
+[Map the chain reaction: what callbacks, middleware, observers, and event handlers fire when this code runs? Trace at least two levels deep. Document: "Action X triggers Y, which calls Z, which persists W."]
+
+### Error & Failure Propagation
+
+[Trace errors from lowest layer up. List specific error classes and where they're handled. Identify retry conflicts, unhandled error types, and silent failure swallowing.]
+
+### State Lifecycle Risks
+
+[Walk through each step that persists state. Can partial failure orphan rows, duplicate records, or leave caches stale? Document cleanup mechanisms or their absence.]
+
+### API Surface Parity
+
+[List all interfaces (classes, DSLs, endpoints) that expose equivalent functionality. Note which need updating and which share the code path.]
+
+### Integration Test Scenarios
+
+[3-5 cross-layer test scenarios that unit tests with mocks would never catch. Include expected behavior for each.]
+
+## Acceptance Criteria
+
+### Functional Requirements
+
+- [ ] Detailed functional criteria
+
+### Non-Functional Requirements
+
+- [ ] Performance targets
+- [ ] Security requirements
+- [ ] Accessibility standards
+
+### Quality Gates
+
+- [ ] Test coverage requirements
+- [ ] Documentation completeness
+- [ ] Code review approval
+
+## Success Metrics
+
+[Detailed KPIs and measurement methods]
+
+## Dependencies & Prerequisites
+
+[Detailed dependency analysis]
+
+## Risk Analysis & Mitigation
+
+[Comprehensive risk assessment]
+
+## Resource Requirements
+
+[Team, time, infrastructure needs]
+
+## Future Considerations
+
+[Extensibility and long-term vision]
+
+## Documentation Plan
+
+[What docs need updating]
+
+## Sources & References
+
+### Origin
+
+- **Brainstorm document:** [docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md](path) — include if plan originated from a brainstorm. Key decisions carried forward: [list 2-3 major decisions from brainstorm]
+
+### Internal References
+
+- Architecture decisions: [file_path:line_number]
+- Similar features: [file_path:line_number]
+- Configuration: [file_path:line_number]
+
+### External References
+
+- Framework documentation: [url]
+- Best practices guide: [url]
+- Industry standards: [url]
+
+### Related Work
+
+- Previous PRs: #[pr_numbers]
+- Related issues: #[issue_numbers]
+- Design documents: [links]
+```
+
+### 5. Issue Creation & Formatting
+
+<thinking>
+Apply best practices for clarity and actionability, making the issue easy to scan and understand
+</thinking>
+
+**Content Formatting:**
+
+- [ ] Use clear, descriptive headings with proper hierarchy (##, ###)
+- [ ] Include code examples in triple backticks with language syntax highlighting
+- [ ] Add screenshots/mockups if UI-related (drag & drop or use image hosting)
+- [ ] Use task lists (- [ ]) for trackable items that can be checked off
+- [ ] Add collapsible sections for lengthy logs or optional details using `<details>` tags
+- [ ] Apply appropriate emoji for visual scanning (🐛 bug, ✨ feature, 📚 docs, ♻️ refactor)
+
+**Cross-Referencing:**
+
+- [ ] Link to related issues/PRs using #number format
+- [ ] Reference specific commits with SHA hashes when relevant
+- [ ] Link to code using GitHub's permalink feature (press 'y' for permanent link)
+- [ ] Mention relevant team members with @username if needed
+- [ ] Add links to external resources with descriptive text
+
+**Code & Examples:**
+
+````markdown
+# Good example with syntax highlighting and line references
+
+
+```ruby
+# app/services/user_service.rb:42
+def process_user(user)
+
+# Implementation here
+
+end
+```
+
+# Collapsible error logs
+
+<details>
+<summary>Full error stacktrace</summary>
+
+`Error details here...`
+
+</details>
+````
+
+**AI-Era Considerations:**
+
+- [ ] Account for accelerated development with AI pair programming
+- [ ] Include prompts or instructions that worked well during research
+- [ ] Note which AI tools were used for initial exploration (Claude, Copilot, etc.)
+- [ ] Emphasize comprehensive testing given rapid implementation
+- [ ] Document any AI-generated code that needs human review
+
+### 6. Final Review & Submission
+
+**Brainstorm cross-check (if plan originated from a brainstorm):**
+
+Before finalizing, re-read the brainstorm document and verify:
+- [ ] Every key decision from the brainstorm is reflected in the plan
+- [ ] The chosen approach matches what was decided in the brainstorm
+- [ ] Constraints and requirements from the brainstorm are captured in acceptance criteria
+- [ ] Open questions from the brainstorm are either resolved or flagged
+- [ ] The `origin:` frontmatter field points to the brainstorm file
+- [ ] The Sources section includes the brainstorm with a summary of carried-forward decisions
+
+**Pre-submission Checklist:**
+
+- [ ] Title is searchable and descriptive
+- [ ] Labels accurately categorize the issue
+- [ ] All template sections are complete
+- [ ] Links and references are working
+- [ ] Acceptance criteria are measurable
+- [ ] Add names of files in pseudo code examples and todo lists
+- [ ] Add an ERD mermaid diagram if applicable for new model changes
+
+## Write Plan File
+
+**REQUIRED: Write the plan file to disk before presenting any options.**
+
+```bash
+mkdir -p docs/plans/
+```
+
+Use the Write tool to save the complete plan to `docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md`. This step is mandatory and cannot be skipped — even when running as part of LFG/SLFG or other automated pipelines.
+
+Confirm: "Plan written to docs/plans/[filename]"
+
+**Pipeline mode:** If invoked from an automated workflow (LFG, SLFG, or any `disable-model-invocation` context), skip all AskUserQuestion calls. Make decisions automatically and proceed to writing the plan without interactive prompts.
+
+## Output Format
+
+**Filename:** Use the date and kebab-case filename from Step 2 Title & Categorization.
+
+```
+docs/plans/YYYY-MM-DD-<type>-<descriptive-name>-plan.md
+```
+
+Examples:
+- ✅ `docs/plans/2026-01-15-feat-user-authentication-flow-plan.md`
+- ✅ `docs/plans/2026-02-03-fix-checkout-race-condition-plan.md`
+- ✅ `docs/plans/2026-03-10-refactor-api-client-extraction-plan.md`
+- ❌ `docs/plans/2026-01-15-feat-thing-plan.md` (not descriptive - what "thing"?)
+- ❌ `docs/plans/2026-01-15-feat-new-feature-plan.md` (too vague - what feature?)
+- ❌ `docs/plans/2026-01-15-feat: user auth-plan.md` (invalid characters - colon and space)
+- ❌ `docs/plans/feat-user-auth-plan.md` (missing date prefix)
+
+## Post-Generation Options
+
+After writing the plan file, use the **AskUserQuestion tool** to present these options:
+
+**Question:** "Plan ready at `docs/plans/YYYY-MM-DD-<type>-<name>-plan.md`. What would you like to do next?"
+
+**Options:**
+1. **Open plan in editor** - Open the plan file for review
+2. **Run `/deepen-plan`** - Enhance each section with parallel research agents (best practices, performance, UI)
+3. **Run `/technical_review`** - Technical feedback from code-focused reviewers (DHH, Kieran, Simplicity)
+4. **Review and refine** - Improve the document through structured self-review
+5. **Share to Proof** - Upload to Proof for collaborative review and sharing
+6. **Start `/ce:work`** - Begin implementing this plan locally
+7. **Start `/ce:work` on remote** - Begin implementing in Claude Code on the web (use `&` to run in background)
+8. **Create Issue** - Create issue in project tracker (GitHub/Linear)
+
+Based on selection:
+- **Open plan in editor** → Run `open docs/plans/<plan_filename>.md` to open the file in the user's default editor
+- **`/deepen-plan`** → Call the /deepen-plan command with the plan file path to enhance with research
+- **`/technical_review`** → Call the /technical_review command with the plan file path
+- **Review and refine** → Load `document-review` skill.
+- **Share to Proof** → Upload the plan to Proof:
+  ```bash
+  CONTENT=$(cat docs/plans/<plan_filename>.md)
+  TITLE="Plan: <plan title from frontmatter>"
+  RESPONSE=$(curl -s -X POST https://www.proofeditor.ai/share/markdown \
+    -H "Content-Type: application/json" \
+    -d "$(jq -n --arg title "$TITLE" --arg markdown "$CONTENT" --arg by "ai:compound" '{title: $title, markdown: $markdown, by: $by}')")
+  PROOF_URL=$(echo "$RESPONSE" | jq -r '.tokenUrl')
+  ```
+  Display: `View & collaborate in Proof: <PROOF_URL>` — skip silently if curl fails. Then return to options.
+- **`/ce:work`** → Call the /ce:work command with the plan file path
+- **`/ce:work` on remote** → Run `/ce:work docs/plans/<plan_filename>.md &` to start work in background for Claude Code web
+- **Create Issue** → See "Issue Creation" section below
+- **Other** (automatically provided) → Accept free text for rework or specific changes
+
+**Note:** If running `/ce:plan` with ultrathink enabled, automatically run `/deepen-plan` after plan creation for maximum depth and grounding.
+
+Loop back to options after Simplify or Other changes until user selects `/ce:work` or `/technical_review`.
+
+## Issue Creation
+
+When user selects "Create Issue", detect their project tracker from CLAUDE.md:
+
+1. **Check for tracker preference** in user's CLAUDE.md (global or project):
+   - Look for `project_tracker: github` or `project_tracker: linear`
+   - Or look for mentions of "GitHub Issues" or "Linear" in their workflow section
+
+2. **If GitHub:**
+
+   Use the title and type from Step 2 (already in context - no need to re-read the file):
+
+   ```bash
+   gh issue create --title "<type>: <title>" --body-file <plan_path>
+   ```
+
+3. **If Linear:**
+
+   ```bash
+   linear issue create --title "<title>" --description "$(cat <plan_path>)"
+   ```
+
+4. **If no tracker configured:**
+   Ask user: "Which project tracker do you use? (GitHub/Linear/Other)"
+   - Suggest adding `project_tracker: github` or `project_tracker: linear` to their CLAUDE.md
+
+5. **After creation:**
+   - Display the issue URL
+   - Ask if they want to proceed to `/ce:work` or `/technical_review`
+
+NEVER CODE! Just research and write the plan.
+
+---
+
+# Deepen Plan - Power Enhancement Mode
+
+## Introduction
+
+**Note: The current year is 2026.** Use this when searching for recent documentation and best practices.
+
+This command takes an existing plan (from `/ce:plan`) and enhances each section with parallel research agents. Each major element gets its own dedicated research sub-agent to find:
+- Best practices and industry patterns
+- Performance optimizations
+- UI/UX improvements (if applicable)
+- Quality enhancements and edge cases
+- Real-world implementation examples
+
+The result is a deeply grounded, production-ready plan with concrete implementation details.
+
+## Plan File
+
+<plan_path> #docs/plans/2026-03-12-feat-dashboard-overhaul-plan.md </plan_path>
+
+**If the plan path above is empty:**
+1. Check for recent plans: `ls -la docs/plans/`
+2. Ask the user: "Which plan would you like to deepen? Please provide the path (e.g., `docs/plans/2026-01-15-feat-my-feature-plan.md`)."
+
+Do not proceed until you have a valid plan file path.
+
+## Main Tasks
+
+### 1. Parse and Analyze Plan Structure
+
+<thinking>
+First, read and parse the plan to identify each major section that can be enhanced with research.
+</thinking>
+
+**Read the plan file and extract:**
+- [ ] Overview/Problem Statement
+- [ ] Proposed Solution sections
+- [ ] Technical Approach/Architecture
+- [ ] Implementation phases/steps
+- [ ] Code examples and file references
+- [ ] Acceptance criteria
+- [ ] Any UI/UX components mentioned
+- [ ] Technologies/frameworks mentioned (Rails, React, Python, TypeScript, etc.)
+- [ ] Domain areas (data models, APIs, UI, security, performance, etc.)
+
+**Create a section manifest:**
+```
+Section 1: [Title] - [Brief description of what to research]
+Section 2: [Title] - [Brief description of what to research]
+...
+```
+
+### 2. Discover and Apply Available Skills
+
+<thinking>
+Dynamically discover all available skills and match them to plan sections. Don't assume what skills exist - discover them at runtime.
+</thinking>
+
+**Step 1: Discover ALL available skills from ALL sources**
+
+```bash
+# 1. Project-local skills (highest priority - project-specific)
+ls .claude/skills/
+
+# 2. User's global skills (~/.claude/)
+ls ~/.claude/skills/
+
+# 3. compound-engineering plugin skills
+ls ~/.claude/plugins/cache/*/compound-engineering/*/skills/
+
+# 4. ALL other installed plugins - check every plugin for skills
+find ~/.claude/plugins/cache -type d -name "skills" 2>/dev/null
+
+# 5. Also check installed_plugins.json for all plugin locations
+cat ~/.claude/plugins/installed_plugins.json
+```
+
+**Important:** Check EVERY source. Don't assume compound-engineering is the only plugin. Use skills from ANY installed plugin that's relevant.
+
+**Step 2: For each discovered skill, read its SKILL.md to understand what it does**
+
+```bash
+# For each skill directory found, read its documentation
+cat [skill-path]/SKILL.md
+```
+
+**Step 3: Match skills to plan content**
+
+For each skill discovered:
+- Read its SKILL.md description
+- Check if any plan sections match the skill's domain
+- If there's a match, spawn a sub-agent to apply that skill's knowledge
+
+**Step 4: Spawn a sub-agent for EVERY matched skill**
+
+**CRITICAL: For EACH skill that matches, spawn a separate sub-agent and instruct it to USE that skill.**
+
+For each matched skill:
+```
+Task general-purpose: "You have the [skill-name] skill available at [skill-path].
+
+YOUR JOB: Use this skill on the plan.
+
+1. Read the skill: cat [skill-path]/SKILL.md
+2. Follow the skill's instructions exactly
+3. Apply the skill to this content:
+
+[relevant plan section or full plan]
+
+4. Return the skill's full output
+
+The skill tells you what to do - follow it. Execute the skill completely."
+```
+
+**Spawn ALL skill sub-agents in PARALLEL:**
+- 1 sub-agent per matched skill
+- Each sub-agent reads and uses its assigned skill
+- All run simultaneously
+- 10, 20, 30 skill sub-agents is fine
+
+**Each sub-agent:**
+1. Reads its skill's SKILL.md
+2. Follows the skill's workflow/instructions
+3. Applies the skill to the plan
+4. Returns whatever the skill produces (code, recommendations, patterns, reviews, etc.)
+
+**Example spawns:**
+```
+Task general-purpose: "Use the dhh-rails-style skill at ~/.claude/plugins/.../dhh-rails-style. Read SKILL.md and apply it to: [Rails sections of plan]"
+
+Task general-purpose: "Use the frontend-design skill at ~/.claude/plugins/.../frontend-design. Read SKILL.md and apply it to: [UI sections of plan]"
+
+Task general-purpose: "Use the agent-native-architecture skill at ~/.claude/plugins/.../agent-native-architecture. Read SKILL.md and apply it to: [agent/tool sections of plan]"
+
+Task general-purpose: "Use the security-patterns skill at ~/.claude/skills/security-patterns. Read SKILL.md and apply it to: [full plan]"
+```
+
+**No limit on skill sub-agents. Spawn one for every skill that could possibly be relevant.**
+
+### 3. Discover and Apply Learnings/Solutions
+
+<thinking>
+Check for documented learnings from /ce:compound. These are solved problems stored as markdown files. Spawn a sub-agent for each learning to check if it's relevant.
+</thinking>
+
+**LEARNINGS LOCATION - Check these exact folders:**
+
+```
+docs/solutions/           <-- PRIMARY: Project-level learnings (created by /ce:compound)
+├── performance-issues/
+│   └── *.md
+├── debugging-patterns/
+│   └── *.md
+├── configuration-fixes/
+│   └── *.md
+├── integration-issues/
+│   └── *.md
+├── deployment-issues/
+│   └── *.md
+└── [other-categories]/
+    └── *.md
+```
+
+**Step 1: Find ALL learning markdown files**
+
+Run these commands to get every learning file:
+
+```bash
+# PRIMARY LOCATION - Project learnings
+find docs/solutions -name "*.md" -type f 2>/dev/null
+
+# If docs/solutions doesn't exist, check alternate locations:
+find .claude/docs -name "*.md" -type f 2>/dev/null
+find ~/.claude/docs -name "*.md" -type f 2>/dev/null
+```
+
+**Step 2: Read frontmatter of each learning to filter**
+
+Each learning file has YAML frontmatter with metadata. Read the first ~20 lines of each file to get:
+
+```yaml
+---
+title: "N+1 Query Fix for Briefs"
+category: performance-issues
+tags: [activerecord, n-plus-one, includes, eager-loading]
+module: Briefs
+symptom: "Slow page load, multiple queries in logs"
+root_cause: "Missing includes on association"
+---
+```
+
+**For each .md file, quickly scan its frontmatter:**
+
+```bash
+# Read first 20 lines of each learning (frontmatter + summary)
+head -20 docs/solutions/**/*.md
+```
+
+**Step 3: Filter - only spawn sub-agents for LIKELY relevant learnings**
+
+Compare each learning's frontmatter against the plan:
+- `tags:` - Do any tags match technologies/patterns in the plan?
+- `category:` - Is this category relevant? (e.g., skip deployment-issues if plan is UI-only)
+- `module:` - Does the plan touch this module?
+- `symptom:` / `root_cause:` - Could this problem occur with the plan?
+
+**SKIP learnings that are clearly not applicable:**
+- Plan is frontend-only → skip `database-migrations/` learnings
+- Plan is Python → skip `rails-specific/` learnings
+- Plan has no auth → skip `authentication-issues/` learnings
+
+**SPAWN sub-agents for learnings that MIGHT apply:**
+- Any tag overlap with plan technologies
+- Same category as plan domain
+- Similar patterns or concerns
+
+**Step 4: Spawn sub-agents for filtered learnings**
+
+For each learning that passes the filter:
+
+```
+Task general-purpose: "
+LEARNING FILE: [full path to .md file]
+
+1. Read this learning file completely
+2. This learning documents a previously solved problem
+
+Check if this learning applies to this plan:
+
+---
+[full plan content]
+---
+
+If relevant:
+- Explain specifically how it applies
+- Quote the key insight or solution
+- Suggest where/how to incorporate it
+
+If NOT relevant after deeper analysis:
+- Say 'Not applicable: [reason]'
+"
+```
+
+**Example filtering:**
+```
+# Found 15 learning files, plan is about "Rails API caching"
+
+# SPAWN (likely relevant):
+docs/solutions/performance-issues/n-plus-one-queries.md      # tags: [activerecord] ✓
+docs/solutions/performance-issues/redis-cache-stampede.md    # tags: [caching, redis] ✓
+docs/solutions/configuration-fixes/redis-connection-pool.md  # tags: [redis] ✓
+
+# SKIP (clearly not applicable):
+docs/solutions/deployment-issues/heroku-memory-quota.md      # not about caching
+docs/solutions/frontend-issues/stimulus-race-condition.md    # plan is API, not frontend
+docs/solutions/authentication-issues/jwt-expiry.md           # plan has no auth
+```
+
+**Spawn sub-agents in PARALLEL for all filtered learnings.**
+
+**These learnings are institutional knowledge - applying them prevents repeating past mistakes.**
+
+### 4. Launch Per-Section Research Agents
+
+<thinking>
+For each major section in the plan, spawn dedicated sub-agents to research improvements. Use the Explore agent type for open-ended research.
+</thinking>
+
+**For each identified section, launch parallel research:**
+
+```
+Task Explore: "Research best practices, patterns, and real-world examples for: [section topic].
+Find:
+- Industry standards and conventions
+- Performance considerations
+- Common pitfalls and how to avoid them
+- Documentation and tutorials
+Return concrete, actionable recommendations."
+```
+
+**Also use Context7 MCP for framework documentation:**
+
+For any technologies/frameworks mentioned in the plan, query Context7:
+```
+mcp__plugin_compound-engineering_context7__resolve-library-id: Find library ID for [framework]
+mcp__plugin_compound-engineering_context7__query-docs: Query documentation for specific patterns
+```
+
+**Use WebSearch for current best practices:**
+
+Search for recent (2024-2026) articles, blog posts, and documentation on topics in the plan.
+
+### 5. Discover and Run ALL Review Agents
+
+<thinking>
+Dynamically discover every available agent and run them ALL against the plan. Don't filter, don't skip, don't assume relevance. 40+ parallel agents is fine. Use everything available.
+</thinking>
+
+**Step 1: Discover ALL available agents from ALL sources**
+
+```bash
+# 1. Project-local agents (highest priority - project-specific)
+find .claude/agents -name "*.md" 2>/dev/null
+
+# 2. User's global agents (~/.claude/)
+find ~/.claude/agents -name "*.md" 2>/dev/null
+
+# 3. compound-engineering plugin agents (all subdirectories)
+find ~/.claude/plugins/cache/*/compound-engineering/*/agents -name "*.md" 2>/dev/null
+
+# 4. ALL other installed plugins - check every plugin for agents
+find ~/.claude/plugins/cache -path "*/agents/*.md" 2>/dev/null
+
+# 5. Check installed_plugins.json to find all plugin locations
+cat ~/.claude/plugins/installed_plugins.json
+
+# 6. For local plugins (isLocal: true), check their source directories
+# Parse installed_plugins.json and find local plugin paths
+```
+
+**Important:** Check EVERY source. Include agents from:
+- Project `.claude/agents/`
+- User's `~/.claude/agents/`
+- compound-engineering plugin (but SKIP workflow/ agents - only use review/, research/, design/, docs/)
+- ALL other installed plugins (agent-sdk-dev, frontend-design, etc.)
+- Any local plugins
+
+**For compound-engineering plugin specifically:**
+- USE: `agents/review/*` (all reviewers)
+- USE: `agents/research/*` (all researchers)
+- USE: `agents/design/*` (design agents)
+- USE: `agents/docs/*` (documentation agents)
+- SKIP: `agents/workflow/*` (these are workflow orchestrators, not reviewers)
+
+**Step 2: For each discovered agent, read its description**
+
+Read the first few lines of each agent file to understand what it reviews/analyzes.
+
+**Step 3: Launch ALL agents in parallel**
+
+For EVERY agent discovered, launch a Task in parallel:
+
+```
+Task [agent-name]: "Review this plan using your expertise. Apply all your checks and patterns. Plan content: [full plan content]"
+```
+
+**CRITICAL RULES:**
+- Do NOT filter agents by "relevance" - run them ALL
+- Do NOT skip agents because they "might not apply" - let them decide
+- Launch ALL agents in a SINGLE message with multiple Task tool calls
+- 20, 30, 40 parallel agents is fine - use everything
+- Each agent may catch something others miss
+- The goal is MAXIMUM coverage, not efficiency
+
+**Step 4: Also discover and run research agents**
+
+Research agents (like `best-practices-researcher`, `framework-docs-researcher`, `git-history-analyzer`, `repo-research-analyst`) should also be run for relevant plan sections.
+
+### 6. Wait for ALL Agents and Synthesize Everything
+
+<thinking>
+Wait for ALL parallel agents to complete - skills, research agents, review agents, everything. Then synthesize all findings into a comprehensive enhancement.
+</thinking>
+
+**Collect outputs from ALL sources:**
+
+1. **Skill-based sub-agents** - Each skill's full output (code examples, patterns, recommendations)
+2. **Learnings/Solutions sub-agents** - Relevant documented learnings from /ce:compound
+3. **Research agents** - Best practices, documentation, real-world examples
+4. **Review agents** - All feedback from every reviewer (architecture, security, performance, simplicity, etc.)
+5. **Context7 queries** - Framework documentation and patterns
+6. **Web searches** - Current best practices and articles
+
+**For each agent's findings, extract:**
+- [ ] Concrete recommendations (actionable items)
+- [ ] Code patterns and examples (copy-paste ready)
+- [ ] Anti-patterns to avoid (warnings)
+- [ ] Performance considerations (metrics, benchmarks)
+- [ ] Security considerations (vulnerabilities, mitigations)
+- [ ] Edge cases discovered (handling strategies)
+- [ ] Documentation links (references)
+- [ ] Skill-specific patterns (from matched skills)
+- [ ] Relevant learnings (past solutions that apply - prevent repeating mistakes)
+
+**Deduplicate and prioritize:**
+- Merge similar recommendations from multiple agents
+- Prioritize by impact (high-value improvements first)
+- Flag conflicting advice for human review
+- Group by plan section
+
+### 7. Enhance Plan Sections
+
+<thinking>
+Merge research findings back into the plan, adding depth without changing the original structure.
+</thinking>
+
+**Enhancement format for each section:**
+
+```markdown
+## [Original Section Title]
+
+[Original content preserved]
+
+### Research Insights
+
+**Best Practices:**
+- [Concrete recommendation 1]
+- [Concrete recommendation 2]
+
+**Performance Considerations:**
+- [Optimization opportunity]
+- [Benchmark or metric to target]
+
+**Implementation Details:**
+```[language]
+// Concrete code example from research
+```
+
+**Edge Cases:**
+- [Edge case 1 and how to handle]
+- [Edge case 2 and how to handle]
+
+**References:**
+- [Documentation URL 1]
+- [Documentation URL 2]
+```
+
+### 8. Add Enhancement Summary
+
+At the top of the plan, add a summary section:
+
+```markdown
+## Enhancement Summary
+
+**Deepened on:** [Date]
+**Sections enhanced:** [Count]
+**Research agents used:** [List]
+
+### Key Improvements
+1. [Major improvement 1]
+2. [Major improvement 2]
+3. [Major improvement 3]
+
+### New Considerations Discovered
+- [Important finding 1]
+- [Important finding 2]
+```
+
+### 9. Update Plan File
+
+**Write the enhanced plan:**
+- Preserve original filename
+- Add `-deepened` suffix if user prefers a new file
+- Update any timestamps or metadata
+
+## Output Format
+
+Update the plan file in place (or if user requests a separate file, append `-deepened` after `-plan`, e.g., `2026-01-15-feat-auth-plan-deepened.md`).
+
+## Quality Checks
+
+Before finalizing:
+- [ ] All original content preserved
+- [ ] Research insights clearly marked and attributed
+- [ ] Code examples are syntactically correct
+- [ ] Links are valid and relevant
+- [ ] No contradictions between sections
+- [ ] Enhancement summary accurately reflects changes
+
+## Post-Enhancement Options
+
+After writing the enhanced plan, use the **AskUserQuestion tool** to present these options:
+
+**Question:** "Plan deepened at `[plan_path]`. What would you like to do next?"
+
+**Options:**
+1. **View diff** - Show what was added/changed
+2. **Run `/technical_review`** - Get feedback from reviewers on enhanced plan
+3. **Start `/ce:work`** - Begin implementing this enhanced plan
+4. **Deepen further** - Run another round of research on specific sections
+5. **Revert** - Restore original plan (if backup exists)
+
+Based on selection:
+- **View diff** → Run `git diff [plan_path]` or show before/after
+- **`/technical_review`** → Call the /technical_review command with the plan file path
+- **`/ce:work`** → Call the /ce:work command with the plan file path
+- **Deepen further** → Ask which sections need more research, then re-run those agents
+- **Revert** → Restore from git or backup
+
+## Example Enhancement
+
+**Before (from /workflows:plan):**
+```markdown
+## Technical Approach
+
+Use React Query for data fetching with optimistic updates.
+```
+
+**After (from /workflows:deepen-plan):**
+```markdown
+## Technical Approach
+
+Use React Query for data fetching with optimistic updates.
+
+### Research Insights
+
+**Best Practices:**
+- Configure `staleTime` and `cacheTime` based on data freshness requirements
+- Use `queryKey` factories for consistent cache invalidation
+- Implement error boundaries around query-dependent components
+
+**Performance Considerations:**
+- Enable `refetchOnWindowFocus: false` for stable data to reduce unnecessary requests
+- Use `select` option to transform and memoize data at query level
+- Consider `placeholderData` for instant perceived loading
+
+**Implementation Details:**
+```typescript
+// Recommended query configuration
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+```
+
+**Edge Cases:**
+- Handle race conditions with `cancelQueries` on component unmount
+- Implement retry logic for transient network failures
+- Consider offline support with `persistQueryClient`
+
+**References:**
+- https://tanstack.com/query/latest/docs/react/guides/optimistic-updates
+- https://tkdodo.eu/blog/practical-react-query
+```
+
+NEVER CODE! Just research and enhance the plan.
+
+---
+
+<task-notification>
+<task-id>acfc9cfa3c24d18ec</task-id>
+<tool-use-id>toolu_01JM196J3uN9uSiEGMSpQJf2</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Agent "Research AG Grid multi-select patterns" completed</summary>
+<result>Now I have comprehensive information. Here is the full research summary:
+
+---
+
+## Dash AG Grid v31.2.0 Best Practices Research
+
+### 1. Multi-Row Selection with Checkboxes
+
+In v31, checkbox selection moved from `columnDefs` to `dashGridOptions`. The old `checkboxSelection` and `headerCheckboxSelection` column properties are **deprecated**.
+
+**Correct v31 pattern:**
+
+```python
+dag.AgGrid(
+    id="my-grid",
+    rowData=df.to_dict("records"),
+    columnDefs=[
+        {"field": "date", "headerName": "Date"},
+        {"field": "model", "headerName": "Model"},
+        # No checkboxSelection here in v31!
+    ],
+    dashGridOptions={
+        "rowSelection": {
+            "mode": "multiRow",
+            "checkboxes": True,           # default True for multiRow
+            "headerCheckbox": True,        # default True for multiRow
+            "selectAll": "filtered",       # or "all" or "currentPage"
+            "enableClickSelection": True,  # click row to select (not just checkbox)
+        },
+        "pagination": True,
+        "paginationPageSize": 100,
+    },
+)
+```
+
+**Interaction with pagination:** Use `"selectAll": "currentPage"` to limit header-checkbox "select all" to the visible page. Use `"selectAll": "all"` (default) to select across all pages. Use `"selectAll": "filtered"` to select all rows matching the current filter.
+
+### 2. Programmatically Setting selectedRows from a Callback
+
+The `selectedRows` property supports **three forms** as an Output:
+
+```python
+# Form 1: Pass row data objects (if getRowId is defined, only the ID fields are needed)
+@callback(
+    Output("my-grid", "selectedRows"),
+    Input("url", "search"),
+)
+def restore_selection(search):
+    selected_ids = parse_ids_from_url(search)
+    # Return list of dicts with at least the fields used by getRowId
+    return [{"run_id": rid} for rid in selected_ids]
+
+# Form 2: Pass row IDs directly
+def restore_selection(search):
+    selected_ids = parse_ids_from_url(search)
+    return {"ids": selected_ids}  # list of string IDs
+
+# Form 3: Pass a JS function string
+def restore_selection(search):
+    return {"function": "params.data.status === 'completed'"}
+```
+
+**Important:** You should define `getRowId` on the grid for reliable ID-based selection:
+
+```python
+dag.AgGrid(
+    # ...
+    getRowId="params.data.run_id",  # JS expression returning unique ID
+)
+```
+
+The `{"ids": [...]}` form is the cleanest for restoring selection from URL state.
+
+### 3. selectedRows with Client-Side Pagination (500 Rows)
+
+For 500 rows with client-side data, you are using the **Client-Side Row Model** (the default), not SSRM. This is important because:
+
+- Client-side pagination works correctly with `selectAll: "currentPage"`, `"filtered"`, and `"all"`.
+- The **Server-Side Row Model (SSRM)** has a known limitation where `selectAll: "currentPage"` and `"filtered"` are ignored and treated as `"all"`.
+- With client-side data, all 500 rows are already in the browser -- pagination is purely visual.
+
+**Recommended configuration:**
+
+```python
+dag.AgGrid(
+    rowData=df.to_dict("records"),  # all 500 rows
+    columnDefs=column_defs,
+    getRowId="params.data.run_id",
+    dashGridOptions={
+        "rowSelection": {
+            "mode": "multiRow",
+            "checkboxes": True,
+            "headerCheckbox": True,
+            "selectAll": "filtered",  # header checkbox selects all filtered rows across pages
+        },
+        "pagination": True,
+        "paginationPageSize": 100,
+        "paginationPageSizeSelector": [50, 100, 200, 500],
+    },
+)
+```
+
+When reading `selectedRows` as an Input, it returns the full row data for all selected rows (across all pages), not just the current page.
+
+### 4. Default Sorting on Multiple Columns
+
+Use `sort` and `sortIndex` in `columnDefs`. The `sortIndex` controls the priority when multiple columns are sorted:
+
+```python
+columnDefs = [
+    {
+        "field": "date",
+        "headerName": "Date",
+        "sort": "desc",
+        "sortIndex": 0,        # primary sort
+    },
+    {
+        "field": "model",
+        "headerName": "Model",
+        "sort": "asc",
+        "sortIndex": 1,        # secondary sort
+    },
+    {
+        "field": "context_length",
+        "headerName": "Context",
+        "sort": "asc",
+        "sortIndex": 2,        # tertiary sort
+    },
+    {"field": "score", "headerName": "Score"},
+    # ...
+]
+```
+
+**Note on `initialSort`:** There is also `initialSort` (and `initialSortIndex`) which only applies when columns are first created and won't be re-applied if columnDefs are updated. Use `sort`/`sortIndex` for the stateful version that persists across columnDef updates.
+
+### 5. Column Visibility Toggling via Callback
+
+Use the `columnState` property (not `columnDefs` updates) for toggling visibility:
+
+```python
+dag.AgGrid(
+    id="my-grid",
+    columnDefs=column_defs,
+    # ...
+)
+
+@callback(
+    Output("my-grid", "columnState"),
+    Input("toggle-columns-checklist", "value"),  # list of visible column IDs
+    State("my-grid", "columnState"),
+)
+def toggle_columns(visible_cols, current_state):
+    if not current_state:
+        return no_update
+    new_state = []
+    for col in current_state:
+        col_copy = dict(col)
+        col_copy["hide"] = col_copy["colId"] not in visible_cols
+        new_state.append(col_copy)
+    return new_state
+```
+
+**Key point:** `columnState` is both an Input (to read current state) and an Output (to set state). Each entry has `colId`, `hide`, `width`, `sort`, `sortIndex`, `pinned`, etc.
+
+### 6. Hidden-by-Default Columns (e.g., File Paths)
+
+Use `hide: True` in `columnDefs`:
+
+```python
+columnDefs = [
+    {"field": "run_id", "headerName": "Run ID"},
+    {"field": "model", "headerName": "Model"},
+    # Hidden by default -- user can toggle via sidebar or callback
+    {
+        "field": "results_path",
+        "headerName": "Results Path",
+        "hide": True,
+    },
+    {
+        "field": "config_path",
+        "headerName": "Config Path",
+        "hide": True,
+    },
+]
+```
+
+If you want to use the **initial** (non-stateful) variant: use `initialHide: True` instead. The difference: `hide` is stateful and will be re-applied if you update `columnDefs`; `initialHide` only applies on column creation.
+
+To also hide the column from the AG Grid sidebar/tool panel, add `"suppressColumnsToolPanel": True`.
+
+### 7. Performance with 500 Rows and Multi-Select
+
+**No known issues.** 500 rows is well within the comfort zone for AG Grid's client-side row model. AG Grid is designed to handle tens of thousands of rows with virtual scrolling. At 500 rows:
+
+- All data is in the browser (client-side model).
+- Pagination at 100 rows/page means only 100 DOM nodes rendered at a time.
+- Multi-select with checkboxes adds negligible overhead.
+- `selectedRows` callbacks fire with the full selected row data, which at 500 rows max is trivial.
+
+**One thing to watch:** If your row data contains very large fields (e.g., long file paths or embedded JSON), it can slow down the callback serialization. Keep `rowData` lean -- only include fields you actually display or need for selection/filtering.
+
+---
+
+### Complete Working Example
+
+```python
+import dash_ag_grid as dag
+from dash import Dash, html, dcc, callback, Input, Output, State, no_update
+
+app = Dash(__name__)
+
+column_defs = [
+    {"field": "date", "headerName": "Date", "sort": "desc", "sortIndex": 0},
+    {"field": "model", "headerName": "Model", "sort": "asc", "sortIndex": 1},
+    {"field": "context_length", "headerName": "Context", "sort": "asc", "sortIndex": 2},
+    {"field": "score", "headerName": "Score"},
+    {"field": "status", "headerName": "Status"},
+    # Hidden columns
+    {"field": "results_path", "headerName": "Results Path", "hide": True},
+    {"field": "config_path", "headerName": "Config Path", "hide": True},
+]
+
+app.layout = html.Div([
+    dag.AgGrid(
+        id="results-grid",
+        columnDefs=column_defs,
+        rowData=[],  # populated by callback
+        getRowId="params.data.run_id",
+        dashGridOptions={
+            "rowSelection": {
+                "mode": "multiRow",
+                "checkboxes": True,
+                "headerCheckbox": True,
+                "selectAll": "filtered",
+                "enableClickSelection": True,
+            },
+            "pagination": True,
+            "paginationPageSize": 100,
+            "paginationPageSizeSelector": [50, 100, 200, 500],
+            "animateRows": False,
+        },
+        defaultColDef={
+            "sortable": True,
+            "filter": True,
+            "resizable": True,
+        },
+        style={"height": "70vh"},
+    ),
+])
+
+# Restore selection from URL
+@callback(
+    Output("results-grid", "selectedRows"),
+    Input("url", "search"),
+)
+def restore_selection(search):
+    if not search:
+        return no_update
+    ids = parse_ids(search)
+    return {"ids": ids}
+
+# Toggle column visibility
+@callback(
+    Output("results-grid", "columnState"),
+    Input("column-toggle", "value"),
+    State("results-grid", "columnState"),
+)
+def toggle_columns(visible, state):
+    if not state:
+        return no_update
+    return [
+        {**col, "hide": col["colId"] not in visible}
+        for col in state
+    ]
+```
+
+### Sources
+
+- [Row Selection With Checkboxes - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/checkbox-row-selection)
+- [Multi-Row Selection - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/multi-row-selection)
+- [Row Selection Overview - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/row-selection)
+- [Row Selection and Callbacks - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/row-selection-callbacks)
+- [Row Sorting - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/row-sorting)
+- [Pagination - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/pagination)
+- [Column State - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/column-state)
+- [Updating Column Definitions - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/updating-column-definitions)
+- [Column Properties Reference - AG Grid](https://www.ag-grid.com/javascript-data-grid/column-properties/)
+- [Getting Started with Dash AG Grid v.31 - Medium](https://medium.REDACTED)
+- [Migration Guide - Dash AG Grid](https://dash.plotly.com/dash-ag-grid/migration-guide)
+- [Hideable Columns - Plotly Community Forum](https://community.plotly.com/t/dash-ag-grid-hideable-columns/75430)
+- [selectedRows Issues - GitHub #274](https://github.com/plotly/dash-ag-grid/issues/274)</result>
+<usage><total_tokens>24196</total_tokens><tool_uses>14</tool_uses><duration_ms>118740</duration_ms></usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>a3f07f15b4b730e48</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Agent "Research Dash URL state patterns" completed</summary>
+<result>Good, now I have full context on your existing dashboard. Here's a comprehensive answer based on established Dash 2.x patterns (including 2.18).
+
+---
+
+## Dash 2.18 URL State Synchronization: Patterns and Recommendations
+
+### 1. Preventing Circular Callback Loops (dcc.Location <-> dcc.Store)
+
+The fundamental problem: if callback A writes to `dcc.Location` when stores change, and callback B writes to stores when `dcc.Location` changes, you get an infinite loop.
+
+**Recommended pattern: use `ctx.triggered_id` to break the cycle.**
+
+```python
+from dash import callback_context as ctx, no_update
+from urllib.parse import urlencode, parse_qs
+
+@app.callback(
+    # Outputs: both the URL and the stores
+    Output("url", "search"),
+    Output("selected-run-id", "data"),
+    Output("tabs", "active_tab"),
+    # Inputs: both the URL and the UI controls
+    Input("url", "search"),           # URL changed (browser nav, manual edit)
+    Input("trace-run-selector", "value"),  # UI control changed
+    Input("tabs", "active_tab"),
+    # States for reading current values without triggering
+    State("selected-run-id", "data"),
+    prevent_initial_call=False,
+)
+def sync_url_and_state(url_search, selected_run, active_tab, current_run_store):
+    triggered = ctx.triggered_id  # Dash 2.x: returns the component id string
+
+    if triggered == "url":
+        # URL changed → parse and push to stores, DON'T update URL back
+        params = parse_qs(url_search.lstrip("?")) if url_search else {}
+        run_id = params.get("run", [None])[0]
+        tab = params.get("tab", ["overview"])[0]
+        return no_update, run_id, tab
+
+    elif triggered in ("trace-run-selector", "tabs"):
+        # UI changed → update URL, DON'T update stores (they already have the value)
+        params = {}
+        if selected_run:
+            params["run"] = selected_run
+        if active_tab:
+            params["tab"] = active_tab
+        new_search = f"?{urlencode(params)}" if params else ""
+        return new_search, no_update, no_update
+
+    # Initial load: read from URL
+    if url_search:
+        params = parse_qs(url_search.lstrip("?"))
+        run_id = params.get("run", [None])[0]
+        tab = params.get("tab", ["overview"])[0]
+        return no_update, run_id, tab
+
+    return no_update, no_update, no_update
+```
+
+**Key insight:** `no_update` is the cycle-breaker. When the URL triggers the callback, you update stores but return `no_update` for the URL output. When a UI control triggers, you update the URL but return `no_update` for the stores.
+
+### 2. Single Callback vs. Two Callbacks
+
+**A single callback is better** for exactly this reason -- it can inspect `ctx.triggered_id` and decide which direction to sync. Two separate callbacks inherently create a cycle unless you add extra guards (hidden flags, intermediate stores), which adds complexity.
+
+However, there is a practical limit: if you have many UI controls that should update the URL, the single callback's Input list gets long. The solution is to **use a single intermediate `dcc.Store` as the "state bundle"** and have two callbacks:
+
+```python
+# Pattern: State Bundle Store
+# Many UI controls → one "state-bundle" store → URL sync
+
+# Callback 1: UI controls update the bundle (no URL involvement)
+@app.callback(
+    Output("state-bundle", "data"),
+    Input("trace-run-selector", "value"),
+    Input("tabs", "active_tab"),
+    Input("date-range", "start_date"),
+    Input("date-range", "end_date"),
+    Input("filter-dropdown", "value"),
+    State("state-bundle", "data"),
+    prevent_initial_call=True,
+)
+def ui_to_bundle(run_id, tab, start, end, filters, current_bundle):
+    bundle = current_bundle or {}
+    # Only update the key that actually changed
+    trigger = ctx.triggered_id
+    if trigger == "trace-run-selector":
+        bundle["run"] = run_id
+    elif trigger == "tabs":
+        bundle["tab"] = tab
+    elif trigger == "date-range":
+        bundle["start"] = start
+        bundle["end"] = end
+    elif trigger == "filter-dropdown":
+        bundle["filters"] = filters
+    return bundle
+
+# Callback 2: Bidirectional sync between bundle and URL
+@app.callback(
+    Output("url", "search"),
+    Output("state-bundle", "data", allow_duplicate=True),
+    Input("url", "search"),
+    Input("state-bundle", "data"),
+    prevent_initial_call=True,
+)
+def sync_bundle_url(url_search, bundle):
+    trigger = ctx.triggered_id
+    if trigger == "url":
+        # URL → bundle
+        params = parse_qs(url_search.lstrip("?")) if url_search else {}
+        new_bundle = {k: v[0] if len(v) == 1 else v for k, v in params.items()}
+        return no_update, new_bundle
+    elif trigger == "state-bundle":
+        # Bundle → URL
+        params = {k: v for k, v in (bundle or {}).items() if v is not None}
+        return f"?{urlencode(params, doseq=True)}" if params else "", no_update
+    return no_update, no_update
+```
+
+This is cleaner because the URL sync logic is isolated from the many UI controls.
+
+### 3. Handling Long URL Query Params (50+ Run IDs)
+
+URLs have practical limits (~2000 chars in older browsers, ~8000 in modern ones, but proxies/servers may truncate). With 50+ 8-char hex run IDs:
+
+```
+?runs=a1b2c3d4,e5f6g7h8,...  # 50 IDs x ~9 chars = ~450 chars. Fine.
+```
+
+50 run IDs at 8 chars + comma = ~450 characters. That's well within limits. But if it grows to hundreds:
+
+**Strategy A: Compress with base64-encoded JSON (if really needed)**
+```python
+import base64, json, zlib
+
+def encode_state(state_dict):
+    """Compress state for URL."""
+    raw = json.dumps(state_dict, separators=(",", ":")).encode()
+    compressed = base64.urlsafe_b64encode(zlib.compress(raw)).decode()
+    return compressed
+
+def decode_state(encoded):
+    raw = zlib.decompress(base64.urlsafe_b64decode(encoded))
+    return json.loads(raw)
+
+# URL: ?s=eJzLKM3JyVcozy_K...
+```
+
+**Strategy B (recommended for your case): Use `dcc.Location` hash instead of search**
+```python
+# Store bulky state in hash fragment (never sent to server)
+# ?tab=trace&start=2026-01-01#runs=a1b2c3d4,e5f6g7h8,...
+```
+
+**Strategy C: Only store "selection name" in URL, not all IDs**
+If the user selects runs by experiment name or filter criteria, store the filter in the URL rather than the expanded list of IDs:
+```
+?experiment=dou2020_gdc&model=gpt-4o  # Instead of listing all matching run IDs
+```
+
+For your dashboard with 8-char hex IDs, comma-separated in the query string is fine up to ~200 IDs before you'd need to worry.
+
+### 4. dcc.Location: refresh, pathname vs search vs hash
+
+```python
+dcc.Location(id="url", refresh=False)  # ALWAYS use refresh=False for SPA state sync
+```
+
+| Property | When to use | Server sees it? | Triggers page reload? |
+|----------|-------------|-----------------|----------------------|
+| `pathname` | Tab/page routing (`/overview`, `/trace/abc123`) | Yes | Only if `refresh=True` |
+| `search` | Filters, selections (`?tab=trace&run=abc123`) | Yes | Only if `refresh=True` |
+| `hash` | Bulky state, client-only state (`#runs=a,b,c`) | No | Never |
+
+**For your dashboard:**
+- Use `search` for the primary state (active tab, selected run, date range). This makes URLs shareable and bookmarkable.
+- Use `hash` only if you have state too bulky for the query string.
+- `refresh=False` is mandatory -- without it, every state change reloads the page and kills the SPA experience.
+- `pathname` is useful if you want clean routes like `/trace/abc123` instead of `?tab=trace&run=abc123`, but it requires `dcc.Location` + page routing logic and is more work for marginal benefit in a single-page dashboard.
+
+### 5. Dash 2.18-Specific Features
+
+**`ctx.triggered_id` (Dash 2.4+, stable in 2.18):**
+Returns the `id` of the component that triggered the callback as a string (or dict for pattern-matching callbacks). This is the primary tool for breaking cycles:
+
+```python
+from dash import ctx  # Dash 2.x shorthand
+
+@app.callback(...)
+def my_callback(...):
+    # Dash 2.18 style:
+    trigger = ctx.triggered_id   # e.g., "url" or "tabs"
+
+    # For pattern-matching callbacks:
+    # ctx.triggered_id returns the dict, e.g., {"type": "run-checkbox", "index": 3}
+
+    # Full list of what fired (for multi-input callbacks):
+    # ctx.args_grouping — structured access to inputs
+```
+
+**`ctx.triggered_prop_ids` (Dash 2.9+):**
+Dict mapping `"component_id.property"` to the component id. Useful when the same component has multiple properties as inputs:
+
+```python
+@app.callback(
+    Output(...),
+    Input("url", "search"),
+    Input("url", "hash"),
+)
+def handle_url_change(...):
+    if "url.search" in ctx.triggered_prop_ids:
+        # search changed
+    elif "url.hash" in ctx.triggered_prop_ids:
+        # hash changed
+```
+
+**`allow_duplicate=True` (Dash 2.9+):**
+You're already using this in your codebase. Essential for URL sync because multiple callbacks may need to write to the same store.
+
+**`dash.no_update`:**
+Return this for any output you don't want to change. This is the single most important tool for preventing cycles.
+
+### 6. Concrete Implementation for Your Dashboard
+
+Given your existing `app.py`, here's what the integration would look like:
+
+```python
+# Add to layout (alongside existing dcc.Store components):
+dcc.Location(id="url", refresh=False),
+
+# Replace or augment your existing callbacks with URL awareness:
+@app.callback(
+    Output("url", "search"),
+    Output("tabs", "active_tab", allow_duplicate=True),
+    Output("selected-run-id", "data", allow_duplicate=True),
+    Output("comparison-run-a-store", "data", allow_duplicate=True),
+    Output("comparison-run-b-store", "data", allow_duplicate=True),
+    Input("url", "search"),
+    Input("tabs", "active_tab"),
+    Input("selected-run-id", "data"),
+    Input("comparison-run-a-store", "data"),
+    Input("comparison-run-b-store", "data"),
+    prevent_initial_call=False,
+)
+def sync_url_state(url_search, active_tab, run_id, comp_a, comp_b):
+    trigger = ctx.triggered_id
+
+    if trigger == "url" or not ctx.triggered:
+        # Page load or URL manual edit → parse URL, push to stores
+        params = parse_qs(url_search.lstrip("?")) if url_search else {}
+        return (
+            no_update,
+            params.get("tab", ["overview"])[0],
+            params.get("run", [None])[0],
+            params.get("comp_a", [None])[0],
+            params.get("comp_b", [None])[0],
+        )
+    else:
+        # Any store/tab changed → update URL, don't touch stores
+        params = {}
+        if active_tab and active_tab != "overview":
+            params["tab"] = active_tab
+        if run_id:
+            params["run"] = run_id
+        if comp_a:
+            params["comp_a"] = comp_a
+        if comp_b:
+            params["comp_b"] = comp_b
+        new_search = f"?{urlencode(params)}" if params else ""
+        return new_search, no_update, no_update, no_update, no_update
+```
+
+### 7. Gotchas
+
+1. **Initial page load:** `ctx.triggered` is an empty list on initial load. Handle this explicitly -- typically you want to read from URL on first load.
+
+2. **`refresh=False` + `search` updates:** When you write to `dcc.Location.search`, Dash updates the browser URL bar via `pushState` without a page reload. However, each write creates a browser history entry. Rapid filter changes can pollute the back button. Consider using `hash` for volatile state or debouncing URL updates with a small `dcc.Interval`.
+
+3. **`prevent_initial_call=False` is needed** for the URL sync callback so it runs on page load and reads initial URL params.
+
+4. **`parse_qs` returns lists:** `parse_qs("?tab=trace")` gives `{"tab": ["trace"]}`, not `{"tab": "trace"}`. Always index `[0]`.
+
+5. **Empty `search` string:** `dcc.Location.search` can be `""` or `None` on initial load depending on whether the URL has a `?`. Guard both cases.
+
+6. **`storage_type="session"` conflict:** Your existing stores use session storage. On page load, both the URL params AND the session storage will have values. Decide which wins -- typically the URL should take precedence (it's what the user navigated to), but you may want session storage as fallback when URL has no params.</result>
+<usage><total_tokens>19989</total_tokens><tool_uses>7</tool_uses><duration_ms>123991</duration_ms></usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>a903fed4cff93a8cc</task-id>
+<tool-use-id>toolu_01AgeJpKXcFJbfogE4s4QfMY</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Agent "Research Dash lazy loading patterns" completed</summary>
+<result>Here is a comprehensive research summary with concrete code examples for each topic.
+
+---
+
+## 1. Lazy Tab Rendering
+
+The recommended Dash pattern is the **callback-based content method** -- you do NOT put content inside `dcc.Tab(children=...)`. Instead, you render content into a separate container only when the tab is selected:
+
+```python
+app.layout = html.Div([
+    dcc.Tabs(id="tabs", value="tab-overview", children=[
+        dcc.Tab(label="Overview", value="tab-overview"),
+        dcc.Tab(label="Plots",    value="tab-plots"),
+        dcc.Tab(label="Logs",     value="tab-logs"),
+    ]),
+    html.Div(id="tab-content"),
+])
+
+@callback(Output("tab-content", "children"), Input("tabs", "value"))
+def render_tab(tab):
+    if tab == "tab-overview":
+        return build_overview_layout()
+    elif tab == "tab-plots":
+        return build_plots_layout()   # plots only built when tab is clicked
+    elif tab == "tab-logs":
+        return build_logs_layout()
+    return html.Div()
+```
+
+Key points:
+- Content for inactive tabs is **never constructed** -- the Python functions only run when the tab is selected.
+- This avoids the "render all tabs upfront" problem that happens when you use `dcc.Tab(children=[dcc.Graph(...)])`.
+- Do NOT wrap the entire `tab-content` div in `dcc.Loading` if your tabs contain sub-callbacks that trigger their own loading states; wrap individual heavy components instead.
+
+---
+
+## 2. Deferred/On-Demand Plots ("Show Plot" Button)
+
+Pattern: start with a button, return a `dcc.Graph` only when clicked, use `prevent_initial_call=True` to avoid firing on page load:
+
+```python
+def build_plots_layout():
+    return html.Div([
+        html.Div([
+            html.Button("Show Plot", id={"type": "show-plot-btn", "index": "accuracy"}),
+            dcc.Loading(
+                id={"type": "plot-loading", "index": "accuracy"},
+                children=html.Div(id={"type": "plot-container", "index": "accuracy"}),
+                type="circle",
+            ),
+        ]),
+        # Repeat for other plots...
+    ])
+
+@callback(
+    Output({"type": "plot-container", "index": MATCH}, "children"),
+    Input({"type": "show-plot-btn", "index": MATCH}, "n_clicks"),
+    State({"type": "show-plot-btn", "index": MATCH}, "id"),
+    prevent_initial_call=True,
+)
+def render_plot_on_click(n_clicks, btn_id):
+    plot_name = btn_id["index"]
+    # Load data and build figure only now
+    df = load_data_for(plot_name)
+    fig = px.bar(df, x="model", y="score", title=plot_name)
+    return dcc.Graph(figure=fig)
+```
+
+Key points:
+- `prevent_initial_call=True` is essential -- without it, the callback fires on load with `n_clicks=None`.
+- The `dcc.Loading` wrapper gives a spinner while data loads.
+- The figure object and data never exist in memory until the button is clicked.
+
+---
+
+## 3. Pattern-Matching Callbacks: Single vs. Multiple
+
+**For 6 deferred plots, use a single MATCH callback.** This is strictly better than 6 individual callbacks because:
+- Less code duplication
+- Easier to add/remove plots (just add a new component with the right `{"type": ..., "index": ...}` id)
+- Each button only triggers its own matched output (not all 6)
+
+```python
+PLOT_CONFIGS = ["accuracy", "completeness", "format", "coverage", "confusion", "timing"]
+
+def build_all_plot_cards():
+    cards = []
+    for name in PLOT_CONFIGS:
+        cards.append(html.Div([
+            html.H4(name.replace("_", " ").title()),
+            html.Button("Show Plot", id={"type": "show-btn", "index": name}),
+            dcc.Loading(
+                children=html.Div(id={"type": "plot-output", "index": name}),
+                type="circle",
+            ),
+        ], className="plot-card"))
+    return html.Div(cards)
+
+@callback(
+    Output({"type": "plot-output", "index": MATCH}, "children"),
+    Input({"type": "show-btn", "index": MATCH}, "n_clicks"),
+    State({"type": "show-btn", "index": MATCH}, "id"),
+    prevent_initial_call=True,
+)
+def render_any_plot(n_clicks, btn_id):
+    plot_key = btn_id["index"]
+    # Dispatch to the right data loader / figure builder
+    fig = PLOT_BUILDERS[plot_key]()  # dict mapping name -> callable
+    return dcc.Graph(figure=fig, config={"displayModeBar": True})
+```
+
+When MATCH **won't** work (and you need ALL):
+- If clicking one button needs to read values from ALL other components (e.g., a "Refresh All" button)
+- If one output depends on the state of multiple matched components
+
+ALLSMALLER is primarily useful for ordered lists where item N depends on items 0..N-1 (rare for plot dashboards).
+
+---
+
+## 4. dcc.Loading Best Practices
+
+**Wrap individual plot containers, not whole tabs:**
+
+```python
+# GOOD: spinner only on the plot being loaded
+dcc.Loading(
+    children=html.Div(id={"type": "plot-output", "index": name}),
+    type="circle",
+    delay_show=200,   # avoid flash for fast loads (ms)
+    delay_hide=100,   # smooth transition
+)
+
+# BAD: entire tab shows spinner when any sub-callback fires
+dcc.Loading(children=html.Div(id="tab-content"))
+```
+
+**`target_components`** (Dash 2.17+) lets you decouple the Loading wrapper from its children:
+
+```python
+dcc.Loading(
+    id="my-loader",
+    target_components={"my-graph": "figure"},  # only spin when figure prop updates
+    children=html.Div([
+        dcc.Graph(id="my-graph"),
+        html.Div("Other stuff that should not trigger spinner"),
+    ]),
+    type="dot",
+)
+```
+
+For pattern-matching IDs, stringify them:
+
+```python
+from dash import stringify_id
+
+target_id = stringify_id({"type": "plot-output", "index": "accuracy"})
+dcc.Loading(target_components={target_id: "children"}, ...)
+```
+
+**Known caveat:** `target_components` with wildcard `"*"` as the property has a reported bug (issue #3340). Use explicit property names.
+
+---
+
+## 5. Subprocess in Callbacks
+
+**Use background callbacks with `DiskcacheManager` for subprocess calls.** This runs the callback in a separate process so the main Dash server stays responsive:
+
+```python
+import diskcache
+import subprocess
+from dash import Dash, callback, Input, Output, html, DiskcacheManager
+
+cache = diskcache.Cache("./cache")
+background_callback_manager = DiskcacheManager(cache)
+
+app = Dash(__name__, background_callback_manager=background_callback_manager)
+
+@callback(
+    Output("cli-output", "children"),
+    Input("run-analysis-btn", "n_clicks"),
+    background=True,
+    running=[
+        (Output("run-analysis-btn", "disabled"), True, False),
+        (Output("status-text", "children"), "Running analysis...", ""),
+    ],
+    progress=[Output("progress-bar", "value"), Output("progress-bar", "max")],
+    prevent_initial_call=True,
+)
+def run_cli_tool(set_progress, n_clicks):
+    set_progress((0, 100))
+    
+    result = subprocess.run(
+        [".venv/bin/python", "my_cli_tool.py", "--arg", "value"],
+        capture_output=True, text=True, timeout=300,
+    )
+    
+    set_progress((100, 100))
+    
+    if result.returncode != 0:
+        return html.Pre(f"ERROR:\n{result.stderr}", style={"color": "red"})
+    return html.Pre(result.stdout)
+```
+
+Key points:
+- The `running` parameter disables the button and shows status text while the callback executes.
+- The `progress` parameter with `set_progress` enables progress updates.
+- `DiskcacheManager` is fine for single-user/HPC use; `CeleryManager` + Redis for production multi-user.
+- For real-time streaming output, use `subprocess.Popen` with line-by-line reading and call `set_progress` per line.
+- **Always set a `timeout`** on `subprocess.run` to avoid zombie processes.
+
+For streaming progress from a subprocess:
+
+```python
+def run_cli_tool(set_progress, n_clicks):
+    proc = subprocess.Popen(
+        [".venv/bin/python", "my_cli_tool.py"],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+    )
+    lines = []
+    for i, line in enumerate(proc.stdout):
+        lines.append(line.rstrip())
+        set_progress((i, "running"))  # update progress per line
+    proc.wait()
+    return html.Pre("\n".join(lines))
+```
+
+---
+
+## 6. Performance Tips for 20+ Callbacks
+
+**Clientside callbacks** for purely UI logic (no data processing):
+
+```python
+# Toggle visibility -- no need for a server round-trip
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        const el = document.getElementById('details-panel');
+        return el && el.style.display === 'none'
+            ? {'display': 'block'} : {'display': 'none'};
+    }
+    """,
+    Output("details-panel", "style"),
+    Input("toggle-btn", "n_clicks"),
+    prevent_initial_call=True,
+)
+```
+
+**Other performance strategies:**
+
+| Technique | When to Use |
+|-----------|-------------|
+| `prevent_initial_call=True` | Any callback that responds to user action (buttons, dropdowns) |
+| `dcc.Store` with `storage_type="session"` | Cache computed data client-side to avoid recomputation |
+| `flask_caching` / `@cache.memoize()` | Server-side caching for expensive data loads |
+| Partial property updates (`Patch()`) | Update one trace/style without resending entire figure |
+| Clientside callbacks | Visibility toggles, CSS changes, simple formatting |
+| Lazy tab rendering (pattern #1 above) | Avoid computing all tabs on load |
+| `background=True` | Any callback that takes >2-3 seconds |
+
+**Partial property updates** (Dash 2.9+) for updating a figure without re-sending all data:
+
+```python
+@callback(Output("my-graph", "figure"), Input("color-picker", "value"),
+          prevent_initial_call=True)
+def update_color(color):
+    patched = Patch()
+    patched["data"][0]["marker"]["color"] = color
+    return patched  # only the diff is sent, not the whole figure
+```
+
+**Avoid these common pitfalls with 20+ callbacks:**
+- Don't use pattern-matching callbacks with hundreds of dynamic components -- there is a known performance issue (#3008) where Dash's front-end matching becomes slow.
+- Don't nest `dcc.Loading` wrappers deeply -- each one adds overhead.
+- Use `orjson` serialization (built into Dash 2.x) -- it is automatic but ensure you are not overriding the JSON encoder.
+
+---
+
+Sources:
+- [Tabs Documentation](https://dash.plotly.com/dash-core-components/tabs)
+- [Pattern-Matching Callbacks](https://dash.plotly.com/pattern-matching-callbacks)
+- [Background Callbacks](https://dash.plotly.com/background-callbacks)
+- [dcc.Loading Documentation](https://dash.plotly.com/dash-core-components/loading)
+- [Loading States](https://dash.plotly.com/loading-states)
+- [Clientside Callbacks](https://dash.plotly.com/clientside-callbacks)
+- [Performance](https://dash.plotly.com/performance)
+- [Advanced Callbacks](https://dash.plotly.com/advanced-callbacks)
+- [Pattern-Matching Callbacks (Medium)](https://medium.com/plotly/pattern-matching-callbacks-in-dash-9014eee99858)
+- [Lazy Load dcc.Graph in Tabs (Forum)](https://community.plotly.com/t/how-to-lazy-load-dcc-graph-elements-in-a-tabbed-dash-application/96337)
+- [target_components Bug #3340](https://github.com/plotly/dash/issues/3340)
+- [Pattern-Matching Performance #3008](https://github.com/plotly/dash/issues/3008)
+- [Background Callback Caching](https://dash.plotly.com/background-callback-caching)
+- [target_components Forum Discussion](https://community.plotly.com/t/how-does-dcc-loading-target-components-works/90011)</result>
+<usage><total_tokens>23401</total_tokens><tool_uses>12</tool_uses><duration_ms>112441</duration_ms></usage>
+</task-notification>
+Full transcript available at: REDACTED.output
+
+---
+
+<task-notification>
+<task-id>ae5a42bc088939183</task-id>
+<tool-use-id>toolu_017LjmuMoha54j2oLBbM1hFA</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Agent "Research Dash collapsible panels" completed</summary>
+<result>Here are concrete code examples for each of the six UI patterns, targeting Dash 2.18 with dash-bootstrap-components (DBC) 1.6.0.
+
+---
+
+## 1. Collapsible Options Panel (top of each tab)
+
+**Recommendation: `dbc.Accordion` with `start_collapsed=True`.**
+
+`dbc.Accordion` is the best choice here. It gives you a styled, accessible toggle header out of the box (no separate button needed), supports `always_open` for multiple sections, and `start_collapsed` to default-closed. `dbc.Collapse` requires you to wire up your own toggle button. `html.Details` works but looks unstyled and is harder to animate.
+
+```python
+import dash_bootstrap_components as dbc
+from dash import html, dcc
+
+def make_options_panel(tab_id):
+    """Collapsible options panel for the top of a tab."""
+    return dbc.Accordion(
+        [
+            dbc.AccordionItem(
+                [
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label("Dataset"),
+                            dcc.Dropdown(
+                                id={"type": "dataset-dropdown", "tab": tab_id},
+                                options=[],
+                                placeholder="Select dataset...",
+                            ),
+                        ], md=4),
+                        dbc.Col([
+                            dbc.Label("Metric"),
+                            dcc.Dropdown(
+                                id={"type": "metric-dropdown", "tab": tab_id},
+                                options=[
+                                    {"label": "Accuracy", "value": "accuracy"},
+                                    {"label": "F1 Score", "value": "f1"},
+                                ],
+                                value="accuracy",
+                            ),
+                        ], md=4),
+                        dbc.Col([
+                            dbc.Label("Options"),
+                            dbc.Checklist(
+                                id={"type": "options-checklist", "tab": tab_id},
+                                options=[
+                                    {"label": "Show errors", "value": "errors"},
+                                    {"label": "Normalize", "value": "normalize"},
+                                ],
+                                value=[],
+                                inline=True,
+                            ),
+                        ], md=4),
+                    ]),
+                ],
+                title="Options",  # This is the clickable header text
+                item_id="options",
+            ),
+        ],
+        id={"type": "options-accordion", "tab": tab_id},
+        start_collapsed=True,  # Collapsed by default
+        flush=True,            # Remove outer border for cleaner embedding
+        className="mb-3",
+    )
+```
+
+If you need **multiple independently collapsible sections** (e.g., "Filters" and "Display Settings"), use `always_open=True`:
+
+```python
+dbc.Accordion(
+    [
+        dbc.AccordionItem([...filter controls...], title="Filters", item_id="filters"),
+        dbc.AccordionItem([...display controls...], title="Display Settings", item_id="display"),
+    ],
+    always_open=True,       # Opening one does NOT close the other
+    start_collapsed=True,
+    flush=True,
+)
+```
+
+---
+
+## 2. Collapsible Diagnostic Panel (bottom debug info)
+
+**Recommendation: `html.Details` with `html.Summary`.**
+
+For a debug/diagnostic section, `html.Details` is ideal. It requires zero callbacks (pure HTML5), is semantically correct for "supplementary details," and has a low visual footprint. DBC components are overkill here.
+
+```python
+def make_diagnostic_panel(run_id, file_paths, raw_json, timing_ms):
+    """Collapsible diagnostic panel for the bottom of a view."""
+    return html.Details(
+        [
+            html.Summary(
+                "Diagnostics",
+                style={
+                    "cursor": "pointer",
+                    "fontWeight": "600",
+                    "fontSize": "0.85rem",
+                    "color": "#6c757d",
+                    "padding": "0.5rem 0",
+                },
+            ),
+            html.Div(
+                [
+                    html.Table(
+                        [
+                            html.Tr([html.Td("Run ID", style={"fontWeight": "bold", "paddingRight": "1rem"}),
+                                     html.Td(run_id)]),
+                            html.Tr([html.Td("Elapsed", style={"fontWeight": "bold", "paddingRight": "1rem"}),
+                                     html.Td(f"{timing_ms} ms")]),
+                        ] + [
+                            html.Tr([html.Td(f"File {i+1}", style={"fontWeight": "bold", "paddingRight": "1rem"}),
+                                     html.Td(p, style={"fontFamily": "monospace", "fontSize": "0.8rem"})])
+                            for i, p in enumerate(file_paths)
+                        ],
+                        style={"marginBottom": "0.5rem"},
+                    ),
+                    html.Details(
+                        [
+                            html.Summary("Raw JSON", style={"cursor": "pointer", "fontSize": "0.8rem"}),
+                            html.Pre(
+                                raw_json,
+                                id="diagnostic-json",
+                                style={
+                                    "maxHeight": "300px",
+                                    "overflow": "auto",
+                                    "backgroundColor": "#f8f9fa",
+                                    "padding": "0.5rem",
+                                    "fontSize": "0.75rem",
+                                    "border": "1px solid #dee2e6",
+                                    "borderRadius": "4px",
+                                },
+                            ),
+                            dcc.Clipboard(
+                                target_id="diagnostic-json",
+                                style={"position": "absolute", "top": 0, "right": 0},
+                            ),
+                        ],
+                        style={"position": "relative"},
+                    ),
+                ],
+                style={
+                    "padding": "0.75rem",
+                    "backgroundColor": "#f8f9fa",
+                    "borderRadius": "4px",
+                    "border": "1px solid #dee2e6",
+                    "fontSize": "0.85rem",
+                },
+            ),
+        ],
+        style={"marginTop": "1.5rem"},
+        # html.Details is closed by default. Add open=True to start open.
+    )
+```
+
+---
+
+## 3. Multi-Filter Widget (dynamic add/remove rows)
+
+**Recommendation: Pattern-matching callbacks with `Patch()` for partial updates.**
+
+This uses dict-based IDs with `MATCH` and `ALL` selectors. Each filter row gets a unique index. `Patch()` (Dash 2.9+) lets you append/remove children without returning the entire children list.
+
+```python
+from dash import html, dcc, callback, Input, Output, State, ALL, MATCH, Patch, no_update, ctx
+import dash_bootstrap_components as dbc
+
+# ---------- Layout ----------
+
+def make_filter_widget(columns):
+    """Dynamic multi-filter widget. `columns` is a list of column names."""
+    return html.Div([
+        html.Div(id="filter-rows-container", children=[]),
+        dbc.Button(
+            "+ Add Filter",
+            id="add-filter-btn",
+            color="secondary",
+            size="sm",
+            className="mt-2",
+        ),
+        # Hidden store to track the next index (avoids ID collisions after deletion)
+        dcc.Store(id="filter-next-index", data=0),
+        # Store the column list so callbacks can access it
+        dcc.Store(id="filter-columns", data=columns),
+    ])
+
+
+def make_filter_row(index, columns):
+    """Create a single filter row."""
+    operators = [
+        {"label": "equals", "value": "eq"},
+        {"label": "not equals", "value": "ne"},
+        {"label": "contains", "value": "contains"},
+        {"label": "starts with", "value": "startswith"},
+        {"label": "is empty", "value": "empty"},
+        {"label": "is not empty", "value": "notempty"},
+    ]
+    return dbc.Row(
+        [
+            dbc.Col(
+                dcc.Dropdown(
+                    id={"type": "filter-column", "index": index},
+                    options=[{"label": c, "value": c} for c in columns],
+                    placeholder="Column...",
+                ),
+                md=4,
+            ),
+            dbc.Col(
+                dcc.Dropdown(
+                    id={"type": "filter-operator", "index": index},
+                    options=operators,
+                    value="eq",
+                    clearable=False,
+                ),
+                md=2,
+            ),
+            dbc.Col(
+                dbc.Input(
+                    id={"type": "filter-value", "index": index},
+                    placeholder="Value...",
+                    type="text",
+                    size="sm",
+                ),
+                md=4,
+            ),
+            dbc.Col(
+                dbc.Button(
+                    "x",
+                    id={"type": "filter-delete", "index": index},
+                    color="danger",
+                    outline=True,
+                    size="sm",
+                ),
+                md=2,
+            ),
+        ],
+        className="g-2 mb-2 align-items-center",
+        id={"type": "filter-row", "index": index},
+    )
+
+
+# ---------- Callbacks ----------
+
+@callback(
+    Output("filter-rows-container", "children"),
+    Output("filter-next-index", "data"),
+    Input("add-filter-btn", "n_clicks"),
+    State("filter-next-index", "data"),
+    State("filter-columns", "data"),
+    prevent_initial_call=True,
+)
+def add_filter_row(n_clicks, next_index, columns):
+    """Append a new filter row using Patch (partial update)."""
+    patched = Patch()
+    patched.append(make_filter_row(next_index, columns))
+    return patched, next_index + 1
+
+
+@callback(
+    Output("filter-rows-container", "children", allow_duplicate=True),
+    Input({"type": "filter-delete", "index": ALL}, "n_clicks"),
+    State({"type": "filter-row", "index": ALL}, "id"),
+    prevent_initial_call=True,
+)
+def remove_filter_row(n_clicks_list, row_ids):
+    """Remove the clicked filter row. Rebuilds children minus the deleted row."""
+    if not ctx.triggered_id or not any(n for n in n_clicks_list if n):
+        return no_update
+    # ctx.triggered_id is the dict ID of the clicked delete button
+    delete_index = ctx.triggered_id["index"]
+    # Use Patch to remove by position
+    # Find the position of the row to remove
+    for pos, row_id in enumerate(row_ids):
+        if row_id["index"] == delete_index:
+            patched = Patch()
+            del patched[pos]
+            return patched
+    return no_update
+
+
+@callback(
+    Output("current-filters-store", "data"),  # Wire this to wherever you need filters
+    Input({"type": "filter-column", "index": ALL}, "value"),
+    Input({"type": "filter-operator", "index": ALL}, "value"),
+    Input({"type": "filter-value", "index": ALL}, "value"),
+    State({"type": "filter-column", "index": ALL}, "id"),
+    prevent_initial_call=True,
+)
+def collect_filters(columns, operators, values, ids):
+    """Collect all active filters into a list of dicts."""
+    filters = []
+    for col, op, val, id_dict in zip(columns, operators, values, ids):
+        if col is not None:
+            filters.append({
+                "column": col,
+                "operator": op,
+                "value": val or "",
+                "index": id_dict["index"],
+            })
+    return filters
+```
+
+**Key points about pattern-matching callbacks:**
+- IDs are dicts: `{"type": "filter-column", "index": 3}`.
+- `ALL` fires whenever *any* component of that type changes, passing all values as a list.
+- `MATCH` fires per-component and passes only the matched value (useful for row-level reactions).
+- `ctx.triggered_id` (Dash 2.4+) gives you the dict ID of whichever component triggered.
+- `Patch()` (Dash 2.9+) lets you do `patched.append(...)` or `del patched[i]` for partial children updates.
+- `allow_duplicate=True` is needed when multiple callbacks write to the same Output.
+
+---
+
+## 4. dcc.Clipboard
+
+**Two usage modes:** target_id-based (no callback needed) and content-based (callback-driven).
+
+```python
+from dash import html, dcc, callback, Input, Output
+
+# --- Mode 1: target_id (simplest, no callback) ---
+# Copies the inner text/value of the target element.
+
+html.Div([
+    html.Pre(
+        "some-value-to-copy",
+        id="copy-target",
+        style={"padding": "0.5rem", "backgroundColor": "#f8f9fa"},
+    ),
+    dcc.Clipboard(
+        target_id="copy-target",
+        title="Copy to clipboard",  # Tooltip text
+        style={
+            "display": "inline-block",
+            "fontSize": 20,
+            "verticalAlign": "top",
+        },
+    ),
+], style={"position": "relative"})
+
+
+# --- Mode 2: content prop (callback-driven, for computed text) ---
+# Useful when you want to copy something different from what is displayed,
+# or when the source is not a simple text element.
+
+html.Div([
+    html.Div("Displayed summary info", id="summary-display"),
+    dcc.Clipboard(id="copy-full-json", title="Copy full JSON"),
+])
+
+@callback(
+    Output("copy-full-json", "content"),
+    Input("copy-full-json", "n_clicks"),
+    State("my-data-store", "data"),
+    prevent_initial_call=True,
+)
+def set_clipboard_content(n_clicks, data):
+    import json
+    return json.dumps(data, indent=2)
+```
+
+**Gotchas and notes:**
+- `dcc.Clipboard` renders as a small copy icon by default. You can style it or wrap it.
+- `target_id` copies `.innerText` of the target; for `dcc.Input`/`dbc.Input` it copies `.value`.
+- If both `target_id` and `content` are set, `content` takes precedence when populated.
+- The component uses the browser Clipboard API. There is no built-in fallback -- it silently fails in insecure contexts (non-HTTPS, non-localhost). For HPC port-forwarded dashboards over SSH tunnels, localhost works fine.
+- Available since Dash 2.0. No compatibility issues in 2.18.
+
+---
+
+## 5. Toast Notifications
+
+**Recommendation: `dbc.Toast` with `duration` for auto-dismiss, positioned fixed in top-right corner.**
+
+```python
+import dash_bootstrap_components as dbc
+from dash import html, callback, Input, Output, State, no_update
+
+# --- Layout ---
+# Place the toast container at the top level of app.layout, outside tabs/content.
+
+toast_container = html.Div(
+    dbc.Toast(
+        id="notification-toast",
+        header="Notification",
+        icon="success",           # "success", "warning", "danger", "info", "primary"
+        duration=4000,            # Auto-dismiss after 4 seconds (milliseconds)
+        dismissable=True,         # Show X button
+        is_open=False,
+        style={
+            "position": "fixed",
+            "top": 10,
+            "right": 10,
+            "width": 350,
+            "zIndex": 1050,       # Above modals if needed
+        },
+    ),
+)
+
+
+# --- Callback to show toast ---
+@callback(
+    Output("notification-toast", "is_open"),
+    Output("notification-toast", "header"),
+    Output("notification-toast", "icon"),
+    Output("notification-toast", "children"),
+    Input("save-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def show_save_notification(n_clicks):
+    # Return True for is_open to show it; duration handles auto-close.
+    return True, "Saved", "success", "Configuration saved successfully."
+
+
+# --- For error toasts, use a different icon/header ---
+@callback(
+    Output("notification-toast", "is_open", allow_duplicate=True),
+    Output("notification-toast", "header", allow_duplicate=True),
+    Output("notification-toast", "icon", allow_duplicate=True),
+    Output("notification-toast", "children", allow_duplicate=True),
+    Input("run-button", "n_clicks"),
+    prevent_initial_call=True,
+)
+def show_error_notification(n_clicks):
+    try:
+        do_something()
+        return True, "Success", "success", "Run completed."
+    except Exception as e:
+        return True, "Error", "danger", f"Run failed: {e}"
+```
+
+**For multiple simultaneous toasts**, use a stacking pattern:
+
+```python
+# Layout: a container div with fixed position, toasts appended dynamically
+toast_stack = html.Div(
+    id="toast-stack",
+    style={
+        "position": "fixed",
+        "top": 10,
+        "right": 10,
+        "zIndex": 1050,
+        "display": "flex",
+        "flexDirection": "column",
+        "gap": "0.5rem",
+    },
+)
+
+# In a callback, use Patch() to append toasts:
+@callback(
+    Output("toast-stack", "children"),
+    Input("some-trigger", "n_clicks"),
+    prevent_initial_call=True,
+)
+def add_toast(n):
+    patched = Patch()
+    patched.append(
+        dbc.Toast(
+            "Operation completed.",
+            header="Success",
+            icon="success",
+            duration=4000,
+            dismissable=True,
+            is_open=True,
+        )
+    )
+    return patched
+```
+
+---
+
+## 6. Searchable Dropdown
+
+`dcc.Dropdown` has `search_value` built in (search is enabled by default). The key gotcha is around custom/component labels.
+
+```python
+from dash import html, dcc
+
+# --- Basic: string labels (search works automatically) ---
+dcc.Dropdown(
+    id="model-dropdown",
+    options=[
+        {"label": "GPT-4o (OpenAI)", "value": "openai/gpt-4o"},
+        {"label": "Claude Opus 4 (Anthropic)", "value": "anthropic/claude-opus-4"},
+        {"label": "Llama 3.1 70B (Meta)", "value": "meta/llama-3.1-70b"},
+    ],
+    placeholder="Search models...",
+    searchable=True,       # This is True by default
+    clearable=True,
+    # optionHeight=50,     # Increase if labels are tall
+)
+
+
+# --- With styled component labels: MUST set `search` property ---
+# Gotcha: when label is a Dash component, search matches against `value` only.
+# Fix: add the `search` key to each option.
+
+dcc.Dropdown(
+    id="model-dropdown-styled",
+    options=[
+        {
+            "label": html.Span([
+                html.Span("GPT-4o", style={"fontWeight": "bold"}),
+                html.Span(" - OpenAI", style={"color": "#888", "marginLeft": "0.5rem"}),
+            ]),
+            "value": "openai/gpt-4o",
+            "search": "GPT-4o OpenAI gpt4o",  # All searchable terms
+        },
+        {
+            "label": html.Span([
+                html.Span("Claude Opus 4", style={"fontWeight": "bold"}),
+                html.Span(" - Anthropic", style={"color": "#888", "marginLeft": "0.5rem"}),
+            ]),
+            "value": "anthropic/claude-opus-4",
+            "search": "Claude Opus 4 Anthropic claude-opus-4",
+        },
+        {
+            "label": html.Span([
+                html.Span("Llama 3.1 70B", style={"fontWeight": "bold"}),
+                html.Span(" - Meta", style={"color": "#888", "marginLeft": "0.5rem"}),
+            ]),
+            "value": "meta/llama-3.1-70b",
+            "search": "Llama 3.1 70B Meta llama3",
+        },
+    ],
+    placeholder="Search models...",
+)
+```
+
+**Gotchas summary for dcc.Dropdown search:**
+
+1. **Component labels break search.** When `label` is an `html.Span` or any Dash component, search only matches against `value` unless you explicitly set the `search` property on each option. This is the single biggest gotcha.
+2. **`search` is additive.** The `search` string is matched *in addition to* `value`, not instead of it. So include any aliases or alternate spellings in `search`.
+3. **Performance with large option lists.** Above ~10,000 options the dropdown becomes sluggish. For very large lists, consider a callback-driven approach that filters options server-side based on `search_value`:
+
+```python
+@callback(
+    Output("large-dropdown", "options"),
+    Input("large-dropdown", "search_value"),
+)
+def filter_options(search):
+    if not search:
+        return all_options[:100]  # Show first 100 by default
+    search_lower = search.lower()
+    return [o for o in all_options if search_lower in o["label"].lower()][:100]
+```
+
+4. **`multi=True`** works with search -- selected items appear as tags, and the search box remains active for adding more.
+
+---
+
+## Summary of Recommendations
+
+| Pattern | Best Component | Why |
+|---|---|---|
+| Collapsible options (top) | `dbc.Accordion` + `AccordionItem` | Built-in toggle header, `start_collapsed`, `always_open`, styled |
+| Collapsible diagnostics (bottom) | `html.Details` + `html.Summary` | Zero callbacks, lightweight, semantic HTML5 |
+| Dynamic filter rows | Pattern-matching callbacks + `Patch()` | Dict IDs with `ALL`/`MATCH`, partial updates via `Patch` |
+| Copy to clipboard | `dcc.Clipboard` with `target_id` | No callback needed for simple cases; `content` prop for computed text |
+| Toast notifications | `dbc.Toast` with `duration` | Auto-dismiss, `icon` for color coding, fixed positioning |
+| Searchable dropdown | `dcc.Dropdown` with `search` option key | Always set `search` when using component labels |
+
+Sources:
+- [DBC Accordion docs](https://www.dash-bootstrap-components.com/docs/components/accordion/)
+- [DBC Collapse docs](https://www.dash-bootstrap-components.com/docs/components/collapse/)
+- [DBC Toast docs](https://www.dash-bootstrap-components.com/docs/components/toast/)
+- [Dash Pattern-Matching Callbacks](https://dash.plotly.com/pattern-matching-callbacks)
+- [dcc.Clipboard docs](https://dash.plotly.com/dash-core-components/clipboard)
+- [dcc.Dropdown docs](https://dash.plotly.com/dash-core-components/dropdown)
+- [DBC 1.6.0 release notes](https://community.plotly.com/t/dash-bootstrap-components-v01-6-0/84020)
+- [Plotly community: expand all accordion items](https://community.plotly.com/t/expand-all-accordion-elements-by-default/83096)
+- [Advanced Dash pattern-matching with smart filters (Medium)](https://medium.com/@REDACTED)</result>
+<usage><total_tokens>22840</total_tokens><tool_uses>14</tool_uses><duration_ms>137000</duration_ms></usage>
+</task-notification>
+Full transcript available at: REDACTED.output
