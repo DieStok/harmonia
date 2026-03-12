@@ -25,8 +25,10 @@ import dash_bootstrap_components as dbc
 import diskcache
 from dash import Dash, Input, Output, State, ctx, dcc, html, no_update
 
+from dashboard.activity_logger import DashboardActivityLogger
 from dashboard.components.multi_filter import register_multi_filter_callbacks
 from dashboard.data_loader import DashboardDataLoader
+from dashboard.tabs.activity_log import render_activity_log
 from dashboard.tabs.comparison import render_comparison
 from dashboard.tabs.error_analysis import render_error_analysis
 from dashboard.tabs.failure_analysis import render_failure_analysis
@@ -83,6 +85,7 @@ app.layout = dbc.Container(
                 dbc.Tab(label="Trace Explorer", tab_id="trace"),
                 dbc.Tab(label="Tokens & Cost", tab_id="tokens"),
                 dbc.Tab(label="Comparison", tab_id="comparison"),
+                dbc.Tab(label="Activity Log", tab_id="activity-log"),
             ],
             id="tabs",
             active_tab="overview",
@@ -116,6 +119,9 @@ register_multi_filter_callbacks(app, "overview-filter")
 # Global data_loader reference (set in main)
 data_loader: DashboardDataLoader = None  # type: ignore
 
+# Activity logger — writes JSON-lines to logs/dashboard/
+activity_logger = DashboardActivityLogger(Path("logs/dashboard"))
+
 
 @app.callback(
     Output("phoenix-status-banner", "children"),
@@ -123,6 +129,7 @@ data_loader: DashboardDataLoader = None  # type: ignore
 )
 def update_phoenix_banner(_active_tab):
     """Show warning if Phoenix is unavailable."""
+    activity_logger.log("phoenix_banner_check")
     if data_loader is None or data_loader.phoenix_available:
         return []
     return dbc.Alert(
@@ -148,6 +155,8 @@ def update_phoenix_banner(_active_tab):
 def sync_url_state(url_search, selected_runs, date_range, active_tab):
     """Bidirectional URL ↔ store sync. Uses ctx.triggered_id to break cycles."""
     trigger = ctx.triggered_id
+    if trigger == "url":
+        activity_logger.log("url_navigation", {"url_search": url_search})
     if trigger == "url" or not ctx.triggered:
         # URL changed or initial load → parse params, push to stores
         params = parse_qs(url_search.lstrip("?")) if url_search else {}
@@ -189,6 +198,8 @@ def sync_url_state(url_search, selected_runs, date_range, active_tab):
 )
 def render_tab(active_tab, selected_run_id, turn_page, comp_a, comp_b, selected_runs):
     """Render the content for the selected tab."""
+    if ctx.triggered_id == "tabs":
+        activity_logger.log("tab_switch", {"tab_id": active_tab})
     if data_loader is None:
         return html.P("Loading...")
 
@@ -208,6 +219,8 @@ def render_tab(active_tab, selected_run_id, turn_page, comp_a, comp_b, selected_
         return render_token_cost(data_loader, selected_run_ids)
     elif active_tab == "comparison":
         return render_comparison(data_loader, comp_a, comp_b, selected_run_ids)
+    elif active_tab == "activity-log":
+        return render_activity_log(activity_logger.log_dir)
     return html.P("Select a tab.")
 
 
@@ -225,6 +238,7 @@ def click_bar_to_trace(click_data):
         if isinstance(run_id, list):
             run_id = run_id[0]
         if run_id:
+            activity_logger.log("chart_click_accuracy", {"run_id": run_id})
             return "trace", run_id
     raise dash.exceptions.PreventUpdate
 
@@ -239,6 +253,7 @@ def click_bar_to_trace(click_data):
 def sync_table_selection_to_store(selected_rows):
     if selected_rows is not None:
         run_ids = [r.get("run_id") for r in selected_rows if r.get("run_id")]
+        activity_logger.log("run_select", {"run_ids": run_ids})
         return run_ids, True
     raise dash.exceptions.PreventUpdate
 
@@ -253,6 +268,7 @@ def sync_table_selection_to_store(selected_rows):
 )
 def clear_selection(n_clicks):
     if n_clicks:
+        activity_logger.log("run_clear")
         return [], [], True
     raise dash.exceptions.PreventUpdate
 
@@ -264,6 +280,7 @@ def clear_selection(n_clicks):
     prevent_initial_call=True,
 )
 def update_date_range(value):
+    activity_logger.log("date_range_change", {"range": value})
     return value if value else "last5d"
 
 
@@ -275,6 +292,7 @@ def update_date_range(value):
 )
 def select_trace_run(value):
     if value:
+        activity_logger.log("trace_run_select", {"run_id": value})
         return value
     raise dash.exceptions.PreventUpdate
 
@@ -286,6 +304,7 @@ def select_trace_run(value):
     prevent_initial_call=True,
 )
 def select_comp_a(value):
+    activity_logger.log("comparison_select", {"slot": "a", "run_id": value})
     return value
 
 
@@ -295,6 +314,7 @@ def select_comp_a(value):
     prevent_initial_call=True,
 )
 def select_comp_b(value):
+    activity_logger.log("comparison_select", {"slot": "b", "run_id": value})
     return value
 
 
@@ -305,6 +325,7 @@ def select_comp_b(value):
     prevent_initial_call=True,
 )
 def sync_accordions(active_item):
+    activity_logger.log("accordion_sync", {"active_item": active_item})
     return active_item
 
 
@@ -317,6 +338,7 @@ def sync_accordions(active_item):
 )
 def refresh_overview(n_clicks, active_tab):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "overview"})
         data_loader.refresh()
     return render_overview(data_loader)
 
@@ -329,6 +351,7 @@ def refresh_overview(n_clicks, active_tab):
 )
 def refresh_metrics(n_clicks, active_tab):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "metrics"})
         data_loader.refresh()
     return render_metrics(data_loader)
 
@@ -343,6 +366,7 @@ def refresh_metrics(n_clicks, active_tab):
 )
 def refresh_trace(n_clicks, active_tab, run_id, turn_page):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "trace"})
         data_loader.refresh()
     return render_trace_explorer(data_loader, run_id, turn_page or 0)
 
@@ -355,6 +379,7 @@ def refresh_trace(n_clicks, active_tab, run_id, turn_page):
 )
 def refresh_tokens(n_clicks, active_tab):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "tokens"})
         data_loader.refresh()
     return render_token_cost(data_loader)
 
@@ -369,6 +394,7 @@ def refresh_tokens(n_clicks, active_tab):
 )
 def refresh_comparison(n_clicks, active_tab, comp_a, comp_b):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "comparison"})
         data_loader.refresh()
     return render_comparison(data_loader, comp_a, comp_b)
 
@@ -387,6 +413,7 @@ def refresh_comparison(n_clicks, active_tab, comp_a, comp_b):
 def regenerate_analysis(n_clicks):
     if not n_clicks:
         raise dash.exceptions.PreventUpdate
+    activity_logger.log("regenerate_analysis")
     try:
         result = subprocess.run(
             [
@@ -419,6 +446,7 @@ def regenerate_analysis(n_clicks):
     prevent_initial_call=True,
 )
 def update_radar(selected_runs):
+    activity_logger.log("radar_update", {"selected_runs": selected_runs})
     from dashboard.tabs.metrics import _radar_chart
 
     return _radar_chart(data_loader, selected_runs or [])
@@ -431,6 +459,7 @@ def update_radar(selected_runs):
     prevent_initial_call=True,
 )
 def update_boxplot(group_by):
+    activity_logger.log("boxplot_update", {"group_by": group_by})
     from dashboard.tabs.metrics import _metrics_boxplot
 
     metrics_df = data_loader.get_all_metrics()
@@ -447,6 +476,7 @@ def update_boxplot(group_by):
 def update_confusion_matrix(column_name, run_id):
     if not run_id or not column_name:
         raise dash.exceptions.PreventUpdate
+    activity_logger.log("confusion_column", {"column": column_name, "run_id": run_id})
     from dashboard.tabs.trace_explorer import _confusion_matrix_chart
 
     metrics = data_loader.get_run_metrics(run_id)
@@ -467,6 +497,7 @@ def update_confusion_matrix(column_name, run_id):
 def update_cross_model_heatmap(column_name, run_id_a, run_id_b):
     if not run_id_a or not run_id_b or not column_name:
         raise dash.exceptions.PreventUpdate
+    activity_logger.log("cross_model_column", {"column": column_name})
     from dashboard.tabs.comparison import _cross_model_heatmap
 
     return _cross_model_heatmap(data_loader, run_id_a, run_id_b, column_name)
@@ -480,6 +511,7 @@ def update_cross_model_heatmap(column_name, run_id_a, run_id_b):
 )
 def refresh_failure_analysis(n_clicks):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "failure-analysis"})
         data_loader.refresh()
     return render_failure_analysis(data_loader)
 
@@ -491,6 +523,7 @@ def refresh_failure_analysis(n_clicks):
 )
 def refresh_error_analysis(n_clicks):
     if n_clicks:
+        activity_logger.log("refresh", {"tab_id": "error-analysis"})
         data_loader.refresh()
     return render_error_analysis(data_loader)
 
@@ -512,6 +545,7 @@ def click_heatmap_to_trace(click_data):
             if "Run ID:" in hover:
                 run_id = hover.split("Run ID:")[1].strip().split("<")[0].strip()
                 if run_id and run_id != "N/A":
+                    activity_logger.log("chart_click_heatmap", {"run_id": run_id, "status": text})
                     return "trace", run_id
     raise dash.exceptions.PreventUpdate
 

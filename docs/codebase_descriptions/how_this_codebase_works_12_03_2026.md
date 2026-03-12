@@ -29,16 +29,16 @@ harmonia/
 │   ├── evaluation/              # Metrics pipeline
 │   │   ├── schemas.py           # Pydantic models for metrics.json (v1.1)
 │   │   ├── metrics.py           # Core: calculate_all_metrics()
-│   │   ├── make_standard_evaluation_plots.py  # Generate all standard plots (+ failure mode plots via --analysis-report)
-│   │   ├── visualize_metrics_cli.py           # CLI: summarize, bars, heatmap, confusion, errors, compare, boxplot, cross-compare, failure-analysis
-│   │   └── visualization/       # io.py, enrich.py, normalize.py, aggregate.py, plots.py, failure_io.py, report.py
+│   │   ├── make_standard_evaluation_plots.py  # Generate all standard plots
+│   │   └── visualization/       # io.py, enrich.py, normalize.py, aggregate.py, plots.py, report.py
 │   │
 │   ├── dashboard/               # Plotly Dash web dashboard
 │   │   ├── app.py               # Main entry point + all callbacks
-│   │   ├── data_loader.py       # DashboardDataLoader — dual-source (files + Phoenix + analysis reports)
+│   │   ├── activity_logger.py   # DashboardActivityLogger — JSON-lines interaction logging
+│   │   ├── data_loader.py       # DashboardDataLoader — dual-source (files + Phoenix)
 │   │   ├── tabs/                # overview, metrics, failure_analysis, error_analysis,
-│   │   │                        #   trace_explorer, token_cost, comparison
-│   │   └── components/          # run_table, span_waterfall, turn_accordion, diff_card
+│   │   │                        #   trace_explorer, token_cost, comparison, activity_log
+│   │   └── components/          # run_table, span_waterfall, turn_accordion, diff_card, multi_filter
 │   │
 │   ├── bdikit_context/          # BDI-Kit Beaker context (ReAct + domain tools)
 │   │   ├── context.py           # BDIKitContext — reads HARMONIA_* env vars for prompt overrides
@@ -82,8 +82,6 @@ harmonia/
 ├── manage_configs.py            # List/get/set/clone/validate configs
 │
 ├── exec_apptainer_harmonia.sh   # Launch Beaker in Apptainer (auto-detects image, per-job Ollama)
-├── launch_experiment.sh         # Submit experiment jobs + auto-submit post-analysis watcher
-├── run_post_experiment_analysis.sh  # Post-experiment watcher: log analysis → metrics → plots
 ├── harmonia_beaker_LLM_agent_environment_apptainer.sif  # Current Apptainer image
 ├── results/                     # Experiment output (gitignored)
 ├── logs/                        # SLURM logs (gitignored)
@@ -140,14 +138,13 @@ srun --partition=gpu --gpus-per-node=1 --time=04:00:00 --mem=64G --cpus-per-task
 
 Every run gets an 8-char hex ID (`secrets.token_hex(4)`). It appears in:
 
-- Results dir: `results/{YYYYMMDD_HHMMSS}_{name}_{slurm_job_id}_{run_id}/` (canonical format)
-- Legacy results dirs: `results/{name}_{timestamp}_{run_id}/` or `results/{name}_{slurm_job_id}_{run_id}/` (still parsed by all tools)
+- Results dir: `results/{name}_{timestamp}_{run_id}/` or `results/{name}_{slurm_job_id}_{run_id}/`
 - Log files: `logs/{date}_{name}_{jobid}_{run_id}.out/.err`
 - `trace.json` top-level `run_id` field
 - Phoenix spans: `harmonia.run_id` attribute
 - `.experiment_id` JSON metadata file in results dir
 
-The SBATCH template (or exec script in manual mode) is the single source of truth for directory naming. The Python runner uses the `RESULTS_DIR` environment variable set by the shell layer, only constructing its own path as a fallback when running outside the container. All parsers handle both old and new formats for backward compatibility.
+When a run_id maps to multiple directories (both formats coexist), prefer the SLURM-job-ID format as canonical.
 
 ---
 
@@ -157,9 +154,7 @@ The SBATCH template (or exec script in manual mode) is the single source of trut
 
 Top-level: `run_id`, `experiment` (name, description), `llm` (provider, model), `timing` (start_time, end_time, total_duration_seconds), `status`, `error_message`, `config_snapshot`, `turns[]`.
 
-Each turn: `turn`, `user_message`, `agent_response`, `response_type`, `tool_calls`, `duration_seconds`, `raw_messages`, `timestamp`, `input_tokens`, `output_tokens`, `cost_usd`, `agent_code_executions`, `internal_code_executions`, `usage_records`.
-
-Code executions are classified at the `extract_code_executions()` layer in `src/automation/tracing.py`. Beaker kernel internal code (state introspection, checkpointing) is separated from agent-authored code using pattern matching on `_SubkernelStateEncoder` and other stable signatures. The `classify_code_execution()` function returns one of: `fetch_state`, `checkpoint_save`, `unknown_internal`, or `agent`. Agent code goes into `agent_code_executions`; internal code goes into `internal_code_executions` (with an extra `category` field). The dashboard shows agent code by default with a collapsible section for internals. OTel spans are only created for agent code. The migration CLI `code_development_tools_agents/monitoring_and_evaluation/enrich_traces.py` can retroactively classify old traces.
+Each turn: `turn`, `user_message`, `agent_response`, `response_type`, `tool_calls`, `duration_seconds`, `raw_messages`, `timestamp`, `input_tokens`, `output_tokens`, `cost_usd`, `code_executions`, `usage_records`.
 
 ### metrics.json (schema v1.1)
 Top-level: `schema_version`, `metadata` (ExperimentMetadata), `column_mapping` (ColumnMappingMetrics), `column_values` (dict → ColumnValueMetrics), `extra_columns_count`, `extra_columns`, `overall_summary` (OverallSummary), `gold_standard_file`, `llm_output_file`.
@@ -211,11 +206,11 @@ Plotly Dash web app combining Phoenix traces, metrics.json, and trace.json.
 .venv/bin/python src/dashboard/app.py --phoenix-endpoint http://localhost:6006 --results-dir results/ --port 8050
 ```
 
-**7 tabs:** Overview (AG Grid runs table + summary cards + status pie), Metrics Comparison (accuracy bars, cost-vs-accuracy scatter, heatmap, radar, boxplots by model_family/model/provider), Failure Analysis (success/failure heatmap, failure distribution bar, failure sunburst), Error Analysis (error breakdown stacked bars, error type pie, per-column error table), Trace Explorer (span waterfall, paginated turn accordion, token/cost charts, per-column confusion matrices), Token & Cost Analysis, Side-by-Side Comparison (per-column accuracy bars, per-row cross-model heatmap from row_values.csv).
+**8 tabs:** Overview (AG Grid runs table + summary cards + status pie), Metrics Comparison (accuracy bars, cost-vs-accuracy scatter, heatmap, radar, boxplots), Failure Analysis (success/failure heatmap, failure distribution, sunburst), Error Analysis (error breakdown, per-column errors), Trace Explorer (span waterfall, paginated turn accordion with full content + tool calls, token/cost charts, confusion matrices), Token & Cost Analysis, Side-by-Side Comparison, Activity Log (chronological interaction history with filters).
 
-**Data loader:** `DashboardDataLoader` scans `results/` directories AND queries Phoenix. Outer-joins on `run_id`. Thread-safe. Degrades gracefully without Phoenix (shows local data only). Also loads `analysis_report.json` (from watcher script output) to enrich runs with failure reasons.
+**Data loader:** `DashboardDataLoader` scans `results/` directories AND queries Phoenix. Outer-joins on `run_id`. Thread-safe. Degrades gracefully without Phoenix (shows local data only).
 
-**Post-experiment orchestration:** `launch_experiment.sh` submits experiment jobs then auto-submits `run_post_experiment_analysis.sh` as a `--dependency=afterany` watcher. The watcher chains: log analysis CLI (`--json`) → `calculate_metrics.py` for each run → `make_standard_evaluation_plots.py` with `--analysis-report`. Output: `results/analysis_<name>_<timestamp>/` with `analysis_report.json`, `plots/`, `tables/`, and `analysis_complete.json` status summary.
+**Activity logging:** All user interactions (tab switches, run selections, chart clicks, refreshes, etc.) are logged as JSON-lines to `logs/dashboard/dashboard.log` with daily rotation. The Activity Log tab reads these files and displays a filterable table. Logger: `DashboardActivityLogger` in `activity_logger.py`.
 
 ---
 
@@ -250,17 +245,9 @@ Key env vars: `LLM_SERVICE_PROVIDER`, `LLM_SERVICE_MODEL`, `LLM_PROVIDER_IMPORT_
 
 # Standard plots
 .venv/bin/python src/evaluation/make_standard_evaluation_plots.py --metrics-glob "results/*/metrics.json" --out-dir analysis/plots
-
-# Standard plots + failure mode analysis (success/failure heatmap, failure distribution, sunburst)
-.venv/bin/python src/evaluation/make_standard_evaluation_plots.py \
-    --metrics-glob "results/*/metrics.json" \
-    --analysis-report analysis_report.json \
-    --out-dir analysis/plots
 ```
 
-**Visualization CLI:** `visualize_metrics_cli.py` with subcommands: summarize, bars, heatmap, confusion, errors, compare, boxplot, cross-compare, **failure-analysis**. Supports `--backend seaborn|plotly`.
-
-**Failure analysis:** The `failure-analysis` subcommand and `--analysis-report` flag on `compare`/`make_standard_evaluation_plots.py` accept JSON output from `read_and_analyze_logs_and_traces_cli.py --json`. This bridges the log analysis (which knows about failed runs) with the visualization pipeline (which previously only knew about successful runs with `metrics.json`). Produces: success/failure heatmap (model x context grid), failure distribution bar chart, failure sunburst/grouped bar, and error breakdown (hallucinations/omissions/genuine errors).
+**Visualization CLI:** `visualize_metrics_cli.py` with subcommands: summarize, bars, heatmap, confusion, errors, compare, boxplot, cross-compare. Supports `--backend seaborn|plotly`.
 
 ---
 

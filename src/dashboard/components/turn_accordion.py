@@ -5,12 +5,20 @@ from dash import dcc, html
 
 TURNS_PER_PAGE = 20
 
+# Shared style for scrollable content blocks
+_SCROLLABLE = {"maxHeight": "600px", "overflowY": "auto"}
+
 
 def _format_code_block(code: str, language: str = "python") -> html.Div:
     """Render a code block with syntax highlighting via Markdown."""
     return dcc.Markdown(
         f"```{language}\n{code}\n```",
-        style={"backgroundColor": "#f5f5f5", "padding": "8px", "borderRadius": "4px"},
+        style={
+            "backgroundColor": "#f5f5f5",
+            "padding": "8px",
+            "borderRadius": "4px",
+            **_SCROLLABLE,
+        },
     )
 
 
@@ -46,83 +54,107 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
     # Content
     children = []
 
-    # User message
+    # User message — full content, scrollable
     user_msg = turn.get("user_message", "")
     if user_msg:
         children.append(html.H6("User Message", className="text-muted mt-2"))
         children.append(
             html.Div(
-                dcc.Markdown(user_msg[:2000] + ("..." if len(user_msg) > 2000 else "")),
+                dcc.Markdown(user_msg),
                 style={
                     "backgroundColor": "#e3f2fd",
                     "padding": "10px",
                     "borderRadius": "4px",
                     "marginBottom": "10px",
+                    **_SCROLLABLE,
                 },
             )
         )
 
-    # Agent response
+    # Agent response — full content, scrollable
     agent_resp = turn.get("agent_response", "")
     if agent_resp:
         children.append(html.H6("Agent Response", className="text-muted"))
         if response_type == "code_cell":
-            children.append(_format_code_block(agent_resp[:3000]))
+            children.append(_format_code_block(agent_resp))
         else:
             children.append(
                 html.Div(
-                    dcc.Markdown(agent_resp[:3000] + ("..." if len(agent_resp) > 3000 else "")),
+                    dcc.Markdown(agent_resp),
                     style={
                         "backgroundColor": "#f1f8e9",
                         "padding": "10px",
                         "borderRadius": "4px",
                         "marginBottom": "10px",
+                        **_SCROLLABLE,
                     },
                 )
             )
 
-    # Agent code executions (shown by default)
+    # Tool calls (ReAct thought/action patterns)
+    tool_calls = turn.get("tool_calls", [])
+    if tool_calls:
+        children.append(html.H6(f"Tool Calls ({len(tool_calls)})", className="text-muted mt-2"))
+        for tc in tool_calls:
+            thought = tc.get("thought", "")
+            if thought:
+                children.append(
+                    html.Div(
+                        dcc.Markdown(thought),
+                        style={
+                            "backgroundColor": "#f3e5f5",
+                            "padding": "10px",
+                            "borderRadius": "4px",
+                            "marginBottom": "6px",
+                            **_SCROLLABLE,
+                        },
+                    )
+                )
+
+    # Agent code executions — all executions, full content, scrollable
     # Backward-compatible: fall back to old "code_executions" field for un-migrated traces
     agent_execs = turn.get("agent_code_executions", turn.get("code_executions", []))
     if agent_execs:
         children.append(html.H6(f"Code Executions ({len(agent_execs)})", className="text-muted mt-2"))
-        for j, ce in enumerate(agent_execs[:5]):  # Limit display
+        for j, ce in enumerate(agent_execs):
             children.append(html.Strong(f"Execution {j+1} [{ce.get('status', '?')}]"))
             if ce.get("code"):
-                children.append(_format_code_block(ce["code"][:1000]))
+                children.append(_format_code_block(ce["code"]))
             if ce.get("stdout"):
                 children.append(
                     html.Pre(
-                        ce["stdout"][:500],
+                        ce["stdout"],
                         style={
                             "fontSize": "0.85em",
                             "backgroundColor": "#fff3e0",
                             "padding": "6px",
+                            **_SCROLLABLE,
                         },
                     )
                 )
             if ce.get("stderr"):
                 children.append(
                     html.Pre(
-                        ce["stderr"][:500],
+                        ce["stderr"],
                         style={
                             "fontSize": "0.85em",
                             "backgroundColor": "#ffebee",
                             "padding": "6px",
                             "color": "#c62828",
+                            **_SCROLLABLE,
                         },
                     )
                 )
 
-    # Internal executions (collapsible, hidden by default)
+    # Internal executions (collapsible, hidden by default) — all executions, full content
     internal_execs = turn.get("internal_code_executions", [])
     if internal_execs:
         internal_children = []
-        for j, ce in enumerate(internal_execs[:5]):
+        for j, ce in enumerate(internal_execs):
             category = ce.get("category", "unknown")
             internal_children.append(html.Strong(f"{category} [{ce.get('status', '?')}]"))
             if ce.get("code"):
-                internal_children.append(_format_code_block(ce["code"][:500]))
+                internal_children.append(_format_code_block(ce["code"]))
         children.append(html.Details([
             html.Summary(
                 f"Internal Executions ({len(internal_execs)})",

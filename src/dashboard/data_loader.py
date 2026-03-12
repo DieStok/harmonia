@@ -103,16 +103,23 @@ class DashboardDataLoader:
             return
         try:
             self._phoenix_client = _phoenix_module.Client(endpoint=self.phoenix_endpoint)
-            # Use a thread with timeout to avoid hanging on unresponsive Phoenix
+            # Fire-and-forget thread to probe Phoenix — don't block startup
             import concurrent.futures
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(self._phoenix_client.get_spans_dataframe, limit=1)
-                future.result(timeout=10)
-            self._phoenix_available = True
-            logger.info("Phoenix connection established")
+            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+            future = executor.submit(self._phoenix_client.get_spans_dataframe, limit=1)
+            try:
+                future.result(timeout=5)
+                self._phoenix_available = True
+                logger.info("Phoenix connection established")
+            except (concurrent.futures.TimeoutError, Exception) as e:
+                logger.warning(f"Phoenix not available: {e}")
+                self._phoenix_available = False
+                self._phoenix_client = None
+            # Don't call executor.shutdown() — let the daemon thread die on its own
+            executor._threads.clear()
         except Exception as e:
-            logger.warning(f"Phoenix not available: {e}")
+            logger.warning(f"Phoenix init error: {e}")
             self._phoenix_available = False
             self._phoenix_client = None
 
