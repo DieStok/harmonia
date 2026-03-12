@@ -24,6 +24,8 @@ from dash import Dash, Input, Output, State, dcc, html
 
 from dashboard.data_loader import DashboardDataLoader
 from dashboard.tabs.comparison import render_comparison
+from dashboard.tabs.error_analysis import render_error_analysis
+from dashboard.tabs.failure_analysis import render_failure_analysis
 from dashboard.tabs.metrics import render_metrics
 from dashboard.tabs.overview import render_overview
 from dashboard.tabs.token_cost import render_token_cost
@@ -42,36 +44,41 @@ app = Dash(
     suppress_callback_exceptions=True,
 )
 
-app.layout = dbc.Container([
-    # Phoenix status banner (hidden when Phoenix is available)
-    html.Div(id="phoenix-status-banner"),
-
-    # Navbar
-    dbc.NavbarSimple(
-        brand="Harmonia Experiment Dashboard",
-        color="primary",
-        dark=True,
-        className="mb-3",
-    ),
-
-    # Tabs
-    dbc.Tabs([
-        dbc.Tab(label="Overview", tab_id="overview"),
-        dbc.Tab(label="Metrics", tab_id="metrics"),
-        dbc.Tab(label="Trace Explorer", tab_id="trace"),
-        dbc.Tab(label="Tokens & Cost", tab_id="tokens"),
-        dbc.Tab(label="Comparison", tab_id="comparison"),
-    ], id="tabs", active_tab="overview"),
-
-    # Tab content
-    html.Div(id="tab-content", className="mt-3"),
-
-    # Hidden stores for cross-tab state
-    dcc.Store(id="selected-run-id", storage_type="session"),
-    dcc.Store(id="turn-page", data=0, storage_type="session"),
-    dcc.Store(id="comparison-run-a-store", storage_type="session"),
-    dcc.Store(id="comparison-run-b-store", storage_type="session"),
-], fluid=True)
+app.layout = dbc.Container(
+    [
+        # Phoenix status banner (hidden when Phoenix is available)
+        html.Div(id="phoenix-status-banner"),
+        # Navbar
+        dbc.NavbarSimple(
+            brand="Harmonia Experiment Dashboard",
+            color="primary",
+            dark=True,
+            className="mb-3",
+        ),
+        # Tabs
+        dbc.Tabs(
+            [
+                dbc.Tab(label="Overview", tab_id="overview"),
+                dbc.Tab(label="Metrics", tab_id="metrics"),
+                dbc.Tab(label="Failure Analysis", tab_id="failure-analysis"),
+                dbc.Tab(label="Error Analysis", tab_id="error-analysis"),
+                dbc.Tab(label="Trace Explorer", tab_id="trace"),
+                dbc.Tab(label="Tokens & Cost", tab_id="tokens"),
+                dbc.Tab(label="Comparison", tab_id="comparison"),
+            ],
+            id="tabs",
+            active_tab="overview",
+        ),
+        # Tab content
+        html.Div(id="tab-content", className="mt-3"),
+        # Hidden stores for cross-tab state
+        dcc.Store(id="selected-run-id", storage_type="session"),
+        dcc.Store(id="turn-page", data=0, storage_type="session"),
+        dcc.Store(id="comparison-run-a-store", storage_type="session"),
+        dcc.Store(id="comparison-run-b-store", storage_type="session"),
+    ],
+    fluid=True,
+)
 
 
 # --------------------------------------------------------------------------- #
@@ -116,6 +123,10 @@ def render_tab(active_tab, selected_run_id, turn_page, comp_a, comp_b):
         return render_overview(data_loader)
     elif active_tab == "metrics":
         return render_metrics(data_loader)
+    elif active_tab == "failure-analysis":
+        return render_failure_analysis(data_loader)
+    elif active_tab == "error-analysis":
+        return render_error_analysis(data_loader)
     elif active_tab == "trace":
         return render_trace_explorer(data_loader, selected_run_id, turn_page or 0)
     elif active_tab == "tokens":
@@ -272,12 +283,106 @@ def refresh_comparison(n_clicks, active_tab, comp_a, comp_b):
 )
 def update_radar(selected_runs):
     from dashboard.tabs.metrics import _radar_chart
+
     return _radar_chart(data_loader, selected_runs or [])
+
+
+# Boxplot grouping update
+@app.callback(
+    Output("metrics-boxplot", "figure"),
+    Input("boxplot-group-selector", "value"),
+    prevent_initial_call=True,
+)
+def update_boxplot(group_by):
+    from dashboard.tabs.metrics import _metrics_boxplot
+
+    metrics_df = data_loader.get_all_metrics()
+    return _metrics_boxplot(metrics_df, group_by or "model_family")
+
+
+# Confusion matrix column selector (trace explorer)
+@app.callback(
+    Output("confusion-matrix-chart", "figure"),
+    Input("confusion-column-selector", "value"),
+    State("selected-run-id", "data"),
+    prevent_initial_call=True,
+)
+def update_confusion_matrix(column_name, run_id):
+    if not run_id or not column_name:
+        raise dash.exceptions.PreventUpdate
+    from dashboard.tabs.trace_explorer import _confusion_matrix_chart
+
+    metrics = data_loader.get_run_metrics(run_id)
+    if not metrics:
+        raise dash.exceptions.PreventUpdate
+    cm = metrics.get("column_values", {}).get(column_name, {}).get("confusion_matrix", {})
+    return _confusion_matrix_chart(cm, column_name)
+
+
+# Cross-model comparison column selector
+@app.callback(
+    Output("cross-model-heatmap", "figure"),
+    Input("cross-model-column-selector", "value"),
+    State("comparison-run-a-store", "data"),
+    State("comparison-run-b-store", "data"),
+    prevent_initial_call=True,
+)
+def update_cross_model_heatmap(column_name, run_id_a, run_id_b):
+    if not run_id_a or not run_id_b or not column_name:
+        raise dash.exceptions.PreventUpdate
+    from dashboard.tabs.comparison import _cross_model_heatmap
+
+    return _cross_model_heatmap(data_loader, run_id_a, run_id_b, column_name)
+
+
+# Refresh buttons for new tabs
+@app.callback(
+    Output("tab-content", "children", allow_duplicate=True),
+    Input("refresh-failure-analysis", "n_clicks"),
+    prevent_initial_call=True,
+)
+def refresh_failure_analysis(n_clicks):
+    if n_clicks:
+        data_loader.refresh()
+    return render_failure_analysis(data_loader)
+
+
+@app.callback(
+    Output("tab-content", "children", allow_duplicate=True),
+    Input("refresh-error-analysis", "n_clicks"),
+    prevent_initial_call=True,
+)
+def refresh_error_analysis(n_clicks):
+    if n_clicks:
+        data_loader.refresh()
+    return render_error_analysis(data_loader)
+
+
+# Click-through: failure heatmap → trace explorer (for successful runs)
+@app.callback(
+    Output("tabs", "active_tab", allow_duplicate=True),
+    Output("selected-run-id", "data", allow_duplicate=True),
+    Input("success-failure-heatmap", "clickData"),
+    prevent_initial_call=True,
+)
+def click_heatmap_to_trace(click_data):
+    if click_data and click_data.get("points"):
+        point = click_data["points"][0]
+        text = point.get("text", "")
+        if text == "OK":
+            # Extract run_id from hovertext
+            hover = point.get("hovertext", "")
+            if "Run ID:" in hover:
+                run_id = hover.split("Run ID:")[1].strip().split("<")[0].strip()
+                if run_id and run_id != "N/A":
+                    return "trace", run_id
+    raise dash.exceptions.PreventUpdate
 
 
 # --------------------------------------------------------------------------- #
 # CLI entry point
 # --------------------------------------------------------------------------- #
+
 
 def check_port_available(port: int) -> bool:
     """Check if a port is available for binding."""
@@ -294,15 +399,19 @@ def main():
 
     parser = argparse.ArgumentParser(description="Harmonia Experiment Dashboard")
     parser.add_argument(
-        "--phoenix-endpoint", default="http://localhost:6006",
+        "--phoenix-endpoint",
+        default="http://localhost:6006",
         help="Phoenix server endpoint (default: http://localhost:6006)",
     )
     parser.add_argument(
-        "--results-dir", default="results/",
+        "--results-dir",
+        default="results/",
         help="Path to results directory (default: results/)",
     )
     parser.add_argument(
-        "--port", type=int, default=8050,
+        "--port",
+        type=int,
+        default=8050,
         help="Port to serve dashboard on (default: 8050)",
     )
     args = parser.parse_args()
@@ -315,12 +424,13 @@ def main():
     # Port check
     if not check_port_available(args.port):
         logger.error(
-            f"Port {args.port} is already in use. "
-            f"Use --port <number> to specify a different port."
+            f"Port {args.port} is already in use. Use --port <number> to specify a different port."
         )
         sys.exit(1)
 
-    logger.info(f"Initializing data loader: results={results_path}, phoenix={args.phoenix_endpoint}")
+    logger.info(
+        f"Initializing data loader: results={results_path}, phoenix={args.phoenix_endpoint}"
+    )
     data_loader = DashboardDataLoader(
         phoenix_endpoint=args.phoenix_endpoint,
         results_base_dir=results_path,

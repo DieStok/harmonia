@@ -9,12 +9,21 @@ from dashboard.components.run_table import create_run_table
 
 def _summary_card(title: str, value: str, color: str = "primary") -> dbc.Col:
     """Create a summary statistic card."""
-    return dbc.Col(dbc.Card([
-        dbc.CardBody([
-            html.H6(title, className="text-muted mb-1"),
-            html.H4(value, className="mb-0"),
-        ]),
-    ], color=color, outline=True), width=True)
+    return dbc.Col(
+        dbc.Card(
+            [
+                dbc.CardBody(
+                    [
+                        html.H6(title, className="text-muted mb-1"),
+                        html.H4(value, className="mb-0"),
+                    ]
+                ),
+            ],
+            color=color,
+            outline=True,
+        ),
+        width=True,
+    )
 
 
 def create_status_pie(runs_df) -> go.Figure:
@@ -35,13 +44,17 @@ def create_status_pie(runs_df) -> go.Figure:
         "unknown": "#adb5bd",
     }
 
-    fig = go.Figure(data=[go.Pie(
-        labels=status_counts.index.tolist(),
-        values=status_counts.values.tolist(),
-        marker_colors=[color_map.get(s, "#adb5bd") for s in status_counts.index],
-        hole=0.4,
-        textinfo="label+value",
-    )])
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=status_counts.index.tolist(),
+                values=status_counts.values.tolist(),
+                marker_colors=[color_map.get(s, "#adb5bd") for s in status_counts.index],
+                hole=0.4,
+                textinfo="label+value",
+            )
+        ]
+    )
 
     fig.update_layout(
         template="plotly_white",
@@ -58,15 +71,24 @@ def render_overview(data_loader) -> html.Div:
     runs_df = data_loader.get_all_runs()
 
     if runs_df is None or len(runs_df) == 0:
-        return html.Div([
-            dbc.Button("Refresh Data", id="refresh-overview", color="primary",
-                       size="sm", className="mb-3"),
-            html.Div(
-                html.P("No experiment runs found. Run experiments first, then refresh.",
-                       className="text-muted"),
-                className="text-center my-5",
-            ),
-        ])
+        return html.Div(
+            [
+                dbc.Button(
+                    "Refresh Data",
+                    id="refresh-overview",
+                    color="primary",
+                    size="sm",
+                    className="mb-3",
+                ),
+                html.Div(
+                    html.P(
+                        "No experiment runs found. Run experiments first, then refresh.",
+                        className="text-muted",
+                    ),
+                    className="text-center my-5",
+                ),
+            ]
+        )
 
     # Summary statistics
     total_runs = len(runs_df)
@@ -78,36 +100,50 @@ def render_overview(data_loader) -> html.Div:
 
     total_cost = runs_df["total_cost_usd"].sum() if "total_cost_usd" in runs_df.columns else 0
     total_tokens = (
-        runs_df["total_input_tokens"].sum() + runs_df["total_output_tokens"].sum()
-    ) if "total_input_tokens" in runs_df.columns else 0
+        (runs_df["total_input_tokens"].sum() + runs_df["total_output_tokens"].sum())
+        if "total_input_tokens" in runs_df.columns
+        else 0
+    )
 
     # Build row data for AG Grid
     row_data = runs_df.to_dict("records")
 
-    return html.Div([
-        dbc.Button("Refresh Data", id="refresh-overview", color="primary",
-                   size="sm", className="mb-3"),
-
-        # Summary cards
-        dbc.Row([
-            _summary_card("Total Runs", str(total_runs)),
-            _summary_card("Success Rate", success_rate),
-            _summary_card("Avg Accuracy", avg_accuracy_str),
-            _summary_card("Total Cost", f"${total_cost:.2f}"),
-            _summary_card("Total Tokens", f"{total_tokens:,}"),
-        ], className="mb-4"),
-
-        # Main content
-        dbc.Row([
-            dbc.Col([
-                html.H5("Experiment Runs"),
-                create_run_table(row_data),
-            ], width=9),
-            dbc.Col([
-                dcc.Graph(
-                    id="status-pie",
-                    figure=create_status_pie(runs_df),
-                ),
-            ], width=3),
-        ]),
-    ])
+    return html.Div(
+        [
+            dbc.Button(
+                "Refresh Data", id="refresh-overview", color="primary", size="sm", className="mb-3"
+            ),
+            # Summary cards
+            dbc.Row(
+                [
+                    _summary_card("Total Runs", str(total_runs)),
+                    _summary_card("Success Rate", success_rate),
+                    _summary_card("Avg Accuracy", avg_accuracy_str),
+                    _summary_card("Total Cost", f"${total_cost:.2f}"),
+                    _summary_card("Total Tokens", f"{total_tokens:,}"),
+                ],
+                className="mb-4",
+            ),
+            # Main content
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            html.H5("Experiment Runs"),
+                            create_run_table(row_data),
+                        ],
+                        width=9,
+                    ),
+                    dbc.Col(
+                        [
+                            dcc.Graph(
+                                id="status-pie",
+                                figure=create_status_pie(runs_df),
+                            ),
+                        ],
+                        width=3,
+                    ),
+                ]
+            ),
+        ]
+    )

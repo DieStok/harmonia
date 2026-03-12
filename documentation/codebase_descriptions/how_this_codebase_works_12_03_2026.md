@@ -35,8 +35,9 @@ harmonia/
 │   │
 │   ├── dashboard/               # Plotly Dash web dashboard
 │   │   ├── app.py               # Main entry point + all callbacks
-│   │   ├── data_loader.py       # DashboardDataLoader — dual-source (files + Phoenix)
-│   │   ├── tabs/                # overview, metrics, trace_explorer, token_cost, comparison
+│   │   ├── data_loader.py       # DashboardDataLoader — dual-source (files + Phoenix + analysis reports)
+│   │   ├── tabs/                # overview, metrics, failure_analysis, error_analysis,
+│   │   │                        #   trace_explorer, token_cost, comparison
 │   │   └── components/          # run_table, span_waterfall, turn_accordion, diff_card
 │   │
 │   ├── bdikit_context/          # BDI-Kit Beaker context (ReAct + domain tools)
@@ -81,6 +82,8 @@ harmonia/
 ├── manage_configs.py            # List/get/set/clone/validate configs
 │
 ├── exec_apptainer_harmonia.sh   # Launch Beaker in Apptainer (auto-detects image, per-job Ollama)
+├── launch_experiment.sh         # Submit experiment jobs + auto-submit post-analysis watcher
+├── run_post_experiment_analysis.sh  # Post-experiment watcher: log analysis → metrics → plots
 ├── harmonia_beaker_LLM_agent_environment_apptainer.sif  # Current Apptainer image
 ├── results/                     # Experiment output (gitignored)
 ├── logs/                        # SLURM logs (gitignored)
@@ -208,9 +211,11 @@ Plotly Dash web app combining Phoenix traces, metrics.json, and trace.json.
 .venv/bin/python src/dashboard/app.py --phoenix-endpoint http://localhost:6006 --results-dir results/ --port 8050
 ```
 
-**5 tabs:** Overview (AG Grid runs table + summary cards + status pie), Metrics Comparison (accuracy bars, cost-vs-accuracy scatter, heatmap, radar), Trace Explorer (span waterfall, paginated turn accordion, token/cost charts), Token & Cost Analysis, Side-by-Side Comparison.
+**7 tabs:** Overview (AG Grid runs table + summary cards + status pie), Metrics Comparison (accuracy bars, cost-vs-accuracy scatter, heatmap, radar, boxplots by model_family/model/provider), Failure Analysis (success/failure heatmap, failure distribution bar, failure sunburst), Error Analysis (error breakdown stacked bars, error type pie, per-column error table), Trace Explorer (span waterfall, paginated turn accordion, token/cost charts, per-column confusion matrices), Token & Cost Analysis, Side-by-Side Comparison (per-column accuracy bars, per-row cross-model heatmap from row_values.csv).
 
-**Data loader:** `DashboardDataLoader` scans `results/` directories AND queries Phoenix. Outer-joins on `run_id`. Thread-safe. Degrades gracefully without Phoenix (shows local data only).
+**Data loader:** `DashboardDataLoader` scans `results/` directories AND queries Phoenix. Outer-joins on `run_id`. Thread-safe. Degrades gracefully without Phoenix (shows local data only). Also loads `analysis_report.json` (from watcher script output) to enrich runs with failure reasons.
+
+**Post-experiment orchestration:** `launch_experiment.sh` submits experiment jobs then auto-submits `run_post_experiment_analysis.sh` as a `--dependency=afterany` watcher. The watcher chains: log analysis CLI (`--json`) → `calculate_metrics.py` for each run → `make_standard_evaluation_plots.py` with `--analysis-report`. Output: `results/analysis_<name>_<timestamp>/` with `analysis_report.json`, `plots/`, `tables/`, and `analysis_complete.json` status summary.
 
 ---
 

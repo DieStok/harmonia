@@ -13,7 +13,11 @@ from typing import Optional
 
 import pandas as pd
 import yaml
-
+from evaluation.visualization.enrich import infer_context
+from evaluation.visualization.failure_io import (
+    build_all_runs_table,
+    load_analysis_report,
+)
 from evaluation.visualization.io import (
     RUN_ID_PATTERN,
 )
@@ -22,12 +26,14 @@ logger = logging.getLogger(__name__)
 
 try:
     from openinference.semconv.trace import SpanAttributes
+
     _OPENINFERENCE_AVAILABLE = True
 except ImportError:
     _OPENINFERENCE_AVAILABLE = False
 
 try:
     import phoenix as px
+
     _PHOENIX_AVAILABLE = True
 except ImportError:
     _PHOENIX_AVAILABLE = False
@@ -121,7 +127,9 @@ class DashboardDataLoader:
                 meta["provider"] = trace_data.get("llm", {}).get("provider", "")
                 meta["status"] = trace_data.get("status", "unknown")
                 meta["total_turns"] = len(trace_data.get("turns", []))
-                meta["total_duration"] = trace_data.get("timing", {}).get("total_duration_seconds", 0)
+                meta["total_duration"] = trace_data.get("timing", {}).get(
+                    "total_duration_seconds", 0
+                )
                 timing = trace_data.get("timing", {})
                 meta["start_time"] = timing.get("start_time", "")
 
@@ -138,8 +146,12 @@ class DashboardDataLoader:
             try:
                 metrics = self.get_run_metrics(run_id)
                 if metrics:
-                    meta["accuracy"] = metrics.get("overall_summary", {}).get("avg_accuracy_excl_empty")
-                    meta["column_mapping_accuracy"] = metrics.get("column_mapping", {}).get("accuracy")
+                    meta["accuracy"] = metrics.get("overall_summary", {}).get(
+                        "avg_accuracy_excl_empty"
+                    )
+                    meta["column_mapping_accuracy"] = metrics.get("column_mapping", {}).get(
+                        "accuracy"
+                    )
                     md = metrics.get("metadata", {})
                     # Fill in model/provider from metrics if not from trace
                     if not meta.get("model"):
@@ -209,8 +221,12 @@ class DashboardDataLoader:
                                 "has_trace": False,
                                 "has_config": False,
                                 "has_phoenix_data": True,
-                                "experiment_name": span.get("attributes.harmonia.experiment_name", ""),
-                                "model": span.get(f"attributes.{SpanAttributes.LLM_MODEL_NAME}", "") if _OPENINFERENCE_AVAILABLE else span.get("attributes.llm.model_name", ""),
+                                "experiment_name": span.get(
+                                    "attributes.harmonia.experiment_name", ""
+                                ),
+                                "model": span.get(f"attributes.{SpanAttributes.LLM_MODEL_NAME}", "")
+                                if _OPENINFERENCE_AVAILABLE
+                                else span.get("attributes.llm.model_name", ""),
                                 "provider": span.get("attributes.harmonia.llm_provider", ""),
                                 "status": "unknown",
                                 "total_turns": 0,
@@ -227,14 +243,28 @@ class DashboardDataLoader:
                 logger.warning(f"Error querying Phoenix: {e}")
 
         if not rows:
-            return pd.DataFrame(columns=[
-                "run_id", "experiment_name", "model", "provider", "status",
-                "total_turns", "total_duration", "total_input_tokens",
-                "total_output_tokens", "total_cost_usd", "start_time",
-                "accuracy", "column_mapping_accuracy",
-                "has_metrics", "has_trace", "has_config", "has_phoenix_data",
-                "results_dir",
-            ])
+            return pd.DataFrame(
+                columns=[
+                    "run_id",
+                    "experiment_name",
+                    "model",
+                    "provider",
+                    "status",
+                    "total_turns",
+                    "total_duration",
+                    "total_input_tokens",
+                    "total_output_tokens",
+                    "total_cost_usd",
+                    "start_time",
+                    "accuracy",
+                    "column_mapping_accuracy",
+                    "has_metrics",
+                    "has_trace",
+                    "has_config",
+                    "has_phoenix_data",
+                    "results_dir",
+                ]
+            )
 
         return pd.DataFrame(rows)
 
@@ -354,27 +384,29 @@ class DashboardDataLoader:
                 total_output = sum(t.get("output_tokens", 0) for t in turns)
                 total_cost = sum(t.get("cost_usd", 0) for t in turns)
 
-            rows.append({
-                "run_id": run_id,
-                "experiment_name": md.get("experiment_name", ""),
-                "model": md.get("llm_model", ""),
-                "provider": md.get("llm_provider", ""),
-                "model_family": md.get("model_family_group", ""),
-                "parameter_count_b": md.get("parameter_count_b"),
-                "column_mapping_accuracy": cm.get("accuracy"),
-                "avg_accuracy_excl_empty": os_.get("avg_accuracy_excl_empty"),
-                "avg_accuracy_incl_empty": os_.get("avg_accuracy_incl_empty"),
-                "avg_f1_excl_empty": os_.get("avg_f1_excl_empty"),
-                "avg_precision_excl_empty": os_.get("avg_precision_excl_empty"),
-                "avg_recall_excl_empty": os_.get("avg_recall_excl_empty"),
-                "total_hallucinations": os_.get("total_hallucinations", 0),
-                "total_omissions": os_.get("total_omissions", 0),
-                "total_columns": os_.get("total_columns", 0),
-                "total_input_tokens": total_input,
-                "total_output_tokens": total_output,
-                "total_cost_usd": total_cost,
-                "total_turns": total_turns,
-            })
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "experiment_name": md.get("experiment_name", ""),
+                    "model": md.get("llm_model", ""),
+                    "provider": md.get("llm_provider", ""),
+                    "model_family": md.get("model_family_group", ""),
+                    "parameter_count_b": md.get("parameter_count_b"),
+                    "column_mapping_accuracy": cm.get("accuracy"),
+                    "avg_accuracy_excl_empty": os_.get("avg_accuracy_excl_empty"),
+                    "avg_accuracy_incl_empty": os_.get("avg_accuracy_incl_empty"),
+                    "avg_f1_excl_empty": os_.get("avg_f1_excl_empty"),
+                    "avg_precision_excl_empty": os_.get("avg_precision_excl_empty"),
+                    "avg_recall_excl_empty": os_.get("avg_recall_excl_empty"),
+                    "total_hallucinations": os_.get("total_hallucinations", 0),
+                    "total_omissions": os_.get("total_omissions", 0),
+                    "total_columns": os_.get("total_columns", 0),
+                    "total_input_tokens": total_input,
+                    "total_output_tokens": total_output,
+                    "total_cost_usd": total_cost,
+                    "total_turns": total_turns,
+                }
+            )
 
         if not rows:
             return pd.DataFrame()
@@ -400,18 +432,20 @@ class DashboardDataLoader:
             total_output = sum(t.get("output_tokens", 0) for t in turns)
             total_cost = sum(t.get("cost_usd", 0) for t in turns)
 
-            rows.append({
-                "run_id": run_id,
-                "experiment_name": trace.get("experiment", {}).get("name", ""),
-                "model": trace.get("llm", {}).get("model", ""),
-                "provider": trace.get("llm", {}).get("provider", ""),
-                "total_input_tokens": total_input,
-                "total_output_tokens": total_output,
-                "total_tokens": total_input + total_output,
-                "total_cost_usd": total_cost,
-                "total_turns": len(turns),
-                "start_time": trace.get("timing", {}).get("start_time", ""),
-            })
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "experiment_name": trace.get("experiment", {}).get("name", ""),
+                    "model": trace.get("llm", {}).get("model", ""),
+                    "provider": trace.get("llm", {}).get("provider", ""),
+                    "total_input_tokens": total_input,
+                    "total_output_tokens": total_output,
+                    "total_tokens": total_input + total_output,
+                    "total_cost_usd": total_cost,
+                    "total_turns": len(turns),
+                    "start_time": trace.get("timing", {}).get("start_time", ""),
+                }
+            )
 
         if not rows:
             return pd.DataFrame()
@@ -430,8 +464,163 @@ class DashboardDataLoader:
             self._run_index.clear()
             self._metrics_cache.clear()
             self._trace_cache.clear()
+            if hasattr(self, "_analysis_report_cache"):
+                del self._analysis_report_cache
         self._init_phoenix()
         self._build_run_index()
+
+    def get_analysis_report(self) -> Optional[dict]:
+        """Find and load the most recent analysis_report.json.
+
+        Searches for analysis_report.json in:
+        1. results/analysis_*/analysis_report.json (output from watcher script)
+        2. results/analysis_report.json (manual placement)
+
+        Returns the raw dict or None if not found.
+        """
+        with self._cache_lock:
+            if hasattr(self, "_analysis_report_cache"):
+                return self._analysis_report_cache
+
+        report = None
+
+        # Strategy 1: look in analysis output directories
+        analysis_dirs = sorted(
+            self.results_dir.glob("analysis_*/analysis_report.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        if analysis_dirs:
+            try:
+                report = load_analysis_report(analysis_dirs[0])
+            except Exception as e:
+                logger.warning(f"Failed to load analysis report {analysis_dirs[0]}: {e}")
+
+        # Strategy 2: look in results root
+        if report is None:
+            root_report = self.results_dir / "analysis_report.json"
+            if root_report.exists():
+                try:
+                    report = load_analysis_report(root_report)
+                except Exception as e:
+                    logger.warning(f"Failed to load analysis report {root_report}: {e}")
+
+        with self._cache_lock:
+            self._analysis_report_cache = report
+        return report
+
+    def get_all_runs_with_failures(self) -> pd.DataFrame:
+        """Like get_all_runs() but enriched with failure reasons from analysis reports.
+
+        Adds columns: has_output, failure_reason, context.
+        Runs without an analysis report get failure_reason='Unknown failure' if they
+        have no metrics.
+        """
+        runs_df = self.get_all_runs()
+        if runs_df.empty:
+            return runs_df
+
+        analysis_report = self.get_analysis_report()
+
+        if analysis_report is not None:
+            # Build the all-runs table from analysis report
+            all_runs = build_all_runs_table(analysis_report)
+
+            # Merge failure_reason and context into runs_df
+            if not all_runs.empty and "run_id" in all_runs.columns:
+                merge_cols = ["run_id"]
+                for col in ["failure_reason", "has_output", "context", "num_problems"]:
+                    if col in all_runs.columns:
+                        merge_cols.append(col)
+                runs_df = runs_df.merge(
+                    all_runs[merge_cols],
+                    on="run_id",
+                    how="left",
+                    suffixes=("", "_analysis"),
+                )
+
+        # Fill defaults for runs without analysis data
+        if "failure_reason" not in runs_df.columns:
+            runs_df["failure_reason"] = None
+        if "has_output" not in runs_df.columns:
+            runs_df["has_output"] = runs_df["has_metrics"]
+        if "context" not in runs_df.columns:
+            runs_df["context"] = runs_df["experiment_name"].apply(infer_context)
+
+        # Runs without metrics and without a known failure reason → "Unknown failure"
+        mask_no_metrics = ~runs_df["has_metrics"]
+        mask_no_reason = runs_df["failure_reason"].isna()
+        runs_df.loc[mask_no_metrics & mask_no_reason, "failure_reason"] = "Unknown failure"
+
+        return runs_df
+
+    def get_error_breakdown(self) -> pd.DataFrame:
+        """Get error breakdown (hallucinations/omissions/genuine) per run.
+
+        Returns DataFrame with run_id, model, display_label, and error columns.
+        """
+        metrics_df = self.get_all_metrics()
+        if metrics_df.empty:
+            return pd.DataFrame()
+
+        rows = []
+        for _, row in metrics_df.iterrows():
+            run_id = row["run_id"]
+            metrics = self.get_run_metrics(run_id)
+            if metrics is None:
+                continue
+
+            os_ = metrics.get("overall_summary", {})
+            label = f"{row.get('model', '?')} | {row.get('experiment_name', '?')}"
+
+            rows.append(
+                {
+                    "run_id": run_id,
+                    "model": row.get("model", ""),
+                    "display_label": label,
+                    "total_hallucinations": os_.get("total_hallucinations", 0),
+                    "total_omissions": os_.get("total_omissions", 0),
+                    "total_genuine": os_.get("total_genuine", 0),
+                    "total_errors": os_.get("total_errors", 0),
+                    "total_whitespace_only": os_.get("total_whitespace_only", 0),
+                    "total_case_only": os_.get("total_case_only", 0),
+                }
+            )
+
+        return pd.DataFrame(rows) if rows else pd.DataFrame()
+
+    def get_column_errors(self) -> pd.DataFrame:
+        """Get per-column error counts across all runs.
+
+        Returns DataFrame with run_id, model, column_name, and per-type error counts.
+        """
+        rows = []
+        with self._cache_lock:
+            index_copy = dict(self._run_index)
+
+        for run_id in index_copy:
+            metrics = self.get_run_metrics(run_id)
+            if metrics is None:
+                continue
+
+            model = metrics.get("metadata", {}).get("llm_model", "")
+            for col_name, col_data in metrics.get("column_values", {}).items():
+                ec = col_data.get("error_categorization", {})
+                rows.append(
+                    {
+                        "run_id": run_id,
+                        "model": model,
+                        "column_name": col_name,
+                        "hallucinations": col_data.get("hallucination_count", 0),
+                        "omissions": col_data.get("omission_count", 0),
+                        "genuine_errors": ec.get("genuine", 0),
+                        "whitespace_errors": ec.get("whitespace_only", 0),
+                        "case_errors": ec.get("case_only", 0),
+                        "total_errors": ec.get("total", 0),
+                    }
+                )
+
+        return pd.DataFrame(rows) if rows else pd.DataFrame()
 
     @property
     def phoenix_available(self) -> bool:
