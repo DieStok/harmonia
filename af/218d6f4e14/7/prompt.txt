@@ -1,0 +1,740 @@
+# Brainstorm a Feature or Improvement
+
+**Note: The current year is 2026.** Use this when dating brainstorm documents.
+
+Brainstorming helps answer **WHAT** to build through collaborative dialogue. It precedes `/ce:plan`, which answers **HOW** to build it.
+
+**Process knowledge:** Load the `brainstorming` skill for detailed question techniques, approach exploration patterns, and YAGNI principles.
+
+## Feature Description
+
+<feature_description> # 
+Hi, please read the files in the following folders (or specific files):
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/evaluation (specifically the visualisation_cli) 
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/src/dashboard
+/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results/plots/generate_march11_experiment_overview.py
+
+Then discuss the following with me:
+- how to add these failure mode plots into the standard plots that are generated (so put them into the CLI and add them to make_standard_evaluation_plots.py)
+- what functionality is in the visualisation CLI but not used in make_standard_evaluation_plots.pu
+- how to update the dashboard to include all visualisations generated here: what is currently there in the dashboard, what could be added? </feature_description>
+
+**If the feature description above is empty, ask the user:** "What would you like to explore? Please describe the feature, problem, or improvement you're thinking about."
+
+Do not proceed until you have a feature description from the user.
+
+## Execution Flow
+
+### Phase 0: Assess Requirements Clarity
+
+Evaluate whether brainstorming is needed based on the feature description.
+
+**Clear requirements indicators:**
+- Specific acceptance criteria provided
+- Referenced existing patterns to follow
+- Described exact expected behavior
+- Constrained, well-defined scope
+
+**If requirements are already clear:**
+Use **AskUserQuestion tool** to suggest: "Your requirements seem detailed enough to proceed directly to planning. Should I run `/ce:plan` instead, or would you like to explore the idea further?"
+
+### Phase 1: Understand the Idea
+
+#### 1.1 Repository Research (Lightweight)
+
+Run a quick repo scan to understand existing patterns:
+
+- Task repo-research-analyst("Understand existing patterns related to: <feature_description>")
+
+Focus on: similar features, established patterns, CLAUDE.md guidance.
+
+#### 1.2 Collaborative Dialogue
+
+Use the **AskUserQuestion tool** to ask questions **one at a time**.
+
+**Guidelines (see `brainstorming` skill for detailed techniques):**
+- Prefer multiple choice when natural options exist
+- Start broad (purpose, users) then narrow (constraints, edge cases)
+- Validate assumptions explicitly
+- Ask about success criteria
+
+**Exit condition:** Continue until the idea is clear OR user says "proceed"
+
+### Phase 2: Explore Approaches
+
+Propose **2-3 concrete approaches** based on research and conversation.
+
+For each approach, provide:
+- Brief description (2-3 sentences)
+- Pros and cons
+- When it's best suited
+
+Lead with your recommendation and explain why. Apply YAGNI—prefer simpler solutions.
+
+Use **AskUserQuestion tool** to ask which approach the user prefers.
+
+### Phase 3: Capture the Design
+
+Write a brainstorm document to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`.
+
+**Document structure:** See the `brainstorming` skill for the template format. Key sections: What We're Building, Why This Approach, Key Decisions, Open Questions.
+
+Ensure `docs/brainstorms/` directory exists before writing.
+
+**IMPORTANT:** Before proceeding to Phase 4, check if there are any Open Questions listed in the brainstorm document. If there are open questions, YOU MUST ask the user about each one using AskUserQuestion before offering to proceed to planning. Move resolved questions to a "Resolved Questions" section.
+
+### Phase 4: Handoff
+
+Use **AskUserQuestion tool** to present next steps:
+
+**Question:** "Brainstorm captured. What would you like to do next?"
+
+**Options:**
+1. **Review and refine** - Improve the document through structured self-review
+2. **Proceed to planning** - Run `/ce:plan` (will auto-detect this brainstorm)
+3. **Share to Proof** - Upload to Proof for collaborative review and sharing
+4. **Ask more questions** - I have more questions to clarify before moving on
+5. **Done for now** - Return later
+
+**If user selects "Share to Proof":**
+
+```bash
+CONTENT=$(cat docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md)
+TITLE="Brainstorm: <topic title>"
+RESPONSE=$(curl -s -X POST https://www.proofeditor.ai/share/markdown \
+  -H "Content-Type: application/json" \
+  -d "$(jq -n --arg title "$TITLE" --arg markdown "$CONTENT" --arg by "ai:compound" '{title: $title, markdown: $markdown, by: $by}')")
+PROOF_URL=$(echo "$RESPONSE" | jq -r '.tokenUrl')
+```
+
+Display the URL prominently: `View & collaborate in Proof: <PROOF_URL>`
+
+If the curl fails, skip silently. Then return to the Phase 4 options.
+
+**If user selects "Ask more questions":** YOU (Claude) return to Phase 1.2 (Collaborative Dialogue) and continue asking the USER questions one at a time to further refine the design. The user wants YOU to probe deeper - ask about edge cases, constraints, preferences, or areas not yet explored. Continue until the user is satisfied, then return to Phase 4.
+
+**If user selects "Review and refine":**
+
+Load the `document-review` skill and apply it to the brainstorm document.
+
+When document-review returns "Review complete", present next steps:
+
+1. **Move to planning** - Continue to `/ce:plan` with this document
+2. **Done for now** - Brainstorming complete. To start planning later: `/ce:plan [document-path]`
+
+## Output Summary
+
+When complete, display:
+
+```
+Brainstorm complete!
+
+Document: docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md
+
+Key decisions:
+- [Decision 1]
+- [Decision 2]
+
+Next: Run `/ce:plan` when ready to implement.
+```
+
+## Important Guidelines
+
+- **Stay focused on WHAT, not HOW** - Implementation details belong in the plan
+- **Ask one question at a time** - Don't overwhelm
+- **Apply YAGNI** - Prefer simpler approaches
+- **Keep outputs concise** - 200-300 words per section max
+
+NEVER CODE! Just explore and document decisions.
+
+---
+
+Please cross-reference that you have all the correct paths in the plans, the march 11 dash_app.py has been moved to /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/analysis/march11_experiment_plots. Check this for all three plans you just made.
+
+---
+
+# Work Plan Execution Command
+
+Execute a work plan efficiently while maintaining quality and finishing features.
+
+## Introduction
+
+This command takes a work document (plan, specification, or todo file) and executes it systematically. The focus is on **shipping complete features** by understanding requirements quickly, following existing patterns, and maintaining quality throughout.
+
+## Input Document
+
+<input_document> #implement the first plan and update me afterwards. </input_document>
+
+## Execution Workflow
+
+### Phase 1: Quick Start
+
+1. **Read Plan and Clarify**
+
+   - Read the work document completely
+   - Review any references or links provided in the plan
+   - If anything is unclear or ambiguous, ask clarifying questions now
+   - Get user approval to proceed
+   - **Do not skip this** - better to ask questions now than build the wrong thing
+
+2. **Setup Environment**
+
+   First, check the current branch:
+
+   ```bash
+   current_branch=$(git branch --show-current)
+   default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+
+   # Fallback if remote HEAD isn't set
+   if [ -z "$default_branch" ]; then
+     default_branch=$(git rev-parse --verify origin/main >/dev/null 2>&1 && echo "main" || echo "master")
+   fi
+   ```
+
+   **If already on a feature branch** (not the default branch):
+   - Ask: "Continue working on `[current_branch]`, or create a new branch?"
+   - If continuing, proceed to step 3
+   - If creating new, follow Option A or B below
+
+   **If on the default branch**, choose how to proceed:
+
+   **Option A: Create a new branch**
+   ```bash
+   git pull origin [default_branch]
+   git checkout -b feature-branch-name
+   ```
+   Use a meaningful name based on the work (e.g., `feat/user-authentication`, `fix/email-validation`).
+
+   **Option B: Use a worktree (recommended for parallel development)**
+   ```bash
+   skill: git-worktree
+   # The skill will create a new branch from the default branch in an isolated worktree
+   ```
+
+   **Option C: Continue on the default branch**
+   - Requires explicit user confirmation
+   - Only proceed after user explicitly says "yes, commit to [default_branch]"
+   - Never commit directly to the default branch without explicit permission
+
+   **Recommendation**: Use worktree if:
+   - You want to work on multiple features simultaneously
+   - You want to keep the default branch clean while experimenting
+   - You plan to switch between branches frequently
+
+3. **Create Todo List**
+   - Use TodoWrite to break plan into actionable tasks
+   - Include dependencies between tasks
+   - Prioritize based on what needs to be done first
+   - Include testing and quality check tasks
+   - Keep tasks specific and completable
+
+### Phase 2: Execute
+
+1. **Task Execution Loop**
+
+   For each task in priority order:
+
+   ```
+   while (tasks remain):
+     - Mark task as in_progress in TodoWrite
+     - Read any referenced files from the plan
+     - Look for similar patterns in codebase
+     - Implement following existing conventions
+     - Write tests for new functionality
+     - Run System-Wide Test Check (see below)
+     - Run tests after changes
+     - Mark task as completed in TodoWrite
+     - Mark off the corresponding checkbox in the plan file ([ ] → [x])
+     - Evaluate for incremental commit (see below)
+   ```
+
+   **System-Wide Test Check** — Before marking a task done, pause and ask:
+
+   | Question | What to do |
+   |----------|------------|
+   | **What fires when this runs?** Callbacks, middleware, observers, event handlers — trace two levels out from your change. | Read the actual code (not docs) for callbacks on models you touch, middleware in the request chain, `after_*` hooks. |
+   | **Do my tests exercise the real chain?** If every dependency is mocked, the test proves your logic works *in isolation* — it says nothing about the interaction. | Write at least one integration test that uses real objects through the full callback/middleware chain. No mocks for the layers that interact. |
+   | **Can failure leave orphaned state?** If your code persists state (DB row, cache, file) before calling an external service, what happens when the service fails? Does retry create duplicates? | Trace the failure path with real objects. If state is created before the risky call, test that failure cleans up or that retry is idempotent. |
+   | **What other interfaces expose this?** Mixins, DSLs, alternative entry points (Agent vs Chat vs ChatMethods). | Grep for the method/behavior in related classes. If parity is needed, add it now — not as a follow-up. |
+   | **Do error strategies align across layers?** Retry middleware + application fallback + framework error handling — do they conflict or create double execution? | List the specific error classes at each layer. Verify your rescue list matches what the lower layer actually raises. |
+
+   **When to skip:** Leaf-node changes with no callbacks, no state persistence, no parallel interfaces. If the change is purely additive (new helper method, new view partial), the check takes 10 seconds and the answer is "nothing fires, skip."
+
+   **When this matters most:** Any change that touches models with callbacks, error handling with fallback/retry, or functionality exposed through multiple interfaces.
+
+   **IMPORTANT**: Always update the original plan document by checking off completed items. Use the Edit tool to change `- [ ]` to `- [x]` for each task you finish. This keeps the plan as a living document showing progress and ensures no checkboxes are left unchecked.
+
+2. **Incremental Commits**
+
+   After completing each task, evaluate whether to create an incremental commit:
+
+   | Commit when... | Don't commit when... |
+   |----------------|---------------------|
+   | Logical unit complete (model, service, component) | Small part of a larger unit |
+   | Tests pass + meaningful progress | Tests failing |
+   | About to switch contexts (backend → frontend) | Purely scaffolding with no behavior |
+   | About to attempt risky/uncertain changes | Would need a "WIP" commit message |
+
+   **Heuristic:** "Can I write a commit message that describes a complete, valuable change? If yes, commit. If the message would be 'WIP' or 'partial X', wait."
+
+   **Commit workflow:**
+   ```bash
+   # 1. Verify tests pass (use project's test command)
+   # Examples: bin/rails test, npm test, pytest, go test, etc.
+
+   # 2. Stage only files related to this logical unit (not `git add .`)
+   git add <files related to this logical unit>
+
+   # 3. Commit with conventional message
+   git commit -m "feat(scope): description of this unit"
+   ```
+
+   **Handling merge conflicts:** If conflicts arise during rebasing or merging, resolve them immediately. Incremental commits make conflict resolution easier since each commit is small and focused.
+
+   **Note:** Incremental commits use clean conventional messages without attribution footers. The final Phase 4 commit/PR includes the full attribution.
+
+3. **Follow Existing Patterns**
+
+   - The plan should reference similar code - read those files first
+   - Match naming conventions exactly
+   - Reuse existing components where possible
+   - Follow project coding standards (see CLAUDE.md)
+   - When in doubt, grep for similar implementations
+
+4. **Test Continuously**
+
+   - Run relevant tests after each significant change
+   - Don't wait until the end to test
+   - Fix failures immediately
+   - Add new tests for new functionality
+   - **Unit tests with mocks prove logic in isolation. Integration tests with real objects prove the layers work together.** If your change touches callbacks, middleware, or error handling — you need both.
+
+5. **Figma Design Sync** (if applicable)
+
+   For UI work with Figma designs:
+
+   - Implement components following design specs
+   - Use figma-design-sync agent iteratively to compare
+   - Fix visual differences identified
+   - Repeat until implementation matches design
+
+6. **Track Progress**
+   - Keep TodoWrite updated as you complete tasks
+   - Note any blockers or unexpected discoveries
+   - Create new tasks if scope expands
+   - Keep user informed of major milestones
+
+### Phase 3: Quality Check
+
+1. **Run Core Quality Checks**
+
+   Always run before submitting:
+
+   ```bash
+   # Run full test suite (use project's test command)
+   # Examples: bin/rails test, npm test, pytest, go test, etc.
+
+   # Run linting (per CLAUDE.md)
+   # Use linting-agent before pushing to origin
+   ```
+
+2. **Consider Reviewer Agents** (Optional)
+
+   Use for complex, risky, or large changes. Read agents from `compound-engineering.local.md` frontmatter (`review_agents`). If no settings file, invoke the `setup` skill to create one.
+
+   Run configured agents in parallel with Task tool. Present findings and address critical issues.
+
+3. **Final Validation**
+   - All TodoWrite tasks marked completed
+   - All tests pass
+   - Linting passes
+   - Code follows existing patterns
+   - Figma designs match (if applicable)
+   - No console errors or warnings
+
+4. **Prepare Operational Validation Plan** (REQUIRED)
+   - Add a `## Post-Deploy Monitoring & Validation` section to the PR description for every change.
+   - Include concrete:
+     - Log queries/search terms
+     - Metrics or dashboards to watch
+     - Expected healthy signals
+     - Failure signals and rollback/mitigation trigger
+     - Validation window and owner
+   - If there is truly no production/runtime impact, still include the section with: `No additional operational monitoring required` and a one-line reason.
+
+### Phase 4: Ship It
+
+1. **Create Commit**
+
+   ```bash
+   git add .
+   git status  # Review what's being committed
+   git diff --staged  # Check the changes
+
+   # Commit with conventional format
+   git commit -m "$(cat <<'EOF'
+   feat(scope): description of what and why
+
+   Brief explanation if needed.
+
+   🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+   Co-Authored-By: Claude <noreply@anthropic.com>
+   EOF
+   )"
+   ```
+
+2. **Capture and Upload Screenshots for UI Changes** (REQUIRED for any UI work)
+
+   For **any** design changes, new views, or UI modifications, you MUST capture and upload screenshots:
+
+   **Step 1: Start dev server** (if not running)
+   ```bash
+   bin/dev  # Run in background
+   ```
+
+   **Step 2: Capture screenshots with agent-browser CLI**
+   ```bash
+   agent-browser open http://localhost:3000/[route]
+   agent-browser snapshot -i
+   agent-browser screenshot output.png
+   ```
+   See the `agent-browser` skill for detailed usage.
+
+   **Step 3: Upload using imgup skill**
+   ```bash
+   skill: imgup
+   # Then upload each screenshot:
+   imgup -h pixhost screenshot.png  # pixhost works without API key
+   # Alternative hosts: catbox, imagebin, beeimg
+   ```
+
+   **What to capture:**
+   - **New screens**: Screenshot of the new UI
+   - **Modified screens**: Before AND after screenshots
+   - **Design implementation**: Screenshot showing Figma design match
+
+   **IMPORTANT**: Always include uploaded image URLs in PR description. This provides visual context for reviewers and documents the change.
+
+3. **Create Pull Request**
+
+   ```bash
+   git push -u origin feature-branch-name
+
+   gh pr create --title "Feature: [Description]" --body "$(cat <<'EOF'
+   ## Summary
+   - What was built
+   - Why it was needed
+   - Key decisions made
+
+   ## Testing
+   - Tests added/modified
+   - Manual testing performed
+
+   ## Post-Deploy Monitoring & Validation
+   - **What to monitor/search**
+     - Logs:
+     - Metrics/Dashboards:
+   - **Validation checks (queries/commands)**
+     - `command or query here`
+   - **Expected healthy behavior**
+     - Expected signal(s)
+   - **Failure signal(s) / rollback trigger**
+     - Trigger + immediate action
+   - **Validation window & owner**
+     - Window:
+     - Owner:
+   - **If no operational impact**
+     - `No additional operational monitoring required: <reason>`
+
+   ## Before / After Screenshots
+   | Before | After |
+   |--------|-------|
+   | ![before](URL) | ![after](URL) |
+
+   ## Figma Design
+   [Link if applicable]
+
+   ---
+
+   [![Compound Engineered](https://img.shields.io/badge/Compound-Engineered-6366f1)](https://github.com/EveryInc/compound-engineering-plugin) 🤖 Generated with [Claude Code](https://claude.com/claude-code)
+   EOF
+   )"
+   ```
+
+4. **Update Plan Status**
+
+   If the input document has YAML frontmatter with a `status` field, update it to `completed`:
+   ```
+   status: active  →  status: completed
+   ```
+
+5. **Notify User**
+   - Summarize what was completed
+   - Link to PR
+   - Note any follow-up work needed
+   - Suggest next steps if applicable
+
+---
+
+## Swarm Mode (Optional)
+
+For complex plans with multiple independent workstreams, enable swarm mode for parallel execution with coordinated agents.
+
+### When to Use Swarm Mode
+
+| Use Swarm Mode when... | Use Standard Mode when... |
+|------------------------|---------------------------|
+| Plan has 5+ independent tasks | Plan is linear/sequential |
+| Multiple specialists needed (review + test + implement) | Single-focus work |
+| Want maximum parallelism | Simpler mental model preferred |
+| Large feature with clear phases | Small feature or bug fix |
+
+### Enabling Swarm Mode
+
+To trigger swarm execution, say:
+
+> "Make a Task list and launch an army of agent swarm subagents to build the plan"
+
+Or explicitly request: "Use swarm mode for this work"
+
+### Swarm Workflow
+
+When swarm mode is enabled, the workflow changes:
+
+1. **Create Team**
+   ```
+   Teammate({ operation: "spawnTeam", team_name: "work-{timestamp}" })
+   ```
+
+2. **Create Task List with Dependencies**
+   - Parse plan into TaskCreate items
+   - Set up blockedBy relationships for sequential dependencies
+   - Independent tasks have no blockers (can run in parallel)
+
+3. **Spawn Specialized Teammates**
+   ```
+   Task({
+     team_name: "work-{timestamp}",
+     name: "implementer",
+     subagent_type: "general-purpose",
+     prompt: "Claim implementation tasks, execute, mark complete",
+     run_in_background: true
+   })
+
+   Task({
+     team_name: "work-{timestamp}",
+     name: "tester",
+     subagent_type: "general-purpose",
+     prompt: "Claim testing tasks, run tests, mark complete",
+     run_in_background: true
+   })
+   ```
+
+4. **Coordinate and Monitor**
+   - Team lead monitors task completion
+   - Spawn additional workers as phases unblock
+   - Handle plan approval if required
+
+5. **Cleanup**
+   ```
+   Teammate({ operation: "requestShutdown", target_agent_id: "implementer" })
+   Teammate({ operation: "requestShutdown", target_agent_id: "tester" })
+   Teammate({ operation: "cleanup" })
+   ```
+
+See the `orchestrating-swarms` skill for detailed swarm patterns and best practices.
+
+---
+
+## Key Principles
+
+### Start Fast, Execute Faster
+
+- Get clarification once at the start, then execute
+- Don't wait for perfect understanding - ask questions and move
+- The goal is to **finish the feature**, not create perfect process
+
+### The Plan is Your Guide
+
+- Work documents should reference similar code and patterns
+- Load those references and follow them
+- Don't reinvent - match what exists
+
+### Test As You Go
+
+- Run tests after each change, not at the end
+- Fix failures immediately
+- Continuous testing prevents big surprises
+
+### Quality is Built In
+
+- Follow existing patterns
+- Write tests for new code
+- Run linting before pushing
+- Use reviewer agents for complex/risky changes only
+
+### Ship Complete Features
+
+- Mark all tasks completed before moving on
+- Don't leave features 80% done
+- A finished feature that ships beats a perfect feature that doesn't
+
+## Quality Checklist
+
+Before creating PR, verify:
+
+- [ ] All clarifying questions asked and answered
+- [ ] All TodoWrite tasks marked completed
+- [ ] Tests pass (run project's test command)
+- [ ] Linting passes (use linting-agent)
+- [ ] Code follows existing patterns
+- [ ] Figma designs match implementation (if applicable)
+- [ ] Before/after screenshots captured and uploaded (for UI changes)
+- [ ] Commit messages follow conventional format
+- [ ] PR description includes Post-Deploy Monitoring & Validation section (or explicit no-impact rationale)
+- [ ] PR description includes summary, testing notes, and screenshots
+- [ ] PR description includes Compound Engineered badge
+
+## When to Use Reviewer Agents
+
+**Don't use by default.** Use reviewer agents only when:
+
+- Large refactor affecting many files (10+)
+- Security-sensitive changes (authentication, permissions, data access)
+- Performance-critical code paths
+- Complex algorithms or business logic
+- User explicitly requests thorough review
+
+For most features: tests + linting + following patterns is sufficient.
+
+## Common Pitfalls to Avoid
+
+- **Analysis paralysis** - Don't overthink, read the plan and execute
+- **Skipping clarifying questions** - Ask now, not after building wrong thing
+- **Ignoring plan references** - The plan has links for a reason
+- **Testing at the end** - Test continuously or suffer later
+- **Forgetting TodoWrite** - Track progress or lose track of what's done
+- **80% done syndrome** - Finish the feature, don't move on early
+- **Over-reviewing simple changes** - Save reviewer agents for complex work
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user initiated a brainstorm (`/ce:brainstorm`) to discuss integrating failure mode plots into the standard visualization pipeline, identifying unused CLI functionality, and expanding the dashboard. After brainstorming, they requested three separate implementation plans be created in `documentation/plans/` with datetime-prefixed filenames. They then invoked `/ce:work` to implement Plan 1: "Enhance Standard Plots with Failure Mode Visualizations" — adding failure mode plots (success/failure heatmap, failure distribution, failure sunburst, error breakdown) to `make_standard_evaluation_plots.py` and the visualization CLI, using the log analysis CLI's JSON output as the data source for failed runs.
+
+2. Key Technical Concepts:
+   - Log analysis CLI (`read_and_analyze_logs_and_traces_cli.py --json`) produces `AnalysisReport` with `RunAnalysis` objects (run_id, experiment_name, llm_model, has_metrics, problems list)
+   - `build_tables()` from `normalize.py` produces runs DataFrames with `avg_hallucination_rate`/`avg_omission_rate` (rates, NOT total counts like `total_hallucinations`)
+   - Visualization pipeline supports dual backends: seaborn (static PNG/SVG) and plotly (interactive HTML)
+   - `failure_io.py` bridges log analysis JSON with visualization tables by merging failed runs (from analysis report) with successful runs (from metrics tables)
+   - Sunburst charts are plotly-only; seaborn fallback uses grouped bar charts
+   - The `--analysis-report` flag is optional for backward compatibility
+   - A linter/pre-commit hook has been repeatedly reverting changes to `plots.py` and `visualize_metrics_cli.py`
+
+3. Files and Code Sections:
+
+   - **`src/evaluation/visualization/failure_io.py`** (NEW FILE - created successfully)
+     - Bridges log analysis JSON output and visualization tables
+     - Key functions: `load_analysis_report(path)`, `build_all_runs_table(analysis_report, metrics_tables)`, `_primary_failure_reason(problems)`
+     - Merges failed runs from analysis report with successful runs from metrics tables into unified DataFrame
+     ```python
+     def load_analysis_report(path: str | Path) -> dict:
+         path = Path(path)
+         if not path.exists():
+             raise FileNotFoundError(f"Analysis report not found: {path}")
+         data = json.loads(path.read_text())
+         if "runs" not in data:
+             raise ValueError(f"Analysis report missing 'runs' key: {path}")
+         return data
+
+     def build_all_runs_table(analysis_report, metrics_tables=None) -> pd.DataFrame:
+         # Iterates analysis_report["runs"], extracts model/context via enrich.py
+         # Maps problems to failure_reason via _primary_failure_reason()
+         # Merges with metrics_tables["runs"] on run_id if available
+         # Returns DataFrame with: run_id, experiment_name, model, context, has_output, failure_reason, display_label, ...
+     ```
+
+   - **`src/evaluation/visualization/plots.py`** (MODIFIED - but repeatedly reverted by linter)
+     - 4 new functions need to be added BEFORE `_collapse_to_top_labels`:
+     - `plot_success_failure_heatmap(all_runs_df, row_col="model", col_col="context", backend, title)` - Model x context grid with OK/FAIL annotations
+     - `plot_failure_distribution(all_runs_df, backend, title)` - Horizontal bar chart of failure reason counts
+     - `plot_failure_sunburst(all_runs_df, backend, title, row_col, col_col)` - Sunburst (plotly) or grouped bar (seaborn)
+     - `plot_error_breakdown(runs_df, backend, title, x_col)` - Stacked bar of hallucinations/omissions/genuine errors; handles BOTH total counts and rate-based columns as fallback
+     - The error breakdown function detects available columns: first tries `total_hallucinations/total_omissions/total_genuine_errors`, falls back to `avg_hallucination_rate/avg_omission_rate`
+     - Color maps include both singular and plural forms: `"Hallucinations": "#e74c3c", "Hallucination": "#e74c3c"` etc.
+
+   - **`src/evaluation/make_standard_evaluation_plots.py`** (MODIFIED - appears stable)
+     - Added `from evaluation.visualization.failure_io import build_all_runs_table, load_analysis_report`
+     - Added imports for new plot functions
+     - Added `--analysis-report` CLI argument
+     - Added section 9 (error breakdown) and section 10 (failure mode plots gated by `--analysis-report`)
+     - Section 10 generates: success_failure_heatmap, failure_distribution, failure_sunburst in `plots/failure_analysis/` subdirectory
+     - Saves `all_runs.csv` to tables output
+
+   - **`src/evaluation/visualize_metrics_cli.py`** (MODIFIED - but repeatedly reverted by linter)
+     - Needs new imports: `from evaluation.visualization.failure_io import build_all_runs_table, load_analysis_report` and 4 new plot function imports
+     - `cmd_compare` enhanced with: error breakdown plot generation, failure mode plots when `--analysis-report` provided
+     - New `cmd_failure_analysis(args)` function: standalone failure analysis command that generates all 4 failure plots
+     - New subparser: `failure-analysis` with `--analysis-report` (required)
+     - `compare` subparser gets `--analysis-report` (optional)
+
+   - **`documentation/plans/12_03_2026_1115_enhance_standard_plots_with_failure_modes.md`** - Plan 1 (being implemented)
+   - **`documentation/plans/12_03_2026_1115_post_experiment_watcher_orchestrator.md`** - Plan 2 (future)
+   - **`documentation/plans/12_03_2026_1115_expand_dashboard_all_visualizations.md`** - Plan 3 (future)
+   - **`docs/brainstorms/2026-03-12-unified-visualization-pipeline-brainstorm.md`** - Brainstorm document
+   - **`documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md`** - Updated codebase description
+
+4. Errors and fixes:
+   - **Error: `plot_error_breakdown` couldn't find `total_hallucinations` columns**: The `build_tables()` function produces `avg_hallucination_rate` and `avg_omission_rate` (rates), not `total_hallucinations` (counts). Fixed by adding fallback logic to check for rate columns when total columns aren't available, and adjusting labels/y-axis accordingly.
+   - **Error: Linter/pre-commit hook reverting `plots.py` and `visualize_metrics_cli.py`**: Changes were silently reverted at least twice. The system-reminder showed the reverted file contents. I re-applied changes each time. The root cause appears to be a pre-commit hook or automatic formatter that runs when files are modified. This is the CRITICAL ongoing issue - the changes to these two files may need to be re-applied again.
+   - **Path references incorrect**: March 11 files were at `results/plots/` but user indicated they moved to `analysis/march11_experiment_plots/`. Fixed all references in all 4 plan/brainstorm documents.
+
+5. Problem Solving:
+   - Successfully designed the bridge between log analysis CLI JSON output and visualization pipeline via `failure_io.py`
+   - All 3 test scenarios passed when changes were in place: `failure-analysis` CLI command, `make_standard_evaluation_plots.py --analysis-report`, and `compare --analysis-report`
+   - Backward compatibility confirmed: running without `--analysis-report` still generates all original plots plus the new error_breakdown
+   - The linter reversion issue remains the primary obstacle - changes to `plots.py` and `visualize_metrics_cli.py` keep getting reverted
+
+6. All user messages:
+   - Initial brainstorm request: Read evaluation/visualization_cli, dashboard, and March 11 plots files; discuss adding failure mode plots, unused CLI functionality, and dashboard updates
+   - "Also look at this: /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results/plots/dash_app.py"
+   - Response to design questions: Wanted to discuss flow more broadly, mentioned the log analysis CLI, proposed a post-experiment orchestrator sbatch script that auto-chains analysis
+   - "I want to do all of these things, so let us make plans for all of them, but start with the enhancement. Will you help me make separate plans and output them with DATETIME and meaningful names in /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/documentation/plans"
+   - "Please cross-reference that you have all the correct paths in the plans, the march 11 dash_app.py has been moved to /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/analysis/march11_experiment_plots. Check this for all three plans you just made."
+   - `/compound-engineering:ce:work` with args: "implement the first plan and update me afterwards."
+
+7. Pending Tasks:
+   - **CRITICAL**: Re-verify and re-apply changes to `plots.py` and `visualize_metrics_cli.py` that keep getting reverted by linter
+   - Update the plan document to mark steps as complete
+   - Plans 2 and 3 are future work (post-experiment watcher, dashboard expansion)
+
+8. Current Work:
+   I was implementing Plan 1 and had completed all code changes, but a linter/pre-commit hook keeps reverting changes to two files:
+   - `src/evaluation/visualization/plots.py` - needs 4 new plot functions (plot_success_failure_heatmap, plot_failure_distribution, plot_failure_sunburst, plot_error_breakdown) inserted before `_collapse_to_top_labels`
+   - `src/evaluation/visualize_metrics_cli.py` - needs new imports, cmd_failure_analysis function, enhanced cmd_compare with error breakdown + failure plots, and new subparser registrations
+
+   I had just re-applied the changes to both files for the second time. The last actions were:
+   1. Re-applied imports to `visualize_metrics_cli.py`
+   2. Re-applied `cmd_compare` enhancement + `cmd_failure_analysis` function
+   3. Re-applied `--analysis-report` on compare + `failure-analysis` subparser
+   4. Re-applied all 4 plot functions to `plots.py`
+   
+   Then a system-reminder showed the log analysis CLI file was also modified by the linter, suggesting the linter may have run again and potentially reverted the changes once more.
+
+9. Optional Next Step:
+   Verify whether the latest re-application of changes to `plots.py` and `visualize_metrics_cli.py` has survived the linter. If reverted again, need to investigate the pre-commit hook configuration (`.pre-commit-config.yaml` with ruff) to understand why it's reverting the additions, and potentially adjust the code to pass the linter. Run a quick import test: `.venv/bin/python -c "import sys; sys.path.insert(0, 'src'); from evaluation.visualization.plots import plot_error_breakdown; print('OK')"` to confirm.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/cog/dstoker/.REDACTED.jsonl
+Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
+
+---
+
+Can you commit only these changes?
+
+---
+
+Yes continue with this appraoch.
