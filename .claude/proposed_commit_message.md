@@ -101,7 +101,7 @@ See: plans/10_02_2026_1830_make_separate_ollama_instances.md
   (e.g., distinguishing "all turns timed out" infrastructure hang
   from "some turns timed out" LLM-side timeout). Supports --verbose,
   --json, --run-id, --experiment filtering.
-- `documentation/processes/11_02_2026_interpreting_logs_and_traces.md`
+- `docs/processes/11_02_2026_interpreting_logs_and_traces.md`
   — Comprehensive human-readable failure mode reference document
 
 See: plans/11_02_2026_1140_analyze_failure_modes_automated_experiments.md
@@ -152,11 +152,11 @@ See: plans/11_02_2026_1140_analyze_failure_modes_automated_experiments.md
 
 ## 11. Documentation
 
-- `documentation/codebase_descriptions/how_this_codebase_works_11_02_2026.md`
+- `docs/codebase_descriptions/how_this_codebase_works_11_02_2026.md`
   — Updated codebase description with all changes above
-- `documentation/codebase_descriptions/how_this_codebase_works_10_02_2026.md`
+- `docs/codebase_descriptions/how_this_codebase_works_10_02_2026.md`
   — Previous day's description
-- `documentation/codebase_descriptions/how_this_codebase_works_05_02_2026.md`
+- `docs/codebase_descriptions/how_this_codebase_works_05_02_2026.md`
   — Earlier description (any-llm integration)
 
 ---
@@ -166,7 +166,7 @@ For detailed context on each feature area, see:
 - plans/11_02_2026_1140_analyze_failure_modes_automated_experiments.md
 - plans/10_02_2026_1830_make_separate_ollama_instances.md
 - plans/10_02_2026_implementing_metadata_harmonization_metrics_calculation.md
-- documentation/processes/11_02_2026_interpreting_logs_and_traces.md
+- docs/processes/11_02_2026_interpreting_logs_and_traces.md
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 ```

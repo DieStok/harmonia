@@ -6,7 +6,7 @@ Two capabilities:
 2. register_prompt_json_logger() — one-shot monkey-patch on agent.execute() that writes
    structured JSON to the results directory on the first LLM call
 
-See documentation/plans/11_06_2025_1715_make_logging_full_prompt_in_container.md for design.
+See docs/plans/11_06_2025_1715_make_logging_full_prompt_in_container.md for design.
 """
 
 import hashlib

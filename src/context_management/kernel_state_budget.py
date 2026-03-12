@@ -27,7 +27,7 @@ Budget parameters are read from environment variables at runtime:
   HARMONIA_STATE_TYPE_BLACKLIST: comma-separated type substrings to exclude
   HARMONIA_STATE_VAR_WHITELIST: comma-separated variable names to always keep in full
 
-See: documentation/plans/25_02_2026_2238_fix_context_issues.md (Fix 2)
+See: docs/plans/25_02_2026_2238_fix_context_issues.md (Fix 2)
 """
 
 import json

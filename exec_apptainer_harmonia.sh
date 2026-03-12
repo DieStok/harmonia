@@ -372,7 +372,7 @@ is_local_llm_provider() {
 # Uses nvidia-smi for GPU memory info and OLLAMA_CONTEXT_LENGTH for KV cache estimate.
 # Called after model pre-load to provide visibility into whether the model + KV cache
 # will fit in GPU VRAM at full context length.
-# See: documentation/plans/25_02_2026_2238_fix_context_issues.md (Fix 1b)
+# See: docs/plans/25_02_2026_2238_fix_context_issues.md (Fix 1b)
 estimate_vram_usage() {
     local NUM_CTX="$1"
 
