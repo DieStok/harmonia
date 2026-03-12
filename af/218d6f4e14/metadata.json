@@ -2,7 +2,7 @@
   "cli_version": "0.4.4",
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
-  "branch": "feat/classify-trace-code-executions",
+  "branch": "main",
   "checkpoints_count": 21,
   "files_touched": [
     ".gitignore",
@@ -209,10 +209,10 @@
     }
   ],
   "token_usage": {
-    "input_tokens": 14385,
-    "cache_creation_tokens": 2301162,
-    "cache_read_tokens": 66103515,
-    "output_tokens": 312717,
-    "api_call_count": 719
+    "input_tokens": 14532,
+    "cache_creation_tokens": 2122350,
+    "cache_read_tokens": 57726201,
+    "output_tokens": 277023,
+    "api_call_count": 646
   }
 }
