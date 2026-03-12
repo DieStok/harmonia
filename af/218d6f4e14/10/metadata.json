@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "af218d6f4e14",
+  "session_id": "afb34441-ebc3-406a-a826-b01c5db248dc",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-12T14:07:21.16986316Z",
+  "branch": "feat/classify-trace-code-executions",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "code_development_tools_agents/monitoring_and_evaluation/enrich_traces.py",
+    "docs/brainstorms/2026-03-12-dashboard-improvements-brainstorm.md",
+    "docs/brainstorms/2026-03-12-trace-code-execution-classification-brainstorm.md",
+    "docs/plans/2026-03-12-feat-classify-trace-code-executions-plan.md",
+    "docs/plans/2026-03-12-feat-dashboard-overhaul-plan.md",
+    "documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md",
+    "src/automation/__init__.py",
+    "src/automation/logger.py",
+    "src/automation/manual_runner.py",
+    "src/automation/runner.py",
+    "src/automation/tracing.py",
+    "src/dashboard/app.py",
+    "src/dashboard/components/turn_accordion.py",
+    "src/dashboard/data_loader.py",
+    "src/dashboard/tabs/error_analysis.py",
+    "src/dashboard/tabs/failure_analysis.py",
+    "workspace/data",
+    "workspace/results"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "a6380fc9-427f-4861-ba8f-ae3a2a012d6c",
+  "token_usage": {
+    "input_tokens": 122,
+    "cache_creation_tokens": 191146,
+    "cache_read_tokens": 9822677,
+    "output_tokens": 39934,
+    "api_call_count": 97
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-12T14:07:19.45898748Z",
+    "agent_lines": 726,
+    "human_added": 0,
+    "human_modified": 620,
+    "human_removed": 884,
+    "total_committed": 1346,
+    "agent_percentage": 53.937592867756315
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/afb34441-ebc3-406a-a826-b01c5db248dc.jsonl"
+}
