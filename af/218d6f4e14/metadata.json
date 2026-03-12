@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "feat/dashboard-logging-trace-fixes",
-  "checkpoints_count": 20,
+  "checkpoints_count": 21,
   "files_touched": [
     ".claude/proposed_commit_message.md",
     ".gitignore",
@@ -402,13 +402,20 @@
       "context": "/af/218d6f4e14/13/context.md",
       "content_hash": "/af/218d6f4e14/13/content_hash.txt",
       "prompt": "/af/218d6f4e14/13/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/14/metadata.json",
+      "transcript": "/af/218d6f4e14/14/full.jsonl",
+      "context": "/af/218d6f4e14/14/context.md",
+      "content_hash": "/af/218d6f4e14/14/content_hash.txt",
+      "prompt": "/af/218d6f4e14/14/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 9809,
-    "cache_creation_tokens": 2126524,
-    "cache_read_tokens": 64550469,
-    "output_tokens": 268550,
-    "api_call_count": 707
+    "input_tokens": 9828,
+    "cache_creation_tokens": 2166772,
+    "cache_read_tokens": 64800044,
+    "output_tokens": 271237,
+    "api_call_count": 718
   }
 }
