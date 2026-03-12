@@ -48,7 +48,7 @@ usage() {
     echo "  --experiment-name <pattern>   Experiment name pattern for log analysis"
     echo ""
     echo "Optional:"
-    echo "  --output-dir <dir>            Output directory (default: results/analysis_<experiment>_<timestamp>/)"
+    echo "  --output-dir <dir>            Output directory (default: analysis/analysis_<experiment>_<timestamp>/)"
     echo "  --backend <seaborn|plotly>     Plot backend (default: seaborn)"
     echo "  --num-runs <N>                Number of recent runs to analyze (default: 50)"
     echo "  --verbose                     Enable verbose output"
@@ -109,7 +109,7 @@ MAKE_PLOTS="src/evaluation/make_standard_evaluation_plots.py"
 # Set up output directory
 if [[ -z "$OUTPUT_DIR" ]]; then
     TIMESTAMP=$(date -u +%Y%m%d_%H%M)
-    OUTPUT_DIR="results/analysis_${EXPERIMENT_NAME}_${TIMESTAMP}"
+    OUTPUT_DIR="analysis/analysis_${EXPERIMENT_NAME}_${TIMESTAMP}"
 fi
 
 mkdir -p "$OUTPUT_DIR/plots" "$OUTPUT_DIR/tables"

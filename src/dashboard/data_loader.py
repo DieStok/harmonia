@@ -49,9 +49,20 @@ _EXPECTED_SCHEMA_VERSION = "1.1"
 class DashboardDataLoader:
     """Loads experiment data from results directories and optionally Phoenix."""
 
-    def __init__(self, phoenix_endpoint: str, results_base_dir: Path):
+    def __init__(
+        self,
+        phoenix_endpoint: str,
+        results_base_dir: Path,
+        analysis_base_dir: Path | None = None,
+    ):
         self.phoenix_endpoint = phoenix_endpoint
         self.results_dir = Path(results_base_dir)
+        # analysis_dir defaults to analysis/ as sibling of results/
+        self.analysis_dir = (
+            Path(analysis_base_dir)
+            if analysis_base_dir
+            else self.results_dir.parent / "analysis"
+        )
         self._phoenix_client = None
         self._phoenix_available = False
         self._cache_lock = threading.Lock()
@@ -68,9 +79,16 @@ class DashboardDataLoader:
             return
         try:
             self._phoenix_client = px.Client(endpoint=self.phoenix_endpoint)
-            self._phoenix_client.get_spans_dataframe(limit=1)
+            # Use a thread with timeout to avoid hanging on unresponsive Phoenix
+            import concurrent.futures
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(self._phoenix_client.get_spans_dataframe, limit=1)
+                future.result(timeout=10)
             self._phoenix_available = True
-        except Exception:
+            logger.info("Phoenix connection established")
+        except Exception as e:
+            logger.warning(f"Phoenix not available: {e}")
             self._phoenix_available = False
             self._phoenix_client = None
 
