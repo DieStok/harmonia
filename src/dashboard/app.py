@@ -12,16 +12,20 @@ Usage:
 import argparse
 import logging
 import socket
+import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import parse_qs, urlencode
 
 # Follow existing codebase pattern — do NOT add src/__init__.py
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import Dash, Input, Output, State, dcc, html
+import diskcache
+from dash import Dash, Input, Output, State, ctx, dcc, html, no_update
 
+from dashboard.components.multi_filter import register_multi_filter_callbacks
 from dashboard.data_loader import DashboardDataLoader
 from dashboard.tabs.comparison import render_comparison
 from dashboard.tabs.error_analysis import render_error_analysis
@@ -38,19 +42,33 @@ logger = logging.getLogger(__name__)
 # App setup
 # --------------------------------------------------------------------------- #
 
+_cache = diskcache.Cache("./cache")
+_background_callback_manager = dash.DiskcacheManager(_cache)
+
 app = Dash(
     __name__,
     external_stylesheets=[dbc.themes.FLATLY],
     suppress_callback_exceptions=True,
+    background_callback_manager=_background_callback_manager,
 )
+
+app.title = "GEO-LLM Experiment Dashboard"
 
 app.layout = dbc.Container(
     [
         # Phoenix status banner (hidden when Phoenix is available)
         html.Div(id="phoenix-status-banner"),
+        # Toast notification container
+        dbc.Toast(
+            id="notification-toast",
+            is_open=False,
+            duration=4000,
+            dismissable=True,
+            style={"position": "fixed", "top": 10, "right": 10, "zIndex": 1050},
+        ),
         # Navbar
         dbc.NavbarSimple(
-            brand="Harmonia Experiment Dashboard",
+            brand="GEO-LLM Experiment Dashboard",
             color="primary",
             dark=True,
             className="mb-3",
@@ -71,7 +89,14 @@ app.layout = dbc.Container(
         ),
         # Tab content
         html.Div(id="tab-content", className="mt-3"),
-        # Hidden stores for cross-tab state
+        # URL state sync
+        dcc.Location(id="url", refresh=False),
+        # New shared stores for selection-driven architecture
+        dcc.Store(id="selected-runs-store", data=[], storage_type="session"),
+        dcc.Store(id="active-filters-store", data=[], storage_type="session"),
+        dcc.Store(id="date-range-store", data="last5d", storage_type="session"),
+        dcc.Store(id="selection-explicit", data=False, storage_type="session"),
+        # Legacy stores (still used by trace explorer and comparison)
         dcc.Store(id="selected-run-id", storage_type="session"),
         dcc.Store(id="turn-page", data=0, storage_type="session"),
         dcc.Store(id="comparison-run-a-store", storage_type="session"),
@@ -80,6 +105,9 @@ app.layout = dbc.Container(
     fluid=True,
 )
 
+
+# Register pattern-matching callbacks for multi-filter widget
+register_multi_filter_callbacks(app, "overview-filter")
 
 # --------------------------------------------------------------------------- #
 # Callbacks
@@ -107,32 +135,79 @@ def update_phoenix_banner(_active_tab):
 
 
 @app.callback(
+    Output("url", "search"),
+    Output("selected-runs-store", "data", allow_duplicate=True),
+    Output("date-range-store", "data", allow_duplicate=True),
+    Output("tabs", "active_tab", allow_duplicate=True),
+    Input("url", "search"),
+    Input("selected-runs-store", "data"),
+    Input("date-range-store", "data"),
+    Input("tabs", "active_tab"),
+    prevent_initial_call=False,
+)
+def sync_url_state(url_search, selected_runs, date_range, active_tab):
+    """Bidirectional URL ↔ store sync. Uses ctx.triggered_id to break cycles."""
+    trigger = ctx.triggered_id
+    if trigger == "url" or not ctx.triggered:
+        # URL changed or initial load → parse params, push to stores
+        params = parse_qs(url_search.lstrip("?")) if url_search else {}
+        runs_val = params.get("runs", [""])[0].split(",") if params.get("runs") else no_update
+        # Filter out empty strings from split
+        if runs_val is not no_update:
+            runs_val = [r for r in runs_val if r]
+        return (
+            no_update,
+            runs_val,
+            params.get("date", ["last5d"])[0],
+            params.get("tab", ["overview"])[0],
+        )
+    else:
+        # Store/tab changed → serialize to URL, don't touch stores
+        params = {}
+        if selected_runs:
+            params["runs"] = ",".join(selected_runs)
+        if date_range and date_range != "last5d":
+            params["date"] = date_range
+        if active_tab and active_tab != "overview":
+            params["tab"] = active_tab
+        return (
+            f"?{urlencode(params)}" if params else "",
+            no_update,
+            no_update,
+            no_update,
+        )
+
+
+@app.callback(
     Output("tab-content", "children"),
     Input("tabs", "active_tab"),
     Input("selected-run-id", "data"),
     Input("turn-page", "data"),
     Input("comparison-run-a-store", "data"),
     Input("comparison-run-b-store", "data"),
+    Input("selected-runs-store", "data"),
 )
-def render_tab(active_tab, selected_run_id, turn_page, comp_a, comp_b):
+def render_tab(active_tab, selected_run_id, turn_page, comp_a, comp_b, selected_runs):
     """Render the content for the selected tab."""
     if data_loader is None:
         return html.P("Loading...")
 
+    selected_run_ids = selected_runs if selected_runs else []
+
     if active_tab == "overview":
-        return render_overview(data_loader)
+        return render_overview(data_loader, selected_run_ids)
     elif active_tab == "metrics":
-        return render_metrics(data_loader)
+        return render_metrics(data_loader, selected_run_ids)
     elif active_tab == "failure-analysis":
-        return render_failure_analysis(data_loader)
+        return render_failure_analysis(data_loader, selected_run_ids)
     elif active_tab == "error-analysis":
-        return render_error_analysis(data_loader)
+        return render_error_analysis(data_loader, selected_run_ids)
     elif active_tab == "trace":
         return render_trace_explorer(data_loader, selected_run_id, turn_page or 0)
     elif active_tab == "tokens":
-        return render_token_cost(data_loader)
+        return render_token_cost(data_loader, selected_run_ids)
     elif active_tab == "comparison":
-        return render_comparison(data_loader, comp_a, comp_b)
+        return render_comparison(data_loader, comp_a, comp_b, selected_run_ids)
     return html.P("Select a tab.")
 
 
@@ -154,19 +229,42 @@ def click_bar_to_trace(click_data):
     raise dash.exceptions.PreventUpdate
 
 
-# Click-through: runs table row → trace explorer
+# Runs table selection → selected-runs-store sync
 @app.callback(
-    Output("tabs", "active_tab", allow_duplicate=True),
-    Output("selected-run-id", "data", allow_duplicate=True),
+    Output("selected-runs-store", "data", allow_duplicate=True),
+    Output("selection-explicit", "data", allow_duplicate=True),
     Input("runs-table", "selectedRows"),
     prevent_initial_call=True,
 )
-def click_row_to_trace(selected_rows):
-    if selected_rows and len(selected_rows) > 0:
-        run_id = selected_rows[0].get("run_id")
-        if run_id:
-            return "trace", run_id
+def sync_table_selection_to_store(selected_rows):
+    if selected_rows is not None:
+        run_ids = [r.get("run_id") for r in selected_rows if r.get("run_id")]
+        return run_ids, True
     raise dash.exceptions.PreventUpdate
+
+
+# Clear selection button
+@app.callback(
+    Output("runs-table", "selectedRows"),
+    Output("selected-runs-store", "data", allow_duplicate=True),
+    Output("selection-explicit", "data", allow_duplicate=True),
+    Input("clear-selection", "n_clicks"),
+    prevent_initial_call=True,
+)
+def clear_selection(n_clicks):
+    if n_clicks:
+        return [], [], True
+    raise dash.exceptions.PreventUpdate
+
+
+# Date range toggle → re-render overview with filtered data
+@app.callback(
+    Output("date-range-store", "data", allow_duplicate=True),
+    Input("date-range-toggle", "value"),
+    prevent_initial_call=True,
+)
+def update_date_range(value):
+    return value if value else "last5d"
 
 
 # Trace explorer run selector
@@ -273,6 +371,45 @@ def refresh_comparison(n_clicks, active_tab, comp_a, comp_b):
     if n_clicks:
         data_loader.refresh()
     return render_comparison(data_loader, comp_a, comp_b)
+
+
+# Background callback: regenerate analysis report
+@dash.callback(
+    Output("regenerate-output", "children"),
+    Input("regenerate-btn", "n_clicks"),
+    background=True,
+    running=[
+        (Output("regenerate-btn", "disabled"), True, False),
+        (Output("regenerate-status", "children"), "Regenerating analysis...", ""),
+    ],
+    prevent_initial_call=True,
+)
+def regenerate_analysis(n_clicks):
+    if not n_clicks:
+        raise dash.exceptions.PreventUpdate
+    try:
+        result = subprocess.run(
+            [
+                ".venv/bin/python",
+                "code_development_tools_agents/monitoring_and_evaluation/"
+                "read_and_analyze_logs_and_traces_cli.py",
+                "--json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+        if result.returncode == 0:
+            data_loader.refresh()
+            return html.Div("Analysis report regenerated successfully.", className="text-success mt-2")
+        else:
+            return html.Div(
+                f"Error: {result.stderr[:500]}", className="text-danger mt-2",
+            )
+    except subprocess.TimeoutExpired:
+        return html.Div("Timed out after 5 minutes.", className="text-danger mt-2")
+    except Exception as e:
+        return html.Div(f"Error: {e}", className="text-danger mt-2")
 
 
 # Radar chart update on run selection change

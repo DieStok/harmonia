@@ -1,9 +1,14 @@
-"""Experiment Overview tab — entry point showing all runs."""
+"""Experiment Overview tab — entry point showing all runs with selection-driven architecture."""
+
+import re
 
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import dcc, html
 
+from dashboard.components.diagnostic_panel import create_diagnostic_panel
+from dashboard.components.multi_filter import create_multi_filter
+from dashboard.components.options_panel import create_options_panel
 from dashboard.components.run_table import create_run_table
 
 
@@ -66,7 +71,34 @@ def create_status_pie(runs_df) -> go.Figure:
     return fig
 
 
-def render_overview(data_loader) -> html.Div:
+def _apply_filters(runs_df, filters: list[dict]):
+    """Apply multi-filter conditions (AND logic) to the DataFrame."""
+    df = runs_df.copy()
+    for f in filters:
+        col = f.get("column", "")
+        op = f.get("operator", "contains")
+        val = f.get("value", "")
+        if not col or not val or col not in df.columns:
+            continue
+        col_str = df[col].astype(str)
+        try:
+            if op == "contains":
+                mask = col_str.str.contains(val, case=False, na=False, regex=True)
+                df = df[mask]
+            elif op == "not_contains":
+                mask = col_str.str.contains(val, case=False, na=False, regex=True)
+                df = df[~mask]
+            elif op == "equals":
+                df = df[col_str.str.lower() == val.lower()]
+            elif op == "not_equals":
+                df = df[col_str.str.lower() != val.lower()]
+        except re.error:
+            # Invalid regex — skip this filter silently
+            pass
+    return df
+
+
+def render_overview(data_loader, selected_run_ids: list[str] | None = None) -> html.Div:
     """Render the Experiment Overview tab."""
     runs_df = data_loader.get_all_runs()
 
@@ -108,11 +140,75 @@ def render_overview(data_loader) -> html.Div:
     # Build row data for AG Grid
     row_data = runs_df.to_dict("records")
 
+    # Filterable columns for multi-filter widget
+    filter_columns = [
+        "run_id", "experiment_name", "model", "context", "provider", "status",
+    ]
+
+    # Options panel content
+    options_content = [
+        # Date range toggle
+        html.Label("Date Range:", className="fw-bold mb-1"),
+        dbc.RadioItems(
+            id="date-range-toggle",
+            options=[
+                {"label": "Last 5 days", "value": "last5d"},
+                {"label": "All runs", "value": "all"},
+            ],
+            value="last5d",
+            inline=True,
+            className="mb-3",
+        ),
+        html.Hr(),
+        # Multi-filter
+        html.Label("Filters:", className="fw-bold mb-1"),
+        create_multi_filter("overview-filter", filter_columns),
+        html.Hr(),
+        # Selection controls
+        html.Label("Selection:", className="fw-bold mb-1"),
+        html.Div([
+            dbc.Button(
+                "Select All Visible",
+                id="select-all-visible",
+                color="secondary",
+                outline=True,
+                size="sm",
+                className="me-2",
+            ),
+            dbc.Button(
+                "Clear Selection",
+                id="clear-selection",
+                color="secondary",
+                outline=True,
+                size="sm",
+            ),
+        ], className="mb-2"),
+    ]
+
+    # Diagnostic panel
+    timing_info = data_loader.get_timing_info()
+    diag = create_diagnostic_panel(
+        "overview-diagnostic",
+        source_files=[str(data_loader.results_dir)],
+        timing=timing_info.get("timing"),
+        cache_info=timing_info.get("cache"),
+    )
+
     return html.Div(
         [
-            dbc.Button(
-                "Refresh Data", id="refresh-overview", color="primary", size="sm", className="mb-3"
-            ),
+            # Top bar: refresh + selection info
+            dbc.Row([
+                dbc.Col(
+                    dbc.Button(
+                        "Refresh Data", id="refresh-overview", color="primary", size="sm",
+                    ),
+                    width="auto",
+                ),
+                dbc.Col(
+                    html.Div(id="selection-info-banner"),
+                    width=True,
+                ),
+            ], className="mb-3 align-items-center"),
             # Summary cards
             dbc.Row(
                 [
@@ -122,28 +218,24 @@ def render_overview(data_loader) -> html.Div:
                     _summary_card("Total Cost", f"${total_cost:.2f}"),
                     _summary_card("Total Tokens", f"{total_tokens:,}"),
                 ],
-                className="mb-4",
+                className="mb-3",
             ),
-            # Main content
-            dbc.Row(
-                [
-                    dbc.Col(
-                        [
-                            html.H5("Experiment Runs"),
-                            create_run_table(row_data),
-                        ],
-                        width=9,
+            # Options panel
+            create_options_panel("overview-options", "Options & Filters", options_content),
+            # Full-width table
+            html.H5("Experiment Runs"),
+            create_run_table(row_data),
+            # Status pie (below table, less prominent)
+            dbc.Row([
+                dbc.Col(
+                    dcc.Graph(
+                        id="status-pie",
+                        figure=create_status_pie(runs_df),
                     ),
-                    dbc.Col(
-                        [
-                            dcc.Graph(
-                                id="status-pie",
-                                figure=create_status_pie(runs_df),
-                            ),
-                        ],
-                        width=3,
-                    ),
-                ]
-            ),
+                    width=4,
+                ),
+            ], className="mt-3"),
+            # Diagnostic panel
+            diag,
         ]
     )

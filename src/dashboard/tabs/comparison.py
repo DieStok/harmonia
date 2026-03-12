@@ -227,7 +227,10 @@ def _token_comparison_bar(
 
 
 def render_comparison(
-    data_loader, run_id_a: str | None = None, run_id_b: str | None = None
+    data_loader,
+    run_id_a: str | None = None,
+    run_id_b: str | None = None,
+    selected_run_ids: list[str] | None = None,
 ) -> html.Div:
     """Render the Side-by-Side Comparison tab."""
     runs_df = data_loader.get_all_runs()

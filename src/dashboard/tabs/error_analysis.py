@@ -110,10 +110,15 @@ def _error_type_pie(error_df) -> go.Figure:
     return fig
 
 
-def render_error_analysis(data_loader) -> html.Div:
+def render_error_analysis(data_loader, selected_run_ids: list[str] | None = None) -> html.Div:
     """Render the Error Analysis tab."""
     error_df = data_loader.get_error_breakdown()
     column_errors_df = data_loader.get_column_errors()
+    if selected_run_ids:
+        if not error_df.empty and "run_id" in error_df.columns:
+            error_df = error_df[error_df["run_id"].isin(selected_run_ids)].reset_index(drop=True)
+        if not column_errors_df.empty and "run_id" in column_errors_df.columns:
+            column_errors_df = column_errors_df[column_errors_df["run_id"].isin(selected_run_ids)].reset_index(drop=True)
 
     if (error_df is None or len(error_df) == 0) and (
         column_errors_df is None or len(column_errors_df) == 0

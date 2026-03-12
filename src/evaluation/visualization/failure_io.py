@@ -96,7 +96,7 @@ def build_all_runs_table(
         if not has_output and problems:
             failure_reason = _primary_failure_reason(problems)
         elif not has_output:
-            failure_reason = "Unknown"
+            failure_reason = "No output (undiagnosed)"
 
         rows.append({
             "run_id": run_id,

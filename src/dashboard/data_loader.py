@@ -8,6 +8,9 @@ import json
 import logging
 import re
 import threading
+import time
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -69,6 +72,9 @@ class DashboardDataLoader:
         self._run_index: dict[str, Path] = {}  # run_id -> canonical results dir
         self._metrics_cache: dict[str, dict] = {}
         self._trace_cache: dict[str, dict] = {}
+        # Timing instrumentation
+        self._timing: dict[str, float] = {}
+        self._loaded_files: list[str] = []
 
         self._init_phoenix()
         self._build_run_index()
@@ -124,6 +130,35 @@ class DashboardDataLoader:
                             best = d
                             break
                     self._run_index[rid] = best
+
+    @contextmanager
+    def _timed(self, method_name: str):
+        """Context manager to record method execution time."""
+        start = time.monotonic()
+        try:
+            yield
+        finally:
+            elapsed_ms = (time.monotonic() - start) * 1000
+            self._timing[method_name] = elapsed_ms
+
+    def _track_file(self, path: str | Path):
+        """Record a file that was loaded."""
+        self._loaded_files.append(str(path))
+
+    def get_timing_info(self) -> dict:
+        """Return timing + cache hit/miss stats."""
+        return {
+            "timing": dict(self._timing),
+            "cache": {
+                "metrics_cached": len(self._metrics_cache),
+                "trace_cached": len(self._trace_cache),
+                "runs_indexed": len(self._run_index),
+            },
+        }
+
+    def get_loaded_files(self) -> list[str]:
+        """Return list of files that were read during loading."""
+        return list(self._loaded_files)
 
     def _parse_dir_metadata(self, run_id: str, d: Path) -> dict:
         """Extract metadata from a results directory without loading large files."""
@@ -197,11 +232,16 @@ class DashboardDataLoader:
 
         return meta
 
-    def get_all_runs(self) -> pd.DataFrame:
+    def get_all_runs(self, since_days: int | None = None) -> pd.DataFrame:
         """
         Dual-source run discovery.
         Returns DataFrame with run metadata.
+        If since_days is set, filters to runs with start_time within the last N days.
         """
+        with self._timed("get_all_runs"):
+            return self._get_all_runs_inner(since_days)
+
+    def _get_all_runs_inner(self, since_days: int | None = None) -> pd.DataFrame:
         rows = []
 
         # Source 1: File-based discovery
@@ -284,7 +324,17 @@ class DashboardDataLoader:
                 ]
             )
 
-        return pd.DataFrame(rows)
+        df = pd.DataFrame(rows)
+
+        # Date filtering
+        if since_days is not None and "start_time" in df.columns:
+            cutoff = datetime.now(timezone.utc) - timedelta(days=since_days)
+            cutoff_str = cutoff.isoformat()
+            # Keep rows with start_time >= cutoff, or with empty start_time (don't lose them)
+            mask = (df["start_time"] >= cutoff_str) | (df["start_time"] == "")
+            df = df[mask].reset_index(drop=True)
+
+        return df
 
     def get_run_spans(self, run_id: str) -> Optional[pd.DataFrame]:
         """Get all spans for a specific run from Phoenix. Returns None if Phoenix unavailable."""
@@ -482,6 +532,8 @@ class DashboardDataLoader:
             self._run_index.clear()
             self._metrics_cache.clear()
             self._trace_cache.clear()
+            self._timing.clear()
+            self._loaded_files.clear()
             if hasattr(self, "_analysis_report_cache"):
                 del self._analysis_report_cache
         self._init_phoenix()
@@ -540,6 +592,9 @@ class DashboardDataLoader:
 
         analysis_report = self.get_analysis_report()
 
+        if analysis_report is None:
+            logger.warning("No analysis report found — failure reasons will be 'Unknown'")
+
         if analysis_report is not None:
             # Build the all-runs table from analysis report
             all_runs = build_all_runs_table(analysis_report)
@@ -565,10 +620,10 @@ class DashboardDataLoader:
         if "context" not in runs_df.columns:
             runs_df["context"] = runs_df["experiment_name"].apply(infer_context)
 
-        # Runs without metrics and without a known failure reason → "Unknown failure"
+        # Runs without metrics and without a known failure reason → "No output (undiagnosed)"
         mask_no_metrics = ~runs_df["has_metrics"]
         mask_no_reason = runs_df["failure_reason"].isna()
-        runs_df.loc[mask_no_metrics & mask_no_reason, "failure_reason"] = "Unknown failure"
+        runs_df.loc[mask_no_metrics & mask_no_reason, "failure_reason"] = "No output (undiagnosed)"
 
         return runs_df
 

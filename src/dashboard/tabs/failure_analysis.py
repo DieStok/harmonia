@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import dcc, html
 
+from dashboard.components.diagnostic_panel import create_diagnostic_panel
+
 
 def _success_failure_heatmap(runs_df: pd.DataFrame) -> go.Figure:
     """Model x context grid showing success/failure with hover details."""
@@ -159,9 +161,11 @@ def _failure_sunburst(runs_df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def render_failure_analysis(data_loader) -> html.Div:
+def render_failure_analysis(data_loader, selected_run_ids: list[str] | None = None) -> html.Div:
     """Render the Failure Analysis tab."""
     runs_df = data_loader.get_all_runs_with_failures()
+    if selected_run_ids and not runs_df.empty:
+        runs_df = runs_df[runs_df["run_id"].isin(selected_run_ids)].reset_index(drop=True)
 
     if runs_df.empty:
         return html.Div(
@@ -301,5 +305,29 @@ def render_failure_analysis(data_loader) -> html.Div:
             )
             if failure_explanations
             else html.Div(),
+            # Regenerate analysis button
+            html.Div(
+                [
+                    html.Hr(),
+                    dbc.Button(
+                        "Regenerate Analysis Report",
+                        id="regenerate-btn",
+                        color="warning",
+                        size="sm",
+                        className="me-2",
+                    ),
+                    html.Span(id="regenerate-status", className="text-muted"),
+                    html.Div(id="regenerate-output"),
+                ],
+                className="mt-3",
+            ),
+            # Diagnostic panel
+            create_diagnostic_panel(
+                "failure-analysis-diagnostic",
+                cli_command=(
+                    ".venv/bin/python code_development_tools_agents/monitoring_and_evaluation/"
+                    "read_and_analyze_logs_and_traces_cli.py --json"
+                ),
+            ),
         ]
     )

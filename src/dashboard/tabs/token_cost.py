@@ -235,9 +235,12 @@ def _cost_over_time(token_df) -> go.Figure:
     return fig
 
 
-def render_token_cost(data_loader) -> html.Div:
+def render_token_cost(data_loader, selected_run_ids: list[str] | None = None) -> html.Div:
     """Render the Token & Cost Analysis tab."""
     token_df = data_loader.get_token_summary()
+
+    if selected_run_ids and token_df is not None and len(token_df) > 0 and "run_id" in token_df.columns:
+        token_df = token_df[token_df["run_id"].isin(selected_run_ids)].reset_index(drop=True)
 
     if token_df is None or len(token_df) == 0:
         return html.Div(
