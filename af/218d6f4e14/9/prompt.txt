@@ -532,3 +532,334 @@ For most features: tests + linting + following patterns is sufficient.
 <summary>Background command "Run existing tests" completed (exit code 0)</summary>
 </task-notification>
 Read the output file to retrieve the result: REDACTED.output
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user invoked the `/compound-engineering:ce:work` skill requesting implementation of two plans for the Harmonia project, to be implemented in order on branch `fix/unified-result-dir-naming`:
+   
+   **Plan 2: Post-Experiment Watcher/Orchestrator** — Create two shell scripts:
+   - `run_post_experiment_analysis.sh`: An sbatch watcher script that chains log analysis CLI (--json) → calculate_metrics.py for each run → make_standard_evaluation_plots.py --analysis-report. Takes --experiment-name and optional --output-dir. Uses --dependency=afterany.
+   - `launch_experiment.sh`: Convenience wrapper that submits experiment batch jobs, captures JOB_IDs, and auto-submits the watcher with --dependency=afterany:$JOB_ID.
+   
+   **Plan 3: Expand Dashboard with All Visualizations** — Add to the existing Dash dashboard:
+   - New "Failure Analysis" tab with success/failure heatmap, failure distribution bar, failure sunburst
+   - New "Error Analysis" tab with error breakdown stacked bars, error type pie, per-column error table
+   - Enhance Metrics tab with boxplots (groupable by model_family/is_local/cost_tier)
+   - Add confusion matrices to Trace Explorer tab
+   - Add cross-model comparison heatmaps to Comparison tab
+   - Update app.py tab ordering and callbacks
+   
+   Implementation notes specified: commit each plan separately, run ruff pre-commit hook, use plotly backend, check tests still pass, update codebase description.
+
+2. Key Technical Concepts:
+   - SLURM job management (`sbatch`, `--dependency=afterany`, array jobs, `squeue`)
+   - Plotly Dash web dashboard architecture (tabs, callbacks, dcc.Store for cross-tab state)
+   - Dual-source data loading (file-based results/ scanning + Phoenix HTTP API)
+   - Analysis report JSON from `read_and_analyze_logs_and_traces_cli.py --json`
+   - Failure mode taxonomy (16-class, from `types_of_log_and_trace_problems.yaml`)
+   - Metrics pipeline: `calculate_metrics.py` → `metrics.json` + `row_values.csv`
+   - Standard evaluation plots: `make_standard_evaluation_plots.py` with `--analysis-report` flag
+   - Run ID system (8-char hex linking logs, results, traces)
+   - Pre-commit hooks: ruff (lint+format), shellcheck, yamllint
+   - `DashboardDataLoader` class with thread-safe caching and lazy loading
+   - `failure_io.py`: `load_analysis_report()`, `build_all_runs_table()` for merging failed/successful runs
+
+3. Files and Code Sections:
+
+   **Files Created:**
+   
+   - `run_post_experiment_analysis.sh` (new, 218 lines)
+     - Watcher sbatch script that runs after experiment jobs complete
+     - Parses `--experiment-name`, `--output-dir`, `--backend`, `--num-runs`, `--verbose`
+     - Step 1: Runs log analysis CLI with `--json` → `analysis_report.json`
+     - Step 2: Finds results dirs matching experiment name, calculates metrics for runs missing `metrics.json` using `.experiment_id` → config path strategy
+     - Step 3: Runs `make_standard_evaluation_plots.py` with `--analysis-report` and `--metrics-glob`
+     - Step 4: Writes `analysis_complete.json` summary status file
+     - SBATCH directives: `--time=00:30:00`, `--mem=8G`, `--account=compgen`
+
+   - `launch_experiment.sh` (new, ~210 lines)
+     - Convenience wrapper that submits job scripts and auto-submits watcher
+     - Accepts job scripts or directories as positional args
+     - `--experiment-name` for analysis grouping (defaults to parsing from job script's RUN_RESULTS_DIR line)
+     - `--no-watcher` to skip post-analysis, `--watcher-args` for extra watcher options
+     - Builds dependency string from all submitted job IDs: `afterany:id1:id2:id3`
+     - Key pattern for experiment name extraction: `grep -oP 'results/\$\{TIMESTAMP\}_\K[^_$]+(?:_[^_$]+)*(?=_\$\{SLURM)' "$FIRST_SCRIPT"`
+
+   - `src/dashboard/tabs/failure_analysis.py` (new)
+     - `_success_failure_heatmap(runs_df)`: Model × context grid with OK/FAIL annotations and hover details
+     - `_failure_distribution_bar(runs_df)`: Horizontal bar chart of failure reason counts
+     - `_failure_sunburst(runs_df)`: Hierarchical sunburst (failure_reason → model → context)
+     - `render_failure_analysis(data_loader)`: Main render function with summary cards (total/success/failed/rate)
+
+   - `src/dashboard/tabs/error_analysis.py` (new)
+     - `_error_breakdown_stacked(error_df)`: Stacked bar chart of hallucinations/omissions/genuine errors per run
+     - `_error_type_pie(error_df)`: Pie chart with donut hole showing aggregate error type distribution
+     - `render_error_analysis(data_loader)`: Main render with AG Grid per-column error table
+
+   **Files Modified:**
+   
+   - `src/dashboard/data_loader.py`
+     - Added imports: `infer_context` from `evaluation.visualization.enrich`, `build_all_runs_table` and `load_analysis_report` from `evaluation.visualization.failure_io`
+     - Added `get_analysis_report()`: Searches `results/analysis_*/analysis_report.json` (most recent by mtime) and `results/analysis_report.json`, caches result
+     - Added `get_all_runs_with_failures()`: Enriches `get_all_runs()` with failure reasons from analysis reports, adds `has_output`, `failure_reason`, `context` columns, defaults to "Unknown failure" for runs without metrics and without known reason
+     - Added `get_error_breakdown()`: Returns DataFrame with per-run error counts (hallucinations, omissions, genuine, whitespace, case)
+     - Added `get_column_errors()`: Returns DataFrame with per-column per-run error counts
+     - Updated `refresh()` to clear `_analysis_report_cache`
+
+   - `src/dashboard/tabs/metrics.py`
+     - Added `_metrics_boxplot(metrics_df, group_by)`: Box plots of accuracy/F1/precision/recall grouped by a category, with `boxpoints="all"` and jitter
+     - Updated `render_metrics()` to include boxplot section with group-by dropdown (model_family/model/provider)
+
+   - `src/dashboard/tabs/trace_explorer.py`
+     - Added `_confusion_matrix_chart(confusion_data, column_name)`: Plotly heatmap confusion matrix with truncated labels
+     - Updated `render_trace_explorer()` to show confusion matrices (with column selector dropdown) when metrics are available, filtering out columns with >25 unique values
+
+   - `src/dashboard/tabs/comparison.py`
+     - Added `import csv`
+     - Added `_cross_model_heatmap(data_loader, run_id_a, run_id_b, column_name)`: Per-row comparison heatmap reading `row_values.csv` for both runs, showing correct/incorrect/empty per row with classification-to-numeric mapping
+     - Updated `render_comparison()` to include per-row comparison section with column selector dropdown when both runs have `row_values.csv`
+
+   - `src/dashboard/app.py`
+     - Added imports for `render_error_analysis` and `render_failure_analysis`
+     - Updated tab ordering: Overview, Metrics, Failure Analysis, Error Analysis, Trace Explorer, Tokens & Cost, Comparison
+     - Updated `render_tab()` callback to dispatch to new tabs
+     - Added callbacks: `update_boxplot()` (boxplot group selector), `update_confusion_matrix()` (confusion matrix column selector), `update_cross_model_heatmap()` (cross-model column selector), `refresh_failure_analysis()`, `refresh_error_analysis()`, `click_heatmap_to_trace()` (click-through from success/failure heatmap to trace explorer)
+
+   - `documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md`
+     - Updated dashboard section: 5 tabs → 7 tabs with new tab descriptions
+     - Added post-experiment orchestration documentation
+     - Updated directory tree to include `launch_experiment.sh` and `run_post_experiment_analysis.sh`
+     - Updated tabs/ comment to list all 7 tab files
+
+   **Files Read (key references):**
+   - `documentation/plans/12_03_2026_1115_post_experiment_watcher_orchestrator.md` — Plan 2 spec
+   - `documentation/plans/12_03_2026_1115_expand_dashboard_all_visualizations.md` — Plan 3 spec
+   - `documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md` — Full codebase reference
+   - `sbatch_template.sh` — Template for CPU experiment jobs (pattern for watcher script)
+   - `calculate_metrics.py` — CLI for metrics calculation (to understand how to invoke in batch)
+   - `analysis/march11_experiment_plots/dash_app.py` — Prototype standalone dashboard (ported failure/error plots from here)
+   - `src/evaluation/visualization/failure_io.py` — `load_analysis_report()`, `build_all_runs_table()` functions
+   - Explore agents read: `sbatch_template_gpu.sh`, `read_and_analyze_logs_and_traces_cli.py`, `make_standard_evaluation_plots.py`, all dashboard tab files, `plots.py`, components
+
+4. Errors and Fixes:
+   - **Shellcheck SC2181 (style)**: `if [[ $? -eq 0 ]]` in `launch_experiment.sh` — Fixed by restructuring to `if OUTPUT=$(sbatch "$script" 2>&1); then`
+   - **Shellcheck SC2086 (info)**: Unquoted `$WATCHER_ARGS` — Fixed with `# shellcheck disable=SC2086` directive
+   - **Shellcheck SC1073/SC1072 (error)**: Invalid shellcheck directive `# shellcheck disable=SC2086 -- comment` — The `--` comment syntax is not valid for shellcheck directives. Fixed by removing the `-- comment` part: `# shellcheck disable=SC2086`
+   - **Ruff auto-fix**: Import ordering issues in `failure_analysis.py` and `error_analysis.py` (moved `import numpy as np` before `import pandas as pd`) — auto-fixed by ruff
+   - **Ruff format**: 13 dashboard files reformatted by `ruff format` — these were included in the commit as legitimate formatting improvements
+   - **Pre-commit ruff failure on commit**: After initial `git add`, ruff found one more issue in `data_loader.py` during the commit hook — re-staged the file and committed again successfully
+
+   **User feedback on design:**
+   - User asked: "Does this watcher script now run per job? so it does not make the total plots, only the per-experiment plots?" — Clarified that the watcher runs ONCE after ALL jobs complete and makes aggregate cross-experiment plots via the glob `results/*${EXPERIMENT_NAME}*/metrics.json`
+   - User asked: "this EXPERIMENT_NAME is not in the results folder, is this a new subfolder made when submitting via this route?" — Improved the default experiment name inference in `launch_experiment.sh` to parse it from the job script's `RUN_RESULTS_DIR` line using grep, with fallback to the job script filename. Added explanatory comments about substring glob matching.
+
+5. Problem Solving:
+   - All tasks from both plans completed and committed
+   - Tests verified: 83 passed, 4 pre-existing failures (unchanged) — no regressions introduced
+   - Three commits on `fix/unified-result-dir-naming`:
+     - `1de8c1e` — Plan 2: watcher and launcher scripts
+     - `cfd0a5c` — Plan 3: dashboard expansion (13 files, 2301 insertions, 639 deletions)
+     - `db6a2a5` — Codebase description update
+   - User's Phoenix question answered: dashboard queries Phoenix via HTTP API (`px.Client(endpoint=...)` → `get_spans_dataframe()`), not via .phoenix folder
+
+6. All User Messages:
+   - Initial request: Invoked `/compound-engineering:ce:work` with detailed instructions for Plan 2 and Plan 3 implementation
+   - "Does this watcher script now run per job? so it does not make the total plots, only the per-experiment plots?" — Asking about the watcher's scope
+   - "this EXPERIMENT_NAME is not in the results folder, is this a new subfolder made when submitting via this route?" — Asking about how EXPERIMENT_NAME relates to results directory naming
+   - "how does the dashboard get traces from phoenix. Does it load from the .phoenix folder?" — Asking about Phoenix data loading mechanism
+
+7. Pending Tasks:
+   - No explicit pending tasks. Both plans are fully implemented, committed, tested, and documented.
+   - The plan files themselves have not been updated with checkboxes marked (the `ce:work` skill mentions marking `[ ]` → `[x]` in plan files, but this was not explicitly requested by the user).
+
+8. Current Work:
+   All implementation work is complete. The last actions were:
+   - Committed the codebase description update (`db6a2a5`)
+   - Answered the user's question about how the dashboard gets traces from Phoenix (via HTTP API, not file-based)
+   - All 12 todo items marked completed
+
+9. Optional Next Step:
+   No immediate next step required — both plans are fully implemented and committed. The user may want to:
+   - Push the branch to remote
+   - Test the dashboard interactively
+   - Run an experiment using `launch_experiment.sh` to verify the end-to-end watcher pipeline
+   - But none of these were explicitly requested, so no action should be taken without user confirmation.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/cog/dstoker/.REDACTED.jsonl
+
+---
+
+All right, can you make sure that output plots are now generated for all runs that were done yesterday (they may already exist) in the format that the dash dashboard expects, so that I can then check that it works properly? /ce:brainstorm 
+
+First tell me:
+- in what format does the dashboard expect the plots
+- where are the plots now and which plots are there?
+- are there traces in the .phoenix SQLite database corresponding to yesterday's runs?
+- can we somehow run what the watcher script runs separately for the runs from yesterday? Not as a watcher jobs since the jobs have already ended
+- what else should I take into account?
+
+---
+
+Yes do that, and launch the dashboard after.
+
+---
+
+Implement it.
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Summary:
+1. Primary Request and Intent:
+   The user's requests in this conversation were:
+   
+   **Request 1**: "Make sure that output plots are now generated for all runs that were done yesterday" — ensure the dashboard has data to display for March 11 experiment runs. First wanted a brainstorm answering 5 specific questions about dashboard data format, current plot state, Phoenix traces, standalone watcher execution, and other considerations.
+   
+   **Request 2**: "Yes do that, and launch the dashboard after" — run the watcher script for yesterday's runs and start the dashboard.
+   
+   **Request 3**: "So where will the post_experiment_analysis output plots?" — clarification question about output location.
+   
+   **Request 4**: Proposed separating `results/` (per-run data) from `analysis/` (per-experiment aggregate analysis), putting analysis output in `analysis/` directory instead of `results/`. Asked for brainstorm: what changes needed, smart or unwise? Referenced `/ce:brainstorm`.
+   
+   **Request 5**: "Implement it." — implement the separation of results/ and analysis/ directories.
+
+2. Key Technical Concepts:
+   - Dashboard generates all plots dynamically from data files (trace.json, metrics.json, analysis_report.json) — does NOT consume pre-rendered PNGs
+   - Phoenix server running on port 6006 with 23 traces/737 spans from March 11, but `get_spans_dataframe()` hangs indefinitely requiring a timeout workaround
+   - Watcher script (`run_post_experiment_analysis.sh`) can be run standalone without sbatch
+   - `analysis_report.json` is the key missing piece for the Failure Analysis dashboard tab
+   - Directory separation: `results/` for per-run outputs (immutable), `analysis/` for derived aggregate artifacts (regeneratable)
+   - `DashboardDataLoader` constructor now accepts optional `analysis_base_dir` parameter
+   - Both `results/` and `analysis/` are already gitignored
+
+3. Files and Code Sections:
+
+   - **`run_post_experiment_analysis.sh`**
+     - Watcher script that chains log analysis → metrics calculation → plot generation
+     - Changed default output dir from `results/analysis_*` to `analysis/analysis_*`
+     - Two edits made:
+       ```
+       # Line 51: help text
+       echo "  --output-dir <dir>            Output directory (default: analysis/analysis_<experiment>_<timestamp>/)"
+       # Line 112: default output dir
+       OUTPUT_DIR="analysis/analysis_${EXPERIMENT_NAME}_${TIMESTAMP}"
+       ```
+
+   - **`src/dashboard/data_loader.py`** (CRITICAL - partially modified, needs more work)
+     - Constructor updated to accept `analysis_base_dir`:
+       ```python
+       def __init__(
+           self,
+           phoenix_endpoint: str,
+           results_base_dir: Path,
+           analysis_base_dir: Path | None = None,
+       ):
+           self.phoenix_endpoint = phoenix_endpoint
+           self.results_dir = Path(results_base_dir)
+           # analysis_dir defaults to analysis/ as sibling of results/
+           self.analysis_dir = (
+               Path(analysis_base_dir)
+               if analysis_base_dir
+               else self.results_dir.parent / "analysis"
+           )
+       ```
+     - Phoenix timeout fix added to `_init_phoenix()`:
+       ```python
+       def _init_phoenix(self):
+           if not _PHOENIX_AVAILABLE:
+               return
+           try:
+               self._phoenix_client = px.Client(endpoint=self.phoenix_endpoint)
+               import concurrent.futures
+               with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+                   future = executor.submit(self._phoenix_client.get_spans_dataframe, limit=1)
+                   future.result(timeout=10)
+               self._phoenix_available = True
+               logger.info("Phoenix connection established")
+           except Exception as e:
+               logger.warning(f"Phoenix not available: {e}")
+               self._phoenix_available = False
+               self._phoenix_client = None
+       ```
+     - **CRITICAL ISSUE**: The file currently ends at line 457. The following methods from Plan 3 are MISSING and need to be restored:
+       - `get_analysis_report()` — needs to search analysis/ dir first, then results/ for backwards compat
+       - `get_all_runs_with_failures()` — enriches runs with failure reasons
+       - `get_error_breakdown()` — per-run error counts
+       - `get_column_errors()` — per-column per-run error counts
+     - Missing imports that were added in Plan 3: `infer_context` from `evaluation.visualization.enrich`, `build_all_runs_table` and `load_analysis_report` from `evaluation.visualization.failure_io`
+     - `refresh()` method no longer clears `_analysis_report_cache`
+     - The file appears to have been reverted/reformatted by the linter, losing Plan 3 additions
+
+   - **`src/dashboard/app.py`** — needs `--analysis-dir` CLI argument and passing to DashboardDataLoader (not yet done)
+
+   - **`launch_experiment.sh`** — has manual analysis help text that may reference `results/analysis_*` (not yet updated)
+
+   - **`.gitignore`** — already has `analysis/` on line 30, no changes needed
+
+   - **`results/analysis_20260311_20260312_1226/`** — created by watcher run, contains:
+     - `analysis_report.json` (23 runs analyzed)
+     - `plots/` (16 static seaborn plots)
+     - `tables/` (5 CSV tables)
+     - `analysis_complete.json` (summary)
+
+4. Errors and fixes:
+   - **Dashboard module path error**: `python -m dashboard.app` failed with `No module named 'dashboard'`. Fixed by using `PYTHONPATH=src .venv/bin/python src/dashboard/app.py`.
+   - **Multiple dashboard processes**: Several zombie processes accumulated from failed starts. Fixed by killing all with `ps aux | grep "dashboard/app.py" | grep -v grep | awk '{print $2}' | xargs kill`.
+   - **Phoenix `get_spans_dataframe()` hanging indefinitely**: The Phoenix server responds to health checks but span queries hang. Fixed by wrapping in `concurrent.futures.ThreadPoolExecutor` with 10-second timeout in `_init_phoenix()`.
+   - **Linter reformatting data_loader.py**: When attempting to edit `get_analysis_report()`, got error "File has been modified since read, either by the user or by a linter." The linter appears to have reformatted the file AND the Plan 3 methods (get_analysis_report, get_all_runs_with_failures, get_error_breakdown, get_column_errors) along with their imports are now missing from the file.
+
+5. Problem Solving:
+   - Successfully ran watcher script standalone for yesterday's runs — produced analysis_report.json and plots
+   - Successfully launched dashboard on port 8050 after fixing Phoenix timeout issue
+   - Dashboard found 43 experiment runs from file-based discovery
+   - Began implementing analysis/ directory separation but discovered data_loader.py lost Plan 3 methods during linter reformatting
+   - The separation implementation is partially complete — watcher script updated, constructor updated, but get_analysis_report() and app.py changes still pending
+
+6. All user messages:
+   - "All right, can you make sure that output plots are now generated for all runs that were done yesterday (they may already exist) in the format that the dash dashboard expects, so that I can then check that it works properly? /ce:brainstorm First tell me: - in what format does the dashboard expect the plots - where are the plots now and which plots are there? - are there traces in the .phoenix SQLite database corresponding to yesterday's runs? - can we somehow run what the watcher script runs separately for the runs from yesterday? Not as a watcher jobs since the jobs have already ended - what else should I take into account?"
+   - "Yes do that, and launch the dashboard after."
+   - "So where will the post_experiment_analysis output plots?"
+   - "I would prefer if the results dir /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/results remains for per-run results (e.g. LLM x context x task) and the analysis dir has results for the whole experiment. /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/analysis this analysis dir. What changes would have to be made to the codebase to make this possible? Is this a smart choice or very unwise? /ce:brainstorm"
+   - "Implement it."
+
+7. Pending Tasks:
+   - **Restore missing Plan 3 methods in data_loader.py**: `get_analysis_report()`, `get_all_runs_with_failures()`, `get_error_breakdown()`, `get_column_errors()`, plus imports for `infer_context`, `build_all_runs_table`, `load_analysis_report`
+   - **Update `get_analysis_report()`** to search `self.analysis_dir` first (analysis/analysis_*/analysis_report.json), then results/ for backwards compatibility
+   - **Update `refresh()`** to clear `_analysis_report_cache`
+   - **Add `--analysis-dir` CLI argument to `app.py`** and pass it through to DashboardDataLoader
+   - **Update `launch_experiment.sh`** help text if it references analysis output location
+   - **Restart the dashboard** after changes are complete (it's currently running on port 8050 with PID 1081019 but without the failure analysis methods)
+
+8. Current Work:
+   I was implementing the separation of `results/` and `analysis/` directories per the user's request "Implement it." I had:
+   1. Updated `run_post_experiment_analysis.sh` default output dir (done)
+   2. Updated `DashboardDataLoader.__init__()` to accept `analysis_base_dir` (done, preserved after linter)
+   3. Was about to update `get_analysis_report()` to search the new `analysis/` dir first, but discovered the file lost all Plan 3 methods (get_analysis_report, get_all_runs_with_failures, get_error_breakdown, get_column_errors and their imports) during a linter reformat
+   
+   The last file read of data_loader.py (full file, 457 lines) confirmed the missing methods. The file ends at the `phoenix_available` property with no failure analysis or error analysis methods present.
+
+9. Optional Next Step:
+   Re-read data_loader.py to confirm current state, then restore all missing Plan 3 methods with the updated `get_analysis_report()` that searches `self.analysis_dir` first. The methods to restore are from the conversation summary's "Files Modified" section for data_loader.py. After restoring, update app.py with `--analysis-dir` argument and pass it to DashboardDataLoader. This directly continues the user's "Implement it." request for the analysis/ directory separation.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /home/cog/dstoker/.REDACTED.jsonl
+Continue the conversation from where it left off without asking the user any further questions. Resume directly — do not acknowledge the summary, do not recap what was happening, do not preface with "I'll continue" or similar. Pick up the last task as if the break never happened.
+
+---
+
+[Request interrupted by user for tool use]
+
+---
+
+<task-notification>
+<task-id>b8g7uwjtc</task-id>
+<tool-use-id>toolu_01P7hsKuQsBmFymNJHrPzQzN</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "cd /hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia && grep -r "analysis/" --include="*.py" --include="*.sh" | grep -v ".venv" | grep -v ".pytest_cache" | head -40" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
