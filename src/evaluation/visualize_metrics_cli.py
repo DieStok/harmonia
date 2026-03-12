@@ -10,14 +10,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evaluation.visualization.aggregate import apply_cost_bins, apply_filters, heatmap_matrix
 from evaluation.visualization.enrich import load_labels_file
+from evaluation.visualization.failure_io import build_all_runs_table, load_analysis_report
 from evaluation.visualization.io import discover_metrics_files, load_metrics_bundle
 from evaluation.visualization.normalize import build_tables
 from evaluation.visualization.plots import (
     plot_boxplot,
     plot_confusion,
     plot_cross_model_comparison,
+    plot_error_breakdown,
+    plot_failure_distribution,
+    plot_failure_sunburst,
     plot_global_bars,
     plot_heatmap,
+    plot_success_failure_heatmap,
     save_figure,
 )
 from evaluation.visualization.report import write_manifest
@@ -446,6 +451,40 @@ def cmd_compare(args):
         )
         top.to_csv(tables_out / "top_errors_per_column.csv", index=False)
 
+    # Error breakdown (hallucinations / omissions / genuine errors)
+    try:
+        fig = plot_error_breakdown(runs, backend=backend)
+        save_figure(fig, plots_out / "error_breakdown", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+    except ValueError:
+        pass
+
+    # Failure mode plots if --analysis-report provided
+    analysis_report_path = getattr(args, "analysis_report", None)
+    if analysis_report_path:
+        try:
+            report = load_analysis_report(analysis_report_path)
+            all_runs = build_all_runs_table(report, tables)
+            if not all_runs.empty:
+                failure_out = plots_out / "failure_analysis"
+                try:
+                    fig = plot_success_failure_heatmap(all_runs, backend=backend)
+                    save_figure(fig, failure_out / "success_failure_heatmap", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+                except (ValueError, KeyError):
+                    pass
+                try:
+                    fig = plot_failure_distribution(all_runs, backend=backend)
+                    save_figure(fig, failure_out / "failure_distribution", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+                except ValueError:
+                    pass
+                try:
+                    fig = plot_failure_sunburst(all_runs, backend=backend)
+                    save_figure(fig, failure_out / "failure_sunburst", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+                except ValueError:
+                    pass
+                all_runs.to_csv(tables_out / "all_runs.csv", index=False)
+        except (FileNotFoundError, ValueError) as e:
+            print(f"Warning: failed to load analysis report: {e}")
+
     write_manifest(base_out, {
         "command": "compare",
         "backend": backend,
@@ -454,6 +493,87 @@ def cmd_compare(args):
         "skipped": skipped,
         "metrics": default_metrics,
         "heatmap_metric": heat_metric,
+        "analysis_report": analysis_report_path,
+    })
+
+
+def cmd_failure_analysis(args):
+    """Generate failure mode visualizations from a log analysis report."""
+    if not args.analysis_report:
+        raise SystemExit("--analysis-report is required for failure-analysis command")
+
+    report = load_analysis_report(args.analysis_report)
+
+    # Optionally load metrics tables to enrich with accuracy data
+    tables = None
+    has_metrics = bool(args.metrics_files or args.metrics_glob)
+    if has_metrics:
+        tables, paths, skipped = _load_tables(args)
+    else:
+        paths, skipped = [], []
+
+    all_runs = build_all_runs_table(report, tables)
+    if all_runs.empty:
+        raise SystemExit("No runs found in analysis report.")
+
+    backend = "plotly" if args.interactive else args.backend
+    out_dir = Path(args.out_dir)
+    plots_out = out_dir / "plots" / "failure_analysis"
+    tables_out = out_dir / "tables"
+    plots_out.mkdir(parents=True, exist_ok=True)
+    tables_out.mkdir(parents=True, exist_ok=True)
+
+    # Success/failure heatmap
+    try:
+        fig = plot_success_failure_heatmap(all_runs, backend=backend)
+        save_figure(fig, plots_out / "success_failure_heatmap", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+        print("  success_failure_heatmap")
+    except (ValueError, KeyError) as e:
+        print(f"  Skipping success/failure heatmap: {e}")
+
+    # Failure distribution
+    try:
+        fig = plot_failure_distribution(all_runs, backend=backend)
+        save_figure(fig, plots_out / "failure_distribution", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+        print("  failure_distribution")
+    except ValueError:
+        print("  No failed runs, skipping failure distribution")
+
+    # Failure sunburst
+    try:
+        fig = plot_failure_sunburst(all_runs, backend=backend)
+        save_figure(fig, plots_out / "failure_sunburst", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+        print("  failure_sunburst")
+    except ValueError:
+        print("  No failed runs, skipping failure sunburst")
+
+    # Error breakdown (if metrics available)
+    if tables is not None:
+        runs = tables.get("runs")
+        if runs is not None and not runs.empty:
+            try:
+                fig = plot_error_breakdown(runs, backend=backend)
+                save_figure(fig, plots_out / "error_breakdown", backend=backend, figure_format=args.figure_format, dpi=args.dpi)
+                print("  error_breakdown")
+            except ValueError:
+                print("  No error breakdown data available")
+
+    # Save data
+    all_runs.to_csv(tables_out / "all_runs.csv", index=False)
+    print(f"  all_runs.csv: {len(all_runs)} rows")
+
+    n_total = len(all_runs)
+    n_failed = (~all_runs["has_output"].astype(bool)).sum()
+    print(f"\nFailure analysis complete: {n_failed}/{n_total} runs failed")
+
+    write_manifest(out_dir, {
+        "command": "failure-analysis",
+        "analysis_report": args.analysis_report,
+        "total_runs": n_total,
+        "failed_runs": int(n_failed),
+        "backend": backend,
+        "input_count": len(paths),
+        "skipped": skipped,
     })
 
 
@@ -507,6 +627,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument("--metric", default="accuracy_excl_empty")
     p_cmp.add_argument("--columns-mode", choices=["union", "intersection"], default="union")
     p_cmp.add_argument("--error-columns-only", action="store_true", help="restrict per-column plots to columns with errors")
+    p_cmp.add_argument("--analysis-report", help="Path to log analysis JSON for failure mode plots")
     p_cmp.set_defaults(func=cmd_compare)
 
     p_cross = sub.add_parser("cross-compare", help="Cross-model comparison heatmap per column")
@@ -515,6 +636,12 @@ def build_parser() -> argparse.ArgumentParser:
     p_cross.add_argument("--errors-only", action="store_true", help="Show only rows with at least one error")
     p_cross.add_argument("--max-rows", type=int, help="Maximum rows to display")
     p_cross.set_defaults(func=cmd_cross_compare)
+
+    p_fail = sub.add_parser("failure-analysis", help="Generate failure mode plots from log analysis report")
+    _common_parser(p_fail)
+    p_fail.add_argument("--analysis-report", required=True,
+                        help="Path to log analysis JSON (from read_and_analyze_logs_and_traces_cli.py --json)")
+    p_fail.set_defaults(func=cmd_failure_analysis)
 
     return parser
 

@@ -30,14 +30,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from evaluation.visualization.aggregate import heatmap_matrix
+from evaluation.visualization.failure_io import build_all_runs_table, load_analysis_report
 from evaluation.visualization.io import discover_metrics_files, load_metrics_bundle
 from evaluation.visualization.normalize import build_tables
 from evaluation.visualization.plots import (
     plot_boxplot,
     plot_confusion,
     plot_cross_model_comparison,
+    plot_error_breakdown,
+    plot_failure_distribution,
+    plot_failure_sunburst,
     plot_global_bars,
     plot_heatmap,
+    plot_success_failure_heatmap,
     save_figure,
 )
 from evaluation.visualization.report import write_manifest
@@ -119,6 +124,9 @@ def main():
                         help="Regenerate missing row_values.csv files before plotting")
     parser.add_argument("--skip-confusion", action="store_true", help="Skip confusion matrix generation")
     parser.add_argument("--skip-cross-compare", action="store_true", help="Skip cross-model comparison plots")
+    parser.add_argument("--analysis-report", default=None,
+                        help="Path to analysis report JSON (from read_and_analyze_logs_and_traces_cli.py --json) "
+                             "to include failure mode plots")
     parser.add_argument("--verbose", action="store_true")
 
     args = parser.parse_args()
@@ -253,7 +261,64 @@ def main():
         else:
             logger.info("No row_values data available, skipping cross-model comparison plots")
 
-    # 9. Write manifest
+    # 9. Error breakdown (hallucinations / omissions / genuine errors)
+    logger.info("Generating error breakdown...")
+    try:
+        fig = plot_error_breakdown(runs, backend=args.backend)
+        save_figure(
+            fig, plots_out / "error_breakdown",
+            backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
+        )
+        logger.info("  error_breakdown")
+    except ValueError as e:
+        logger.info(f"  Skipping error breakdown: {e}")
+
+    # 10. Failure mode plots (requires --analysis-report)
+    if args.analysis_report:
+        logger.info("Loading analysis report for failure mode plots...")
+        try:
+            report = load_analysis_report(args.analysis_report)
+            all_runs = build_all_runs_table(report, tables)
+            if not all_runs.empty:
+                failure_out = plots_out / "failure_analysis"
+                all_runs.to_csv(tables_out / "all_runs.csv", index=False)
+                logger.info(f"  all_runs.csv: {len(all_runs)} rows")
+
+                try:
+                    fig = plot_success_failure_heatmap(all_runs, backend=args.backend)
+                    save_figure(
+                        fig, failure_out / "success_failure_heatmap",
+                        backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
+                    )
+                    logger.info("  success_failure_heatmap")
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"  Skipping success/failure heatmap: {e}")
+
+                try:
+                    fig = plot_failure_distribution(all_runs, backend=args.backend)
+                    save_figure(
+                        fig, failure_out / "failure_distribution",
+                        backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
+                    )
+                    logger.info("  failure_distribution")
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"  Skipping failure distribution: {e}")
+
+                try:
+                    fig = plot_failure_sunburst(all_runs, backend=args.backend)
+                    save_figure(
+                        fig, failure_out / "failure_sunburst",
+                        backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
+                    )
+                    logger.info("  failure_sunburst")
+                except (ValueError, KeyError) as e:
+                    logger.warning(f"  Skipping failure sunburst: {e}")
+            else:
+                logger.warning("  Analysis report produced empty all_runs table")
+        except (FileNotFoundError, ValueError) as e:
+            logger.error(f"  Failed to load analysis report: {e}")
+
+    # 11. Write manifest
     write_manifest(base_out, {
         "command": "make_standard_evaluation_plots",
         "input_count": len(paths),

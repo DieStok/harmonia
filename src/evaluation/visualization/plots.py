@@ -121,6 +121,318 @@ def plot_boxplot(df: pd.DataFrame, metric: str, group_col: str = "model_family_g
     return fig
 
 
+def plot_success_failure_heatmap(
+    all_runs_df: pd.DataFrame,
+    row_col: str = "model",
+    col_col: str = "context",
+    backend: str = "seaborn",
+    title: str | None = None,
+):
+    """Success/failure grid heatmap (model x context).
+
+    Expects ``all_runs_df`` to have columns: ``row_col``, ``col_col``,
+    ``has_output`` (bool), and optionally ``failure_reason``,
+    ``column_mapping_accuracy``, ``avg_value_accuracy_excl_empty``, ``run_id``.
+    """
+    _require_backend(backend)
+    df = all_runs_df.copy()
+
+    row_labels = sorted(df[row_col].unique())
+    col_labels = sorted(df[col_col].unique())
+
+    # Build pivot grid (1=success, 0=fail, NaN=missing)
+    grid = df.pivot_table(
+        index=row_col, columns=col_col, values="has_output",
+        aggfunc="first",
+    ).reindex(index=row_labels, columns=col_labels).astype(float)
+
+    if backend == "seaborn":
+        # Build annotation matrix
+        annot_rows = []
+        for model in row_labels:
+            row = []
+            for ctx in col_labels:
+                val = grid.loc[model, ctx] if model in grid.index and ctx in grid.columns else np.nan
+                if val == 1.0:
+                    row.append("OK")
+                elif val == 0.0:
+                    match = df[(df[row_col] == model) & (df[col_col] == ctx)]
+                    reason = match.iloc[0].get("failure_reason", "N/A") if not match.empty else "N/A"
+                    short = (reason[:20] + "...") if reason and len(str(reason)) > 20 else (str(reason) if reason else "N/A")
+                    row.append(short)
+                else:
+                    row.append("N/A")
+            annot_rows.append(row)
+
+        annot_df = pd.DataFrame(annot_rows, index=row_labels, columns=col_labels)
+
+        sns.set_theme(style="white", font_scale=1.1)
+        fig, ax = plt.subplots(figsize=(max(8, len(col_labels) * 2.5), max(4, len(row_labels) * 0.9)))
+        cmap = sns.color_palette(["#ffc7ce", "#c6efce"])
+        sns.heatmap(
+            grid.fillna(-1), annot=annot_df, fmt="", cmap=cmap,
+            linewidths=2, linecolor="white", cbar=False, ax=ax,
+            vmin=0, vmax=1,
+        )
+        n_ok = int((grid == 1.0).sum().sum())
+        n_total = int(grid.notna().sum().sum())
+        ax.set_title(title or f"Run Success/Failure Grid ({n_ok}/{n_total} successful)")
+        ax.set_ylabel(row_col.replace("_", " ").title())
+        ax.set_xlabel(col_col.replace("_", " ").title())
+        return fig
+
+    # Plotly
+    z_data, hover_data = [], []
+    for model in row_labels:
+        z_row, hover_row = [], []
+        for ctx in col_labels:
+            match = df[(df[row_col] == model) & (df[col_col] == ctx)]
+            if match.empty:
+                z_row.append(np.nan)
+                hover_row.append("No data")
+                continue
+            r = match.iloc[0]
+            if r.get("has_output"):
+                z_row.append(1)
+                cm = r.get("column_mapping_accuracy")
+                va = r.get("avg_value_accuracy_excl_empty")
+                cm_s = f"{cm:.3f}" if pd.notna(cm) else "N/A"
+                va_s = f"{va:.3f}" if pd.notna(va) else "N/A"
+                hover_row.append(
+                    f"<b>{model} / {ctx}</b><br>"
+                    f"Status: Success<br>"
+                    f"Run ID: {r.get('run_id', 'N/A')}<br>"
+                    f"Col Mapping: {cm_s}<br>"
+                    f"Value Acc: {va_s}"
+                )
+            else:
+                z_row.append(0)
+                hover_row.append(
+                    f"<b>{model} / {ctx}</b><br>"
+                    f"Status: FAILED<br>"
+                    f"Reason: {r.get('failure_reason', 'Unknown')}<br>"
+                    f"Run ID: {r.get('run_id', 'N/A')}"
+                )
+        z_data.append(z_row)
+        hover_data.append(hover_row)
+
+    fig = go.Figure(data=go.Heatmap(
+        z=z_data, x=col_labels, y=row_labels,
+        hovertext=hover_data, hoverinfo="text",
+        colorscale=[[0, "#ffc7ce"], [0.5, "#ffe8a1"], [1, "#c6efce"]],
+        zmin=0, zmax=1, showscale=False,
+        text=[["FAIL" if v == 0 else ("OK" if v == 1 else "") for v in row] for row in z_data],
+        texttemplate="%{text}", textfont={"size": 14},
+    ))
+    n_ok = sum(1 for row in z_data for v in row if v == 1)
+    n_total = sum(1 for row in z_data for v in row if not (isinstance(v, float) and np.isnan(v)))
+    fig.update_layout(
+        title=title or f"Run Success/Failure Grid ({n_ok}/{n_total} successful)",
+        xaxis_title=col_col.replace("_", " ").title(),
+        yaxis_title=row_col.replace("_", " ").title(),
+        height=max(350, len(row_labels) * 55 + 120),
+        template="plotly_white",
+        yaxis=dict(autorange="reversed"),
+    )
+    return fig
+
+
+def plot_failure_distribution(
+    all_runs_df: pd.DataFrame,
+    backend: str = "seaborn",
+    title: str | None = None,
+):
+    """Horizontal bar chart of failure reason counts."""
+    _require_backend(backend)
+
+    failed = all_runs_df[~all_runs_df["has_output"].astype(bool)].copy()
+    if failed.empty:
+        raise ValueError("No failed runs to plot")
+
+    counts = failed["failure_reason"].value_counts().reset_index()
+    counts.columns = ["failure_reason", "count"]
+
+    n_fail = len(failed)
+    n_total = len(all_runs_df)
+    default_title = f"Failure Mode Distribution ({n_fail}/{n_total} failed)"
+
+    if backend == "seaborn":
+        sns.set_theme(style="whitegrid", font_scale=1.1)
+        fig, ax = plt.subplots(figsize=(10, max(3, len(counts) * 0.8 + 1)))
+        colors = sns.color_palette("Reds_r", n_colors=len(counts))
+        sns.barplot(data=counts, x="count", y="failure_reason", palette=colors,
+                    ax=ax, edgecolor="white")
+        ax.set_xlabel("Number of Runs")
+        ax.set_ylabel("")
+        ax.set_title(title or default_title)
+        for container in ax.containers:
+            ax.bar_label(container, fmt="%d", fontsize=11, padding=5)
+        ax.set_xlim(0, counts["count"].max() + 1.5)
+        return fig
+
+    fig = px.bar(
+        counts, x="count", y="failure_reason", orientation="h",
+        title=title or default_title,
+        labels={"count": "Number of Runs", "failure_reason": ""},
+        color="failure_reason",
+        color_discrete_sequence=px.colors.qualitative.Set1,
+        text="count",
+    )
+    fig.update_traces(textposition="outside")
+    fig.update_layout(
+        showlegend=False,
+        height=max(300, len(counts) * 50 + 100),
+        template="plotly_white",
+        xaxis_range=[0, counts["count"].max() + 1.5],
+    )
+    return fig
+
+
+def plot_failure_sunburst(
+    all_runs_df: pd.DataFrame,
+    backend: str = "seaborn",
+    title: str | None = None,
+    row_col: str = "model",
+    col_col: str = "context",
+):
+    """Sunburst (plotly) or grouped bar (seaborn) of failure breakdown."""
+    _require_backend(backend)
+
+    failed = all_runs_df[~all_runs_df["has_output"].astype(bool)].copy()
+    if failed.empty:
+        raise ValueError("No failed runs to plot")
+
+    n_fail = len(failed)
+    default_title = f"Failure Mode Breakdown ({n_fail} failed runs)"
+
+    if backend == "seaborn":
+        counts = (
+            failed.groupby(["failure_reason", row_col])
+            .size()
+            .reset_index(name="count")
+        )
+        sns.set_theme(style="whitegrid")
+        fig, ax = plt.subplots(figsize=(10, max(4, len(counts) * 0.5 + 2)))
+        sns.barplot(data=counts, x="count", y="failure_reason", hue=row_col,
+                    ax=ax, edgecolor="white")
+        ax.set_title(title or default_title)
+        ax.set_xlabel("Number of Runs")
+        ax.set_ylabel("")
+        return fig
+
+    records = [
+        {"failure_reason": r["failure_reason"], row_col: r[row_col],
+         col_col: r[col_col], "count": 1}
+        for _, r in failed.iterrows()
+    ]
+    df = pd.DataFrame(records)
+    fig = px.sunburst(
+        df, path=["failure_reason", row_col, col_col], values="count",
+        title=title or default_title,
+        color="failure_reason",
+        color_discrete_sequence=px.colors.qualitative.Set2,
+    )
+    fig.update_layout(height=550, template="plotly_white")
+    return fig
+
+
+def plot_error_breakdown(
+    runs_df: pd.DataFrame,
+    backend: str = "seaborn",
+    title: str | None = None,
+    x_col: str = "display_label",
+):
+    """Stacked bar chart: hallucinations / omissions / genuine errors per run.
+
+    Accepts either total counts (``total_hallucinations``,
+    ``total_omissions``, ``total_genuine_errors``) or rates
+    (``avg_hallucination_rate``, ``avg_omission_rate``) as fallback.
+    """
+    _require_backend(backend)
+
+    total_types = ["total_hallucinations", "total_omissions", "total_genuine_errors"]
+    rate_types = ["avg_hallucination_rate", "avg_omission_rate"]
+
+    available_totals = [c for c in total_types if c in runs_df.columns]
+    available_rates = [c for c in rate_types if c in runs_df.columns]
+
+    use_rates = False
+    if available_totals:
+        available = available_totals
+    elif available_rates:
+        available = available_rates
+        use_rates = True
+    else:
+        raise ValueError("No error breakdown columns found in runs data")
+
+    data = runs_df.dropna(subset=available, how="all").copy()
+    if data.empty:
+        raise ValueError("No runs with error breakdown data")
+
+    long_rows = []
+    for _, row in data.iterrows():
+        label = row.get(x_col, row.get("run_id", "unknown"))
+        for etype in available:
+            val = row.get(etype)
+            if pd.notna(val):
+                nice_name = (
+                    etype.replace("total_", "")
+                    .replace("avg_", "")
+                    .replace("_rate", "")
+                    .replace("_", " ")
+                    .title()
+                )
+                value = float(val) if use_rates else int(val)
+                long_rows.append({"run": label, "error_type": nice_name, "count": value})
+
+    if not long_rows:
+        raise ValueError("No error breakdown data to plot")
+
+    edf = pd.DataFrame(long_rows)
+    if use_rates:
+        default_title = "Error Rates (Hallucination / Omission)"
+    else:
+        default_title = "Error Breakdown (Hallucinations / Omissions / Genuine Errors)"
+
+    color_map = {
+        "Hallucinations": "#e74c3c",
+        "Hallucination": "#e74c3c",
+        "Omissions": "#f39c12",
+        "Omission": "#f39c12",
+        "Genuine Errors": "#8e44ad",
+        "Genuine": "#8e44ad",
+    }
+    canonical_order = ["Hallucinations", "Hallucination", "Omissions", "Omission",
+                       "Genuine Errors", "Genuine"]
+
+    if backend == "seaborn":
+        sns.set_theme(style="whitegrid")
+        pivot = edf.pivot_table(index="run", columns="error_type", values="count", fill_value=0)
+        ordered_cols = [c for c in canonical_order if c in pivot.columns]
+        pivot = pivot[ordered_cols]
+
+        fig, ax = plt.subplots(figsize=(max(8, len(pivot) * 1.5 + 2), 6))
+        pivot.plot.bar(stacked=True, ax=ax, color=[color_map.get(c, "#999") for c in ordered_cols],
+                       edgecolor="white")
+        ax.set_title(title or default_title)
+        ax.set_ylabel("Rate" if use_rates else "Count")
+        ax.set_xlabel("")
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=35, ha="right")
+        ax.legend(title="Error Type")
+        return fig
+
+    fig = px.bar(
+        edf, x="run", y="count", color="error_type", barmode="stack",
+        title=title or default_title,
+        labels={"count": "Rate" if use_rates else "Count", "run": ""},
+        color_discrete_map=color_map,
+        text="count",
+    )
+    fig.update_traces(textposition="inside")
+    fig.update_layout(height=450, template="plotly_white", xaxis_tickangle=-20)
+    return fig
+
+
 def _collapse_to_top_labels(df: pd.DataFrame, top_n: int = 20) -> pd.DataFrame:
     expected_top = df.groupby("expected_value")["count"].sum().nlargest(top_n).index
     predicted_top = df.groupby("predicted_value")["count"].sum().nlargest(top_n).index
