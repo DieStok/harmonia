@@ -27,19 +27,33 @@ from evaluation.visualization.io import (
 
 logger = logging.getLogger(__name__)
 
-try:
-    from openinference.semconv.trace import SpanAttributes
+# Lazy-load Phoenix and OpenInference — these hang on HPC submit nodes
+# if imported at module level (Phoenix does network init on import).
+_OPENINFERENCE_AVAILABLE = False
+_PHOENIX_AVAILABLE = False
+_phoenix_module = None
+_SpanAttributes = None
 
-    _OPENINFERENCE_AVAILABLE = True
-except ImportError:
-    _OPENINFERENCE_AVAILABLE = False
 
-try:
-    import phoenix as px
+def _lazy_load_phoenix():
+    """Import Phoenix and OpenInference on first use, not at module load."""
+    global _PHOENIX_AVAILABLE, _OPENINFERENCE_AVAILABLE, _phoenix_module, _SpanAttributes
+    if _phoenix_module is not None or _PHOENIX_AVAILABLE:
+        return
+    try:
+        import phoenix as px
 
-    _PHOENIX_AVAILABLE = True
-except ImportError:
-    _PHOENIX_AVAILABLE = False
+        _phoenix_module = px
+        _PHOENIX_AVAILABLE = True
+    except ImportError:
+        _PHOENIX_AVAILABLE = False
+    try:
+        from openinference.semconv.trace import SpanAttributes
+
+        _SpanAttributes = SpanAttributes
+        _OPENINFERENCE_AVAILABLE = True
+    except ImportError:
+        _OPENINFERENCE_AVAILABLE = False
 
 # Regex to distinguish SLURM job ID (all digits) from timestamp (YYYYMMDD_HHMMSS)
 _SLURM_JOB_ID_RE = re.compile(r"^\d+$")
@@ -81,10 +95,14 @@ class DashboardDataLoader:
 
     def _init_phoenix(self):
         """Try to connect to Phoenix. Set _phoenix_available flag."""
+        if not self.phoenix_endpoint:
+            logger.info("Phoenix endpoint not configured — skipping")
+            return
+        _lazy_load_phoenix()
         if not _PHOENIX_AVAILABLE:
             return
         try:
-            self._phoenix_client = px.Client(endpoint=self.phoenix_endpoint)
+            self._phoenix_client = _phoenix_module.Client(endpoint=self.phoenix_endpoint)
             # Use a thread with timeout to avoid hanging on unresponsive Phoenix
             import concurrent.futures
 
@@ -282,7 +300,7 @@ class DashboardDataLoader:
                                 "experiment_name": span.get(
                                     "attributes.harmonia.experiment_name", ""
                                 ),
-                                "model": span.get(f"attributes.{SpanAttributes.LLM_MODEL_NAME}", "")
+                                "model": span.get(f"attributes.{_SpanAttributes.LLM_MODEL_NAME}", "")
                                 if _OPENINFERENCE_AVAILABLE
                                 else span.get("attributes.llm.model_name", ""),
                                 "provider": span.get("attributes.harmonia.llm_provider", ""),

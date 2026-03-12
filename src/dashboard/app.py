@@ -143,7 +143,7 @@ def update_phoenix_banner(_active_tab):
     Input("selected-runs-store", "data"),
     Input("date-range-store", "data"),
     Input("tabs", "active_tab"),
-    prevent_initial_call=False,
+    prevent_initial_call="initial_duplicate",
 )
 def sync_url_state(url_search, selected_runs, date_range, active_tab):
     """Bidirectional URL ↔ store sync. Uses ctx.triggered_id to break cycles."""
