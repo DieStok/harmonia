@@ -1,0 +1,44 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "af218d6f4e14",
+  "session_id": "290d2df1-1196-448a-93ea-9c6ab3cf50a0",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-12T22:30:51.081427095Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cache/.nfs0000000d246b8d2200010d21",
+    "cache/.nfs0000000d26176c5b00010d20",
+    "cache/.nfs0000000d270c0a8000010d1f",
+    "cache/cache.db",
+    "cache/cache.db-shm",
+    "cache/cache.db-wal",
+    "docs/codebase_descriptions/how_this_codebase_works_12_03_2026.md",
+    "docs/plans/2026-03-12-feat-dashboard-logging-and-trace-explorer-fixes-plan.md",
+    "src/dashboard/activity_logger.py",
+    "src/dashboard/app.py",
+    "src/dashboard/components/turn_accordion.py",
+    "src/dashboard/data_loader.py",
+    "src/dashboard/tabs/activity_log.py",
+    "workspace/data",
+    "workspace/results"
+  ],
+  "agent": "Claude Code",
+  "token_usage": {
+    "input_tokens": 8986,
+    "cache_creation_tokens": 127298,
+    "cache_read_tokens": 9746574,
+    "output_tokens": 33860,
+    "api_call_count": 93
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-12T22:30:48.134351372Z",
+    "agent_lines": 619,
+    "human_added": 3,
+    "human_modified": 11,
+    "human_removed": 0,
+    "total_committed": 633,
+    "agent_percentage": 97.78830963665087
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/290d2df1-1196-448a-93ea-9c6ab3cf50a0.jsonl"
+}
