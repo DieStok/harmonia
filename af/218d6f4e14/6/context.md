@@ -1,0 +1,136 @@
+# Session Context
+
+## User Prompts
+
+### Prompt 1
+
+Read the how this codebase works file, and check the automated experiment configs. Then, rerun the 2 cheapest frontier models with all 3 contexts (bdikit, codeact, code_only) and also run the local Qwen3.5 models (2 different sizes) with 3 different contexts. Wait until all these runs are done, then analyze their logs, make plots for them (both plotly and seaborn), and report the main findings, both from the logs, and which model(s) did the best harmonization with what contexts. Finally, start t...
+
+### Prompt 2
+
+Deepseek 3.2 is okay. are there any cheaper models in the model registry for openrouter that you can make the 3 configs for (and that have tool use capabilities)?
+
+### Prompt 3
+
+Do mistal-nemo and gemma-3-27b-it. 
+
+qwen3.5:4b (~3.4 GB) — small
+qwen3.5:27b (~17 GB) — medium-large (fits in 1 GPU) these 2 sizes
+
+local models parallel via sbatch
+
+focus only on new runs
+
+### Prompt 4
+
+Sounds right. Use generate_jobs.py. Rerun DeepSeek v3.2. Report back when all is done.
+
+### Prompt 5
+
+For the codeact_context, how does this interact with the archytas context management that usually occurs? Does it skip that as well?
+
+### Prompt 6
+
+and the jobs?
+
+### Prompt 7
+
+How is it going?
+
+### Prompt 8
+
+<task-notification>
+<task-id>b868r5eqk</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Poll until all 18 experiment jobs complete" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 9
+
+authenticate
+
+### Prompt 10
+
+Tell me how these tasks are going
+
+### Prompt 11
+
+<task-notification>
+<task-id>bwomwlq3y</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Calculate metrics for codeact deepseek-v3.2 run" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 12
+
+<task-notification>
+<task-id>btrsox8vb</task-id>
+<tool-use-id>toolu_017k4PUoM9D9vXthY1eMxJXn</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Check available packages" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 13
+
+where is the dash server exactly? hpcs05?
+
+### Prompt 14
+
+<task-notification>
+<task-id>bbvh5xyqs</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Check DashboardDataLoader for March 11 runs" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 15
+
+<task-notification>
+<task-id>b8i7n7282</task-id>
+<tool-use-id>toolu_01NZjoHZPCNzYYFaZcu3Shgm</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Check DashboardDataLoader for March 11 runs" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 16
+
+<task-notification>
+<task-id>b5w90xqfo</task-id>
+<tool-use-id>toolu_012LmYhNNrU843EPmmh1TutE</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Run overview plot generation" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 17
+
+[Request interrupted by user]
+
+### Prompt 18
+
+<task-notification>
+<task-id>btcw53ada</task-id>
+<tool-use-id>REDACTED</tool-use-id>
+<output-file>REDACTED.output</output-file>
+<status>completed</status>
+<summary>Background command "Test Dash app --help" completed (exit code 0)</summary>
+</task-notification>
+Read the output file to retrieve the result: REDACTED.output
+
+### Prompt 19
+
+Could you pull these qwen models in ollama and rerun the jobs for them?
+
