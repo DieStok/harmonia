@@ -5,10 +5,10 @@ import plotly.graph_objects as go
 
 # Color map for span kinds
 SPAN_KIND_COLORS = {
-    "AGENT": "#2196F3",   # blue
-    "CHAIN": "#4CAF50",   # green
-    "LLM": "#FF9800",     # orange
-    "TOOL": "#9C27B0",    # purple
+    "AGENT": "#2196F3",  # blue
+    "CHAIN": "#4CAF50",  # green
+    "LLM": "#FF9800",  # orange
+    "TOOL": "#9C27B0",  # purple
 }
 
 
@@ -88,29 +88,36 @@ def create_span_waterfall(spans_df: pd.DataFrame) -> go.Figure:
         end = row[end_col]
         duration_ms = (end - start).total_seconds() * 1000
 
-        fig.add_trace(go.Bar(
-            y=[name],
-            x=[duration_ms],
-            base=[(start - df[start_col].min()).total_seconds() * 1000],
-            orientation="h",
-            marker_color=color,
-            name=kind,
-            showlegend=False,
-            hovertemplate=(
-                f"<b>{name}</b><br>"
-                f"Kind: {kind}<br>"
-                f"Duration: {duration_ms:.1f}ms<br>"
-                "<extra></extra>"
-            ),
-        ))
+        fig.add_trace(
+            go.Bar(
+                y=[name],
+                x=[duration_ms],
+                base=[(start - df[start_col].min()).total_seconds() * 1000],
+                orientation="h",
+                marker_color=color,
+                name=kind,
+                showlegend=False,
+                hovertemplate=(
+                    f"<b>{name}</b><br>"
+                    f"Kind: {kind}<br>"
+                    f"Duration: {duration_ms:.1f}ms<br>"
+                    "<extra></extra>"
+                ),
+            )
+        )
 
     # Add legend entries for span kinds
     for kind, color in SPAN_KIND_COLORS.items():
-        fig.add_trace(go.Bar(
-            y=[None], x=[None], orientation="h",
-            marker_color=color, name=kind,
-            showlegend=True,
-        ))
+        fig.add_trace(
+            go.Bar(
+                y=[None],
+                x=[None],
+                orientation="h",
+                marker_color=color,
+                name=kind,
+                showlegend=True,
+            )
+        )
 
     fig.update_layout(
         template="plotly_white",

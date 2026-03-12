@@ -31,13 +31,17 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
         badge_color = "danger"
 
     # Header with key stats
-    title = html.Span([
-        f"Turn {turn_num} ",
-        dbc.Badge(response_type, color=badge_color, className="me-2"),
-        dbc.Badge(f"{input_tokens + output_tokens} tokens", color="info", className="me-1"),
-        dbc.Badge(f"${cost:.4f}", color="warning", className="me-1") if cost > 0 else html.Span(),
-        dbc.Badge(f"{duration:.1f}s", color="secondary") if duration > 0 else html.Span(),
-    ])
+    title = html.Span(
+        [
+            f"Turn {turn_num} ",
+            dbc.Badge(response_type, color=badge_color, className="me-2"),
+            dbc.Badge(f"{input_tokens + output_tokens} tokens", color="info", className="me-1"),
+            dbc.Badge(f"${cost:.4f}", color="warning", className="me-1")
+            if cost > 0
+            else html.Span(),
+            dbc.Badge(f"{duration:.1f}s", color="secondary") if duration > 0 else html.Span(),
+        ]
+    )
 
     # Content
     children = []
@@ -46,10 +50,17 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
     user_msg = turn.get("user_message", "")
     if user_msg:
         children.append(html.H6("User Message", className="text-muted mt-2"))
-        children.append(html.Div(
-            dcc.Markdown(user_msg[:2000] + ("..." if len(user_msg) > 2000 else "")),
-            style={"backgroundColor": "#e3f2fd", "padding": "10px", "borderRadius": "4px", "marginBottom": "10px"},
-        ))
+        children.append(
+            html.Div(
+                dcc.Markdown(user_msg[:2000] + ("..." if len(user_msg) > 2000 else "")),
+                style={
+                    "backgroundColor": "#e3f2fd",
+                    "padding": "10px",
+                    "borderRadius": "4px",
+                    "marginBottom": "10px",
+                },
+            )
+        )
 
     # Agent response
     agent_resp = turn.get("agent_response", "")
@@ -58,38 +69,64 @@ def _build_turn_item(turn: dict, idx: int) -> dbc.AccordionItem:
         if response_type == "code_cell":
             children.append(_format_code_block(agent_resp[:3000]))
         else:
-            children.append(html.Div(
-                dcc.Markdown(agent_resp[:3000] + ("..." if len(agent_resp) > 3000 else "")),
-                style={"backgroundColor": "#f1f8e9", "padding": "10px", "borderRadius": "4px", "marginBottom": "10px"},
-            ))
+            children.append(
+                html.Div(
+                    dcc.Markdown(agent_resp[:3000] + ("..." if len(agent_resp) > 3000 else "")),
+                    style={
+                        "backgroundColor": "#f1f8e9",
+                        "padding": "10px",
+                        "borderRadius": "4px",
+                        "marginBottom": "10px",
+                    },
+                )
+            )
 
     # Code executions
     code_execs = turn.get("code_executions", [])
     if code_execs:
-        children.append(html.H6(f"Code Executions ({len(code_execs)})", className="text-muted mt-2"))
+        children.append(
+            html.H6(f"Code Executions ({len(code_execs)})", className="text-muted mt-2")
+        )
         for j, ce in enumerate(code_execs[:5]):  # Limit display
-            children.append(html.Strong(f"Execution {j+1} [{ce.get('status', '?')}]"))
+            children.append(html.Strong(f"Execution {j + 1} [{ce.get('status', '?')}]"))
             if ce.get("code"):
                 children.append(_format_code_block(ce["code"][:1000]))
             if ce.get("stdout"):
-                children.append(html.Pre(
-                    ce["stdout"][:500],
-                    style={"fontSize": "0.85em", "backgroundColor": "#fff3e0", "padding": "6px"},
-                ))
+                children.append(
+                    html.Pre(
+                        ce["stdout"][:500],
+                        style={
+                            "fontSize": "0.85em",
+                            "backgroundColor": "#fff3e0",
+                            "padding": "6px",
+                        },
+                    )
+                )
             if ce.get("stderr"):
-                children.append(html.Pre(
-                    ce["stderr"][:500],
-                    style={"fontSize": "0.85em", "backgroundColor": "#ffebee", "padding": "6px", "color": "#c62828"},
-                ))
+                children.append(
+                    html.Pre(
+                        ce["stderr"][:500],
+                        style={
+                            "fontSize": "0.85em",
+                            "backgroundColor": "#ffebee",
+                            "padding": "6px",
+                            "color": "#c62828",
+                        },
+                    )
+                )
 
     # Token details row
     children.append(html.Hr())
-    children.append(dbc.Row([
-        dbc.Col(html.Small(f"Input: {input_tokens:,} tokens"), width=3),
-        dbc.Col(html.Small(f"Output: {output_tokens:,} tokens"), width=3),
-        dbc.Col(html.Small(f"Cost: ${cost:.4f}"), width=3),
-        dbc.Col(html.Small(f"Duration: {duration:.1f}s"), width=3),
-    ]))
+    children.append(
+        dbc.Row(
+            [
+                dbc.Col(html.Small(f"Input: {input_tokens:,} tokens"), width=3),
+                dbc.Col(html.Small(f"Output: {output_tokens:,} tokens"), width=3),
+                dbc.Col(html.Small(f"Cost: ${cost:.4f}"), width=3),
+                dbc.Col(html.Small(f"Duration: {duration:.1f}s"), width=3),
+            ]
+        )
+    )
 
     return dbc.AccordionItem(children, title=title, item_id=f"turn-{turn_num}")
 
@@ -126,15 +163,39 @@ def create_turn_accordion(
 
     # Pagination controls (only if needed)
     if total_pages > 1:
-        components.append(html.Div([
-            dbc.ButtonGroup([
-                dbc.Button("Previous", id=f"{accordion_id}-prev", color="secondary",
-                           size="sm", disabled=(page == 0)),
-                html.Span(f" Page {page + 1} / {total_pages} ", className="mx-2 align-self-center"),
-                dbc.Button("Next", id=f"{accordion_id}-next", color="secondary",
-                           size="sm", disabled=(page >= total_pages - 1)),
-            ], className="mt-2"),
-            html.Small(f"Showing turns {start + 1}-{end} of {len(turns)}", className="text-muted ms-2"),
-        ], className="d-flex align-items-center mt-2"))
+        components.append(
+            html.Div(
+                [
+                    dbc.ButtonGroup(
+                        [
+                            dbc.Button(
+                                "Previous",
+                                id=f"{accordion_id}-prev",
+                                color="secondary",
+                                size="sm",
+                                disabled=(page == 0),
+                            ),
+                            html.Span(
+                                f" Page {page + 1} / {total_pages} ",
+                                className="mx-2 align-self-center",
+                            ),
+                            dbc.Button(
+                                "Next",
+                                id=f"{accordion_id}-next",
+                                color="secondary",
+                                size="sm",
+                                disabled=(page >= total_pages - 1),
+                            ),
+                        ],
+                        className="mt-2",
+                    ),
+                    html.Small(
+                        f"Showing turns {start + 1}-{end} of {len(turns)}",
+                        className="text-muted ms-2",
+                    ),
+                ],
+                className="d-flex align-items-center mt-2",
+            )
+        )
 
     return html.Div(components)
