@@ -43,6 +43,74 @@ def save_figure(fig, out_path: Path, backend: str, figure_format: str = "png", d
                 fig.write_html(str(out_path.with_suffix(".html")), include_plotlyjs="cdn")
 
 
+_METRIC_PRETTY = {
+    "column_mapping_accuracy": "Column Mapping Accuracy",
+    "avg_value_accuracy_excl_empty": "Value Accuracy (excl empty)",
+    "avg_value_accuracy_incl_empty": "Value Accuracy (incl empty)",
+    "avg_value_f1_excl_empty": "Value F1 (excl empty)",
+    "avg_value_f1_incl_empty": "Value F1 (incl empty)",
+}
+
+
+def _pretty_metric_name(metric: str) -> str:
+    return _METRIC_PRETTY.get(metric, metric.replace("_", " ").title())
+
+
+def plot_grouped_model_bars(
+    df: pd.DataFrame,
+    metric: str,
+    model_col: str = "model_label",
+    hue_col: str = "context",
+    backend: str = "seaborn",
+    title: str | None = None,
+    contexts_order: list[str] | None = None,
+):
+    """Grouped bar chart: x-axis = model, bars grouped by context (hue).
+
+    Produces a compact view for comparing models across contexts, with
+    value annotations on each bar and human-readable metric names.
+    """
+    _require_backend(backend)
+    data = df.dropna(subset=[metric]).copy()
+    if model_col not in data.columns or hue_col not in data.columns:
+        raise ValueError(f"Required columns missing: need '{model_col}' and '{hue_col}'")
+
+    nice_name = _pretty_metric_name(metric)
+
+    if contexts_order is None:
+        contexts_order = sorted(data[hue_col].unique())
+
+    if backend == "seaborn":
+        sns.set_theme(style="whitegrid", font_scale=1.1)
+        fig, ax = plt.subplots(figsize=(12, 6))
+        sns.barplot(
+            data=data, x=model_col, y=metric, hue=hue_col,
+            hue_order=contexts_order, ax=ax, edgecolor="white",
+        )
+        ax.set_ylim(0, 1.05)
+        ax.set_ylabel(nice_name)
+        ax.set_xlabel("Model")
+        ax.set_title(title or f"{nice_name} by Model and Context")
+        ax.legend(title="Context")
+        for container in ax.containers:
+            ax.bar_label(container, fmt="%.2f", fontsize=9, padding=3)
+        return fig
+
+    # Plotly
+    fig = px.bar(
+        data, x=model_col, y=metric, color=hue_col,
+        barmode="group",
+        category_orders={hue_col: contexts_order},
+        title=title or f"{nice_name} by Model and Context",
+        labels={metric: nice_name, model_col: "Model", hue_col: "Context"},
+        text=metric,
+        hover_data=[c for c in ["run_id", "experiment_name"] if c in data.columns],
+    )
+    fig.update_traces(texttemplate="%{text:.2f}", textposition="outside")
+    fig.update_layout(yaxis_range=[0, 1.05], template="plotly_white")
+    return fig
+
+
 def plot_global_bars(df: pd.DataFrame, metric: str, x_col: str = "display_label", hue_col: str | None = "context", backend: str = "seaborn", title: str | None = None, palette: str = "tab10"):
     _require_backend(backend)
     data = df.dropna(subset=[metric]).copy()

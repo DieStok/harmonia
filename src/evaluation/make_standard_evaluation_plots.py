@@ -41,6 +41,7 @@ from evaluation.visualization.plots import (
     plot_failure_distribution,
     plot_failure_sunburst,
     plot_global_bars,
+    plot_grouped_model_bars,
     plot_heatmap,
     plot_success_failure_heatmap,
     save_figure,
@@ -188,6 +189,25 @@ def main():
                 backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
             )
             logger.info(f"  global_bar_{metric}")
+
+    # 4b. Grouped model bar charts
+    logger.info("Generating grouped model bar charts...")
+    for metric in default_metrics:
+        if metric in runs.columns:
+            try:
+                fig = plot_grouped_model_bars(
+                    runs, metric=metric,
+                    model_col="model_label",
+                    hue_col="context",
+                    backend=args.backend,
+                )
+                save_figure(
+                    fig, plots_out / f"grouped_bar_{metric}",
+                    backend=args.backend, figure_format=args.figure_format, dpi=args.dpi,
+                )
+                logger.info(f"  grouped_bar_{metric}")
+            except Exception as e:
+                logger.warning(f"  Skipping grouped bar for {metric}: {e}")
 
     # 5. Per-column performance heatmap
     logger.info("Generating performance heatmap...")
