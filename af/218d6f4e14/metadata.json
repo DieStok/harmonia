@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 27,
+  "checkpoints_count": 30,
   "files_touched": [
     ".claude/proposed_commit_message.md",
     ".gitignore",
@@ -28,6 +28,7 @@
     "docs/brainstorms/2026-03-12-trace-code-execution-classification-brainstorm.md",
     "docs/brainstorms/2026-03-12-unified-result-directory-naming-brainstorm.md",
     "docs/brainstorms/2026-03-12-unified-visualization-pipeline-brainstorm.md",
+    "docs/brainstorms/2026-03-13-readonly-workspace-fix-brainstorm.md",
     "docs/codebase_descriptions/how_this_codebase_works_02_03_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_03_03_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_05_02_2026.md",
@@ -115,6 +116,7 @@
     "docs/plans/2026-03-12-feat-dashboard-overhaul-plan.md",
     "docs/plans/2026-03-12-fix-unified-result-directory-naming-plan.md",
     "docs/plans/2026-03-13-feat-add-grouped-bar-charts-to-standard-evaluation-plots-plan.md",
+    "docs/plans/2026-03-13-fix-readonly-workspace-writable-output-plan.md",
     "docs/plans/25_02_2026_1527_update_bdikit_and_add_proper_LLM_selection_for_schema_and_value_matching_tools.md",
     "docs/plans/25_02_2026_1530_change_LLM_backend_to_liteLLM.md",
     "docs/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md",
@@ -297,6 +299,9 @@
     "src/automation/manual_runner.py",
     "src/automation/runner.py",
     "src/automation/tracing.py",
+    "src/bdikit_context/prompts/system/main.j2",
+    "src/code_context/prompts/v1/system.txt",
+    "src/codeact_context/prompts/v1/system.txt",
     "src/context_management/kernel_state_budget.py",
     "src/dashboard/activity_logger.py",
     "src/dashboard/app.py",
@@ -436,13 +441,20 @@
       "context": "/af/218d6f4e14/16/context.md",
       "content_hash": "/af/218d6f4e14/16/content_hash.txt",
       "prompt": "/af/218d6f4e14/16/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/17/metadata.json",
+      "transcript": "/af/218d6f4e14/17/full.jsonl",
+      "context": "/af/218d6f4e14/17/context.md",
+      "content_hash": "/af/218d6f4e14/17/content_hash.txt",
+      "prompt": "/af/218d6f4e14/17/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 19041,
-    "cache_creation_tokens": 2525529,
-    "cache_read_tokens": 79492522,
-    "output_tokens": 324366,
-    "api_call_count": 875
+    "input_tokens": 19922,
+    "cache_creation_tokens": 2733358,
+    "cache_read_tokens": 86071255,
+    "output_tokens": 350944,
+    "api_call_count": 958
   }
 }
