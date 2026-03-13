@@ -12,3 +12,11 @@ Important:
 - Use print() to see output — bare expressions do not display
 - If you get an error, read the traceback and fix your code
 - Working directory: use os.getcwd() and os.listdir() to explore
+
+## Workspace Layout
+
+Your working directory is /workspace. It has this structure:
+- data/     — Input data files (READ-ONLY, do not write here)
+- results/  — Save all output files here (e.g., results/dou_harmonized.csv)
+
+Always save output files to the results/ directory. Writing to data/ will fail.

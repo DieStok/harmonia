@@ -977,6 +977,15 @@ APPTAINER_CMD="apptainer exec"
 WORKSPACE_HOST_DIR="${SCRIPT_DIR}/workspace_mount"
 mkdir -p "$WORKSPACE_HOST_DIR"
 
+# Clean workspace from previous runs (data/ and results/ are overlaid mounts,
+# so only scratch files from prior runs exist here)
+find "$WORKSPACE_HOST_DIR" -mindepth 1 -maxdepth 1 \
+    ! -name data ! -name results -exec rm -rf {} + 2>/dev/null || true
+
+# Bind workspace directory writable — LLM's cwd must be writable for
+# intermediate files. Data overlay (:ro) still protects input files.
+APPTAINER_CMD="$APPTAINER_CMD --bind ${WORKSPACE_HOST_DIR}:/workspace"
+
 # =============================================================================
 # Data mounting: per-file isolation from config YAML
 # =============================================================================
@@ -1254,6 +1263,15 @@ if [ "$MONITOR_MODE" = true ]; then
         kill "$BEAKER_PID" 2>/dev/null || true
         wait "$BEAKER_PID" 2>/dev/null || true
         stop_ollama_server
+        # Report any files the LLM wrote outside results/ (diagnostic)
+        STRAY_FILES=$(find "$WORKSPACE_HOST_DIR" -mindepth 1 -maxdepth 2 \
+            ! -path "*/data/*" ! -path "*/results/*" -type f 2>/dev/null)
+        if [ -n "$STRAY_FILES" ]; then
+            echo ""
+            echo "⚠ LLM wrote files outside results/:"
+            echo "   ${STRAY_FILES//$'\n'/$'\n'   }"
+            echo "   These files are in workspace_mount/ and will be cleaned on next run."
+        fi
         echo "Done."
     }
     trap cleanup EXIT INT TERM
@@ -1305,6 +1323,15 @@ else
     # Set up cleanup trap for Ollama
     cleanup_normal() {
         stop_ollama_server
+        # Report any files the LLM wrote outside results/ (diagnostic)
+        STRAY_FILES=$(find "$WORKSPACE_HOST_DIR" -mindepth 1 -maxdepth 2 \
+            ! -path "*/data/*" ! -path "*/results/*" -type f 2>/dev/null)
+        if [ -n "$STRAY_FILES" ]; then
+            echo ""
+            echo "⚠ LLM wrote files outside results/:"
+            echo "   ${STRAY_FILES//$'\n'/$'\n'   }"
+            echo "   These files are in workspace_mount/ and will be cleaned on next run."
+        fi
     }
     trap cleanup_normal EXIT INT TERM
 

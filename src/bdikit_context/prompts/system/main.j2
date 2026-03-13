@@ -70,3 +70,11 @@ After running `materialize_mapping`, you should ALWAYS show its output to the us
 - Always show tables with matches after each function runs.
 - After running `match_schema`, print a list of all column matches.
 - After finding or correcting value mappings, print a list of all value matches.
+
+## Workspace Layout
+
+Your working directory is /workspace. It has this structure:
+- data/     — Input data files (READ-ONLY, do not write here)
+- results/  — Save all output files here (e.g., results/dou_harmonized.csv)
+
+Always save output files to the results/ directory. Writing to data/ will fail.
