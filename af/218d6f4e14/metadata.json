@@ -3,15 +3,20 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 23,
+  "checkpoints_count": 27,
   "files_touched": [
     ".claude/proposed_commit_message.md",
     ".gitignore",
     ".pre-commit-config.yaml",
     "analysis/march11_experiment_plots/dash_app.py",
+    "analysis/march11_experiment_plots/generate_march11_experiment_overview.py",
+    "analysis/march11_experiment_plots/march11_all_runs.csv",
+    "cache/.nfs0000000d223ca8a700010fd0",
     "cache/.nfs0000000d246b8d2200010d21",
+    "cache/.nfs0000000d25888ca400010fd1",
     "cache/.nfs0000000d26176c5b00010d20",
     "cache/.nfs0000000d270c0a8000010d1f",
+    "cache/.nfs0000000d271a237600010fd2",
     "cache/cache.db",
     "cache/cache.db-shm",
     "cache/cache.db-wal",
@@ -33,6 +38,7 @@
     "docs/codebase_descriptions/how_this_codebase_works_12_02_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_12_03_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_13_02_2026.md",
+    "docs/codebase_descriptions/how_this_codebase_works_13_03_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_15_01_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_25_02_2026.md",
     "docs/codebase_descriptions/how_this_codebase_works_26_02_2026.md",
@@ -108,6 +114,7 @@
     "docs/plans/2026-03-12-feat-dashboard-logging-and-trace-explorer-fixes-plan.md",
     "docs/plans/2026-03-12-feat-dashboard-overhaul-plan.md",
     "docs/plans/2026-03-12-fix-unified-result-directory-naming-plan.md",
+    "docs/plans/2026-03-13-feat-add-grouped-bar-charts-to-standard-evaluation-plots-plan.md",
     "docs/plans/25_02_2026_1527_update_bdikit_and_add_proper_LLM_selection_for_schema_and_value_matching_tools.md",
     "docs/plans/25_02_2026_1530_change_LLM_backend_to_liteLLM.md",
     "docs/plans/25_02_2026_2053_implement_true_codeact_context_bypassing_archytas.md",
@@ -422,13 +429,20 @@
       "context": "/af/218d6f4e14/15/context.md",
       "content_hash": "/af/218d6f4e14/15/content_hash.txt",
       "prompt": "/af/218d6f4e14/15/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/16/metadata.json",
+      "transcript": "/af/218d6f4e14/16/full.jsonl",
+      "context": "/af/218d6f4e14/16/context.md",
+      "content_hash": "/af/218d6f4e14/16/content_hash.txt",
+      "prompt": "/af/218d6f4e14/16/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 18814,
-    "cache_creation_tokens": 2294070,
-    "cache_read_tokens": 74546618,
-    "output_tokens": 305097,
-    "api_call_count": 811
+    "input_tokens": 19041,
+    "cache_creation_tokens": 2525529,
+    "cache_read_tokens": 79492522,
+    "output_tokens": 324366,
+    "api_call_count": 875
   }
 }
