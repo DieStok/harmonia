@@ -1,0 +1,5 @@
+There are some uncommited changes. What is each, and why is it here?
+
+---
+
+So gitignore these databases and commit the rest.

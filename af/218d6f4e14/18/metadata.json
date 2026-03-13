@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.4.4",
+  "checkpoint_id": "af218d6f4e14",
+  "session_id": "7c454629-52d5-4e15-8aa4-e966f619d19a",
+  "strategy": "manual-commit",
+  "created_at": "2026-03-13T13:06:54.33982854Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore"
+  ],
+  "agent": "Claude Code",
+  "transcript_identifier_at_start": "fb6e28af-6e0c-4e3c-938b-703e5c8baf8f",
+  "token_usage": {
+    "input_tokens": 17,
+    "cache_creation_tokens": 10288,
+    "cache_read_tokens": 291841,
+    "output_tokens": 1965,
+    "api_call_count": 13
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-03-13T13:06:53.892217467Z",
+    "agent_lines": 0,
+    "human_added": 22,
+    "human_modified": 3,
+    "human_removed": 0,
+    "total_committed": 22,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-hpc-compgen-projects-llm-GEO-project/7c454629-52d5-4e15-8aa4-e966f619d19a.jsonl"
+}
