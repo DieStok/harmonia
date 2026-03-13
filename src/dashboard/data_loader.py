@@ -94,34 +94,33 @@ class DashboardDataLoader:
         self._build_run_index()
 
     def _init_phoenix(self):
-        """Try to connect to Phoenix. Set _phoenix_available flag."""
+        """Try to connect to Phoenix in a background daemon thread.
+
+        Never blocks startup — both `import phoenix` and the connection
+        probe run in the daemon thread so the main thread is never stalled
+        by gRPC/NFS latency.
+        """
         if not self.phoenix_endpoint:
             logger.info("Phoenix endpoint not configured — skipping")
             return
-        _lazy_load_phoenix()
-        if not _PHOENIX_AVAILABLE:
-            return
-        try:
-            self._phoenix_client = _phoenix_module.Client(endpoint=self.phoenix_endpoint)
-            # Fire-and-forget thread to probe Phoenix — don't block startup
-            import concurrent.futures
 
-            executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-            future = executor.submit(self._phoenix_client.get_spans_dataframe, limit=1)
+        def _probe():
             try:
-                future.result(timeout=5)
+                _lazy_load_phoenix()
+                if not _PHOENIX_AVAILABLE:
+                    logger.warning("Phoenix package not installed — skipping")
+                    return
+                client = _phoenix_module.Client(endpoint=self.phoenix_endpoint)
+                client.get_spans_dataframe(limit=1)
+                self._phoenix_client = client
                 self._phoenix_available = True
-                logger.info("Phoenix connection established")
-            except (concurrent.futures.TimeoutError, Exception) as e:
+                logger.info("Phoenix connection established (background)")
+            except Exception as e:
                 logger.warning(f"Phoenix not available: {e}")
-                self._phoenix_available = False
-                self._phoenix_client = None
-            # Don't call executor.shutdown() — let the daemon thread die on its own
-            executor._threads.clear()
-        except Exception as e:
-            logger.warning(f"Phoenix init error: {e}")
-            self._phoenix_available = False
-            self._phoenix_client = None
+
+        t = threading.Thread(target=_probe, daemon=True)
+        t.start()
+        logger.info("Phoenix probe started in background")
 
     def _build_run_index(self):
         """

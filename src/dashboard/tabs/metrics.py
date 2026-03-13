@@ -16,7 +16,7 @@ def _accuracy_bar_chart(metrics_df) -> go.Figure:
 
     df = metrics_df.sort_values("avg_accuracy_excl_empty", ascending=False).head(30)
 
-    labels = [f"{r['run_id']}\n{r['model'][:20]}" for _, r in df.iterrows()]
+    labels = [f"{r['run_id']}\n{(r['model'] or '')[:20]}" for _, r in df.iterrows()]
 
     fig.add_trace(
         go.Bar(

@@ -31,3 +31,6 @@ analysis/
 
 # Phoenix tracing data (SQLite, managed by ensure_phoenix_server.py)
 .phoenix/
+
+# Dashboard cache (SQLite runtime artifacts)
+cache/
