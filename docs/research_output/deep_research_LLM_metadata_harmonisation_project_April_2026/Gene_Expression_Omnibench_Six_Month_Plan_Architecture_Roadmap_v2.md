@@ -6,49 +6,58 @@
 
 | Line | Section |
 |------|---------|
-| 55   | Executive Summary |
-| 75   | Conceptual Overview |
-| 88   | **DELIVERABLE 1: PRIORITIZED SIX-MONTH RESEARCH PLAN** |
-| 90   | 1.1 Competitive Landscape and Strategic Positioning |
-| 94   | 1.1.1 Schema Matching Systems with Performance Numbers |
-| 111  | 1.1.2 Search Pipeline Prior Systems |
-| 124  | 1.1.3 Omics-Specific LLM Evaluations and Competitors |
-| 142  | 1.1.4 White-Space Opportunities |
-| 150  | 1.2 Experiment Inventory with Priority Scoring |
-| 152  | 1.2.1 The Eleven-Variable Taxonomy |
-| 172  | 1.2.2 Priority Score Formula and Experiment Classification |
-| 176  | 1.2.3 P1 Experiments (8) — The Irreducible Core |
-| 204  | 1.2.4 P2 Experiments (16+) — Strengthen the Paper (incl. S6b AutoAgent) |
-| 223  | 1.2.5 P3 Experiments (8+) — Stretch Goals |
-| 234  | 1.2.6 P-Extra Experiments (3) — Future Work |
-| 238  | 1.2.7 Paper Section Mapping |
-| 254  | 1.3 Month-by-Month Timeline |
-| 256  | 1.3.1 The Four-Phase Successive Halving Methodology |
-| 270  | 1.3.2 Conditional Architecture Roadmap |
-| 283  | Month 1: Foundation + Harbor Apptainer Backend + Quick Wins |
-| 303  | Month 2: Local Model Screening and Architecture Comparison |
-| 321  | Month 3: Value Mapping, Multi-Table, Search Pipeline, S6b |
-| 331  | Month 4: Ablations, N-Table (Stretch), and Search Refinement |
-| 337  | Month 5: End-to-End and Comprehensive Analysis |
-| 345  | Month 6: Paper Writing and Reproducibility |
-| 351  | 1.4 Contingency Plans and Go/No-Go Decision Framework |
-| 382  | 1.5 Resource Requirements |
-| 398  | **DELIVERABLE 2: PROPOSED CODEBASE ARCHITECTURE** |
-| 400  | 2.1 Current Architecture Assessment |
-| 410  | 2.2 Proposed Architecture: geo-harmonizer v2 (directory tree) |
-| 487  | 2.3 Key Architectural Changes (incl. Harbor/Apptainer for coding agents) |
-| 529  | 2.4 Component Interfaces and Data Contracts |
-| 609  | 2.5 What Should Not Change |
-| 625  | 2.6 Inference Backend Deployment (vLLM, SGLang, GPU matrix) |
-| 665  | 2.7 Observability and Prompt Management Stack |
-| 680  | 2.8 Four-Layer Reproducibility Strategy |
-| 694  | 2.9 Search Pipeline HPC Infrastructure |
-| 720  | **DELIVERABLE 3: RESEARCH ROADMAP BEYOND SIX MONTHS** |
-| 722  | 3.1 Publication 2: Search Pipeline and End-to-End (Months 7-12) |
-| 750  | 3.2 Publication 3: Multi-Agent and N-Table (Months 12-18) |
-| 777  | 3.3 P-Extra: Aspirational Future Work |
-| 795  | Gap Analysis and Open Questions |
-| 819  | Further Reading |
+| 65   | Executive Summary |
+| 85   | Conceptual Overview |
+| 98   | **DELIVERABLE 1: PRIORITIZED SIX-MONTH RESEARCH PLAN** |
+| 100  | 1.1 Competitive Landscape and Strategic Positioning |
+| 104  | 1.1.1 Schema Matching Systems with Performance Numbers |
+| 121  | 1.1.2 Search Pipeline Prior Systems |
+| 134  | 1.1.3 Omics-Specific LLM Evaluations and Competitors |
+| 152  | 1.1.4 White-Space Opportunities |
+| 160  | 1.2 Experiment Inventory with Priority Scoring |
+| 162  | 1.2.1 The Eleven-Variable Taxonomy |
+| 182  | 1.2.2 Priority Score Formula and Experiment Classification |
+| 186  | 1.2.3 P1 Experiments (8) — The Irreducible Core |
+| 214  | 1.2.4 P2 Experiments (16+) — Strengthen the Paper (incl. S6b AutoAgent) |
+| 233  | 1.2.5 P3 Experiments (8+) — Stretch Goals |
+| 244  | 1.2.6 P-Extra Experiments (3) — Future Work |
+| 248  | 1.2.7 Paper Section Mapping |
+| 264  | 1.3 Month-by-Month Timeline |
+| 266  | 1.3.1 The Four-Phase Successive Halving Methodology |
+| 280  | 1.3.2 Conditional Architecture Roadmap |
+| 293  | Month 1: Foundation + Harbor Apptainer Backend + Quick Wins |
+| 313  | Month 2: Local Model Screening and Architecture Comparison |
+| 331  | Month 3: Value Mapping, Multi-Table, Search Pipeline, S6b |
+| 341  | Month 4: Ablations, N-Table (Stretch), and Search Refinement |
+| 347  | Month 5: End-to-End and Comprehensive Analysis |
+| 355  | Month 6: Paper Writing and Reproducibility |
+| 361  | 1.4 Contingency Plans and Go/No-Go Decision Framework |
+| 392  | 1.5 Resource Requirements |
+| 408  | **DELIVERABLE 2: PROPOSED CODEBASE ARCHITECTURE** |
+| 410  | 2.1 Current Architecture Assessment |
+| 420  | 2.2 Proposed Architecture: geo-harmonizer v2 (directory tree) |
+| 497  | 2.3 Key Architectural Changes (incl. Harbor/Apptainer for coding agents) |
+| 539  | 2.4 Component Interfaces and Data Contracts |
+| 619  | 2.5 What Should Not Change |
+| 635  | 2.6 Inference Backend Deployment (vLLM, SGLang, GPU matrix) |
+| 675  | 2.7 Observability and Prompt Management Stack |
+| 690  | 2.8 Four-Layer Reproducibility Strategy |
+| 704  | 2.9 Search Pipeline HPC Infrastructure |
+| 730  | **DELIVERABLE 3: RESEARCH ROADMAP BEYOND SIX MONTHS** |
+| 732  | 3.1 Publication 2: Search Pipeline and End-to-End (Months 7-12) |
+| 760  | 3.2 Publication 3: Multi-Agent and N-Table (Months 12-18) |
+| 787  | 3.3 P-Extra: Aspirational Future Work |
+| 805  | Gap Analysis and Open Questions |
+| 829  | Further Reading |
+
+## Source Report References
+
+| Label | File |
+|-------|------|
+| Report A | `Part_A_DeepResearch_Claude_LLM-based metadata harmonization for omics_state of the art and benchmark design.md` |
+| Report B | `Part_B_DeepResearch_Claude_Designing a RAG search pipeline over GEO metadata for omics data harmonization.md` |
+| Report C | `merged_Part_C_DeepResearch_Claude_optimal_agent_architecture_for_omics_metadata_harmonization.md` |
+| Report D | `Part_D_with_QwenGemma_DeepResearch_Claude_Optimizing LLMs for Omics Metadata Harmonization A Comprehensive Methodological Guide.md` |
 
 ---
 
