@@ -161,7 +161,7 @@ async def main() -> int:
         )
 
         # Run experiment
-        print(f"\nRunning experiment...")
+        print("\nRunning experiment...")
         if args.interactive:
             print("  (Interactive mode - press Enter after each turn)")
 
@@ -173,10 +173,10 @@ async def main() -> int:
         if not prompt_dst.exists() and prompt_src.exists():
             shutil.copy2(prompt_src, prompt_dst)
 
-        print(f"\n✓ Experiment complete!")
+        print("\n✓ Experiment complete!")
         print(f"  Output directory: {output_dir}")
-        print(f"  - trace.json: Full execution trace")
-        print(f"  - conversation.md: Simplified conversation log")
+        print("  - trace.json: Full execution trace")
+        print("  - conversation.md: Simplified conversation log")
 
         llm_output, mapping_files = _resolve_required_artifacts(output_dir, config)
         missing_artifacts = []
@@ -191,10 +191,9 @@ async def main() -> int:
 
         # Calculate metrics if evaluation config is present
         if config.evaluation and config.evaluation.gold_standard:
-            print(f"\nCalculating metrics...")
+            print("\nCalculating metrics...")
             try:
                 from evaluation.metrics import calculate_all_metrics
-                from evaluation.schemas import MetricsResult
 
                 # Load gold standard files
                 gold_column_mapping = _load_json(config.evaluation.gold_column_mapping)
@@ -232,10 +231,10 @@ async def main() -> int:
                     metrics_path = output_dir / "metrics.json"
                     metrics_path.write_text(result.model_dump_json(indent=2))
                     print(f"  ✓ Metrics saved to: {metrics_path}")
-                    print(f"  - metrics.json: Harmonization metrics")
+                    print("  - metrics.json: Harmonization metrics")
                 else:
                     print("  ⚠ LLM output CSV not found")
-                    print(f"  Skipping metrics calculation.")
+                    print("  Skipping metrics calculation.")
             except Exception as e:
                 print(f"  ⚠ Error calculating metrics: {e}")
                 # Don't fail the whole experiment just because metrics failed

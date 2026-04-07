@@ -12,10 +12,9 @@ Tests all layers of the prompt system:
 7. Full end-to-end prompt flow simulation
 """
 
-import sys
-import os
-import tempfile
 import asyncio
+import sys
+import tempfile
 from pathlib import Path
 
 # Ensure harmonia src is importable
@@ -135,8 +134,8 @@ def test_4_singleton_behavior():
     print("TEST 4: Singleton loader override behavior")
     print("=" * 60)
 
-    from bdikit_context.prompts import get_prompt_loader
     import bdikit_context.prompts as prompts_module
+    from bdikit_context.prompts import get_prompt_loader
 
     # Reset singleton
     prompts_module._loader = None
@@ -211,7 +210,6 @@ def test_6_beaker_context_init_chain():
     print("TEST 6: BeakerContext __init_subclass__ mechanism")
     print("=" * 60)
 
-    from beaker_kernel.lib.context import BeakerContext
     import inspect
 
     # Check __init_subclass__ behavior
@@ -291,6 +289,7 @@ def test_8_custom_prelude_in_beaker_agent():
     print("=" * 60)
 
     import inspect
+
     from beaker_kernel.lib.agent import BeakerAgent
 
     # Check if BeakerAgent.__init__ passes custom_prelude
@@ -317,7 +316,7 @@ def test_8_custom_prelude_in_beaker_agent():
     # Check if BeakerContext passes kwargs to agent_cls
     from beaker_kernel.lib.context import BeakerContext
     ctx_src = inspect.getsource(BeakerContext.__init__)
-    print(f"\nBeakerContext.__init__ agent creation:")
+    print("\nBeakerContext.__init__ agent creation:")
     # Find the line where agent is created
     for line in ctx_src.split("\n"):
         if "agent_cls(" in line:
@@ -337,6 +336,7 @@ def test_9_env_var_prompt_override():
 
     # Check if Beaker config has any prompt-related env vars
     import dataclasses
+
     from beaker_kernel.lib.config import config
 
     print("Beaker config fields related to prompts:")
@@ -361,7 +361,7 @@ def test_10_tool_description_dual_source():
 
     from bdikit_context.prompts import PromptLoader
 
-    loader = PromptLoader()
+    PromptLoader()  # verify import works
 
     print("Tool descriptions come from TWO sources:")
     print()
@@ -377,6 +377,7 @@ def test_10_tool_description_dual_source():
 
     # Verify: check if any code calls get_tool_description
     import inspect
+
     from bdikit_context import context as ctx_mod
     ctx_src = inspect.getsource(ctx_mod)
     uses_tool_desc = "get_tool_description" in ctx_src

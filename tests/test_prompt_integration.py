@@ -5,10 +5,9 @@ Integration tests for prompt configuration mechanisms.
 Tests actual injection points and proposed implementation patterns.
 """
 
-import sys
 import os
+import sys
 import tempfile
-import asyncio
 from pathlib import Path
 
 sys.path.insert(0, "/opt/harmonia_src")
@@ -55,9 +54,10 @@ def test_12_yaml_config_prompts_section():
     print("TEST 12: Proposed YAML prompts config parsing")
     print("=" * 60)
 
+    from dataclasses import dataclass
+    from typing import Optional
+
     import yaml
-    from dataclasses import dataclass, field
-    from typing import Optional, Dict
 
     # Proposed PromptsConfig dataclass
     @dataclass
@@ -102,7 +102,7 @@ messages:
     prompts_data = data.get("prompts", {})
 
     config = PromptsConfig(**prompts_data)
-    print(f"Parsed prompts config:")
+    print("Parsed prompts config:")
     print(f"  system_prompt: {config.system_prompt}")
     print(f"  react_agent_prompt: {config.react_agent_prompt}")
     print(f"  tool_prompts_dir: {config.tool_prompts_dir}")
@@ -247,6 +247,7 @@ def test_15_post_init_prompt_override():
     print("=" * 60)
 
     import inspect
+
     from archytas.react import ReActAgent
 
     # Check if update_prompt exists and what it does
@@ -285,7 +286,6 @@ def test_16_code_context_prompt_override():
     print("TEST 16: CodeContext prompt configurability")
     print("=" * 60)
 
-    from code_context.context import CodeContext
 
     print("Current CodeContext.auto_context():")
     print("  - Returns hardcoded f-string")

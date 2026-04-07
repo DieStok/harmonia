@@ -8,7 +8,7 @@ Uses Jinja2 for template rendering with support for:
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from jinja2 import Environment, FileSystemLoader, TemplateNotFound, select_autoescape
 

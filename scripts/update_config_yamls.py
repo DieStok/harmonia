@@ -3,8 +3,9 @@
 Script to update all 10 automated config YAMLs with evaluation block and mapping message.
 """
 
-import yaml
 from pathlib import Path
+
+import yaml
 
 # Base directory
 CONFIG_DIR = Path("/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/experiments/experiment_1_harmonia_dou2020_gdc/configs/automated")
@@ -104,13 +105,13 @@ def update_config(config_path: Path):
         messages.insert(save_message_idx + 1, NEW_MESSAGE)
         print(f"  ✓ Inserted new message after message {save_message_idx}")
     else:
-        print(f"  ⚠ Could not find save message, appending to end")
+        print("  ⚠ Could not find save message, appending to end")
         messages.append(NEW_MESSAGE)
 
     # 3. Update save_artifacts
     if "output" in config:
         config["output"]["save_artifacts"] = NEW_SAVE_ARTIFACTS
-        print(f"  ✓ Updated save_artifacts")
+        print("  ✓ Updated save_artifacts")
 
     # Keep messages as the final top-level YAML section
     config.pop("messages", None)

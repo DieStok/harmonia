@@ -105,6 +105,7 @@ exclude_lines = [
 
 [tool.ruff]
 line-length = 100
+exclude = ["src/bdikit_context/procedures/"]
 
 [tool.ruff.lint]
 select = ["F", "E", "W", "I"]

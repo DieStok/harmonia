@@ -7,8 +7,9 @@ Creates:
 2. harmonized_dou_correct_with_index.csv - harmonized_dou_correct.csv with Proteomics_Participant_ID prepended
 """
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 # Define base paths
 BASE_DIR = Path("/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/raw/datasets_harmonia/one_metadata_table_gdc_schema")

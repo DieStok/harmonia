@@ -22,7 +22,6 @@ Or without GPU (just unit tests, no container launch):
 import argparse
 import json
 import os
-import shutil
 import signal
 import subprocess
 import sys
@@ -141,7 +140,7 @@ def create_test_config(tmpdir: Path, prompt_paths: dict) -> Path:
 def test_prompts_config_parsing():
     """Test that PromptsConfig is correctly parsed from YAML dict."""
     sys.path.insert(0, str(HARMONIA_ROOT / "src"))
-    from automation.config import ExperimentConfig, PromptsConfig
+    from automation.config import ExperimentConfig
 
     # Test with prompts section
     data = {
@@ -286,7 +285,7 @@ def test_exec_apptainer_with_custom_prompts(tmpdir: Path):
     results_dir.mkdir(parents=True, exist_ok=True)
 
     log(f"Starting exec_apptainer_harmonia.sh with config: {config_path}")
-    log(f"Looking for markers:")
+    log("Looking for markers:")
     log(f"  System prompt marker: {SYSTEM_PROMPT_MARKER}")
     log(f"  ReAct prelude marker: {REACT_PRELUDE_MARKER}")
     log(f"  Token: {token[:10]}...")
@@ -349,8 +348,8 @@ def test_exec_apptainer_with_custom_prompts(tmpdir: Path):
     reader_thread.start()
 
     try:
-        import urllib.request
         import urllib.error
+        import urllib.request
 
         # Phase 1: Wait for Beaker to start (up to 8 minutes for Ollama + Beaker)
         log("Phase 1: Waiting for Beaker server to start...")
@@ -457,7 +456,7 @@ def test_exec_apptainer_with_custom_prompts(tmpdir: Path):
                 pass
             try:
                 proc.wait(timeout=5)
-            except:
+            except Exception:
                 pass
 
     # Combine all output for final check
