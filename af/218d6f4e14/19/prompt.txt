@@ -1,0 +1,354 @@
+# Deep Research Prompt: SRAgent Codebase Analysis, Paper Critique, Comparative Architecture Review, and Frontier Agentic AI Practices Investigation
+
+---
+
+## Mission Statement
+
+You are a **Principal Research Agent** orchestrating a multi-agent deep research operation. Your objective is to conduct a thorough, systematic investigation of the SRAgent repository and its associated paper, compare its architecture with the Harmonia Metadata Agent codebase, and synthesize findings into actionable insights and a follow-on research prompt targeting frontier agentic AI practices.
+
+You **must** delegate work to specialized subagents as described below, ensure each subagent produces written output in a dedicated research directory, and synthesize all findings into a cohesive final report.
+
+---
+
+## Directory Structure and Output Requirements
+
+**All output must be written to disk.** Create and populate the following directory structure:
+
+```
+./research_output/
+├── README.md                          # Index of all outputs with summaries
+├── 01_sragent_codebase_analysis/
+│   ├── full_codebase_overview.md       # Complete architectural analysis
+│   ├── flow_diagrams.md                # Control flow, data flow, execution flow
+│   ├── prompt_and_context_management.md # How prompts are constructed, context windows managed
+│   ├── subagent_architecture.md        # How SRAgent uses sub-agents internally
+│   ├── reusable_patterns.md            # Design patterns extractable for other projects
+│   └── code_organization_practices.md  # File structure, naming, modularity, configuration
+├── 02_paper_analysis/
+│   ├── paper_summary_and_findings.md   # Structured summary of the paper
+│   ├── methodology_deep_dive.md        # Detailed methodological analysis
+│   └── paper_critique.md              # Critic subagent output: gaps, weaknesses, unaddressed issues
+├── 03_comparative_architecture/
+│   ├── sragent_vs_harmonia_comparison.md  # High-level architectural comparison
+│   ├── patterns_for_harmonia.md           # Useful SRAgent patterns transferable to Harmonia
+│   └── harmonia_strengths.md              # What Harmonia does well or uniquely
+├── 04_frontier_practices_prompt/
+│   ├── synthesis_of_findings.md           # Cross-agent synthesis
+│   ├── best_practices_analysis.md         # Analysis of Claude prompting best practices doc
+│   ├── yunque_deep_research_analysis.md   # Analysis of Yunque Deep Research PDF
+│   └── frontier_research_prompt.md        # The final generated deep research prompt
+└── 05_meta/
+    ├── agent_execution_log.md             # Log of what each agent did, decisions made
+    └── quality_checklist.md               # Self-assessment against completeness criteria
+```
+
+---
+
+## Agent Definitions and Task Specifications
+
+### Agent 1: **SRAgent Codebase Analyst**
+
+**Role:** Systematic reverse-engineering of the SRAgent repository to produce a complete technical understanding.
+
+**Instructions:**
+
+1. **Repository Discovery Phase**
+   - Locate the SRAgent repository. Begin by listing the full directory tree (all files, all depths).
+   - Identify the primary language(s), framework(s), dependency manifest(s) (requirements.txt, pyproject.toml, package.json, etc.).
+   - Read the README, any CONTRIBUTING, ARCHITECTURE, or design docs present in the repo.
+   - Catalog every source file, configuration file, prompt template, and data file.
+
+2. **Architectural Overview** → Output: `full_codebase_overview.md`
+   - Describe the overall system architecture: what are the top-level components and how do they relate?
+   - Identify the **entry points** (main scripts, CLI interfaces, API endpoints).
+   - Map the **module dependency graph**: which modules import which, what are the layers of abstraction?
+   - Describe the **configuration system**: how is the agent configured? Environment variables, YAML/JSON configs, command-line arguments, hardcoded defaults?
+   - Identify all **external service integrations**: LLM API calls, database connections, file system I/O, web APIs, tool use.
+   - Document the **error handling strategy**: how are failures caught, retried, logged, escalated?
+   - Note the **testing approach**: unit tests, integration tests, evaluation harnesses.
+
+3. **Control Flow and Data Flow Analysis** → Output: `flow_diagrams.md`
+   - Trace the **end-to-end execution flow** from input (what triggers the agent?) to output (what does it produce?). Document every step.
+   - Identify all **decision points** where the agent branches based on LLM output, tool results, or configuration.
+   - Map the **data flow**: what data enters the system, how is it transformed at each stage, what intermediate representations exist, what is the final output?
+   - Document any **feedback loops**: does the agent iterate, retry, self-correct, or refine its outputs?
+   - Identify **state management**: what state is maintained across steps? How is it stored (in-memory, files, database)?
+
+4. **Prompt Engineering and Context Management** → Output: `prompt_and_context_management.md`
+   - Extract and catalog **every prompt template** or system message in the codebase. For each:
+     - Where is it defined (file, line)?
+     - What variables/placeholders does it contain?
+     - What role does it serve in the overall flow?
+     - How is it assembled at runtime (string formatting, template engine, dynamic construction)?
+   - Analyze **context window management**:
+     - How does the agent manage token limits?
+     - Is there summarization, truncation, sliding window, or prioritized context selection?
+     - How is conversation history maintained and pruned?
+   - Document **prompt chaining**: how does output from one LLM call feed into the next?
+   - Identify any **few-shot examples**, **chain-of-thought** elicitation, or **structured output** enforcement (JSON mode, XML parsing, regex extraction).
+
+5. **Sub-Agent Architecture** → Output: `subagent_architecture.md`
+   - If SRAgent uses sub-agents, specialized workers, or a multi-agent topology:
+     - How are sub-agents defined, instantiated, and orchestrated?
+     - What is the communication protocol between agents (function calls, message queues, shared state)?
+     - How is work divided and results aggregated?
+     - Is there a supervisor/worker pattern, a pipeline, a DAG, or something else?
+   - If SRAgent is monolithic, document how responsibilities are separated within the single agent and whether the architecture could benefit from decomposition.
+
+6. **Reusable Patterns** → Output: `reusable_patterns.md`
+   - Extract **design patterns** that are generalizable beyond SRAgent. For each pattern:
+     - **Name** it descriptively.
+     - **Describe** the pattern in abstract terms.
+     - **Show** a concrete code example from SRAgent.
+     - **Assess** applicability: in what other agentic systems would this pattern be useful?
+   - Specifically look for patterns in:
+     - Tool use and tool result parsing
+     - LLM output validation and structured extraction
+     - Retry and self-healing logic
+     - Dynamic prompt construction
+     - Agent orchestration and delegation
+     - Logging, observability, and debugging support
+     - Configuration and extensibility
+
+7. **Code Organization Practices** → Output: `code_organization_practices.md`
+   - Assess the **file and directory structure**: is it logical, navigable, and consistent?
+   - Evaluate **naming conventions** for files, classes, functions, variables.
+   - Document how **separation of concerns** is achieved (or not).
+   - Note any use of **abstractions, interfaces, or base classes** that promote extensibility.
+   - Identify **anti-patterns** or technical debt.
+
+---
+
+### Agent 2: **Paper Analyst**
+
+**Role:** Read, summarize, and deeply analyze the research paper included in the SRAgent codebase.
+
+**Instructions:**
+
+1. **Locate the Paper**
+   - Search the SRAgent repository for PDF, LaTeX, or markdown files that constitute the research paper.
+   - If multiple documents exist, identify the primary publication.
+
+2. **Structured Summary** → Output: `paper_summary_and_findings.md`
+   - Provide a structured summary covering:
+     - **Problem statement**: What problem does SRAgent address? Why does it matter?
+     - **Proposed approach**: What is the core method/system? Describe the architecture and workflow as presented in the paper.
+     - **Key contributions**: What does the paper claim as novel?
+     - **Experimental setup**: What benchmarks, datasets, baselines, and metrics are used?
+     - **Main results**: What are the headline numbers? How does SRAgent compare to baselines?
+     - **Ablation studies**: What components are tested in isolation? What do ablations reveal about what matters?
+     - **Limitations acknowledged**: What do the authors themselves identify as limitations?
+
+3. **Methodology Deep Dive** → Output: `methodology_deep_dive.md`
+   - Go beyond the summary to analyze the methodology in detail:
+     - How does the agentic loop work step by step?
+     - What LLM(s) are used, and how are they configured (temperature, max tokens, model version)?
+     - What tools does the agent have access to, and how does it decide which to use?
+     - How is the agent evaluated? Are the evaluation metrics appropriate for the claims?
+     - What is the computational cost (tokens, API calls, time, money)?
+     - How reproducible is the work? Is enough detail provided to reimplement?
+
+---
+
+### Agent 3: **Paper Critic** (Subagent)
+
+**Role:** Adversarial reviewer identifying gaps, weaknesses, and unaddressed issues in the paper.
+
+**Instructions:**
+
+Produce → `paper_critique.md`
+
+Evaluate the paper across these dimensions, being thorough and specific:
+
+1. **Methodological Gaps**
+   - Are there confounding variables in the evaluation?
+   - Is the comparison to baselines fair (same compute budget, same information access)?
+   - Are there selection biases in the benchmark tasks?
+   - Does the method generalize beyond the tested domain?
+
+2. **Evaluation Weaknesses**
+   - Are the metrics sufficient to capture real-world utility?
+   - Is statistical significance reported? Variance across runs?
+   - Are there ceiling/floor effects in the benchmarks?
+   - How would the system perform on adversarial or out-of-distribution inputs?
+
+3. **Unaddressed Questions**
+   - What failure modes are not analyzed?
+   - What is the cost-effectiveness compared to simpler approaches?
+   - How does performance degrade with weaker/cheaper models?
+   - What about safety, alignment, or unintended behaviors of the agent?
+   - Is there analysis of when the agent knows it doesn't know (calibration)?
+
+4. **Missing Comparisons**
+   - What recent related work is not compared against?
+   - Are there obvious alternative approaches that should have been tried?
+
+5. **Reproducibility Concerns**
+   - Can the results be reproduced from the paper alone?
+   - Are prompts, hyperparameters, and random seeds fully specified?
+   - Is the code release complete enough to verify claims?
+
+6. **Strength Acknowledgment**
+   - Despite the critique, what does the paper do genuinely well?
+   - What aspects of the approach are most promising for future work?
+
+---
+
+### Agent 4: **Comparative Architecture Analyst** (Subagent)
+
+**Role:** Compare SRAgent and Harmonia Metadata Agent architectures at a high level.
+
+**Context paths:**
+- Harmonia Metadata Agent codebase: `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/`
+- Focus on the core agent code, configuration, prompt management, and orchestration patterns.
+
+**Instructions:**
+
+1. **High-Level Comparison** → Output: `sragent_vs_harmonia_comparison.md`
+
+   For each system, characterize and compare along these axes:
+   - **Overall architecture pattern** (monolithic, microservice, pipeline, DAG, multi-agent)
+   - **Agent orchestration model** (single agent, hierarchical, swarm, sequential pipeline)
+   - **Prompt management approach** (template files, inline strings, dynamic construction, prompt registries)
+   - **Context/memory management** (how each system handles context windows, state persistence, conversation history)
+   - **Tool integration model** (how tools are defined, registered, invoked, and results parsed)
+   - **Error handling and recovery** (retry strategies, fallback behaviors, graceful degradation)
+   - **Configuration and extensibility** (how easy is it to add new capabilities, change models, modify behavior)
+   - **Code modularity and separation of concerns**
+   - **Testing and evaluation approach**
+   - **Documentation quality and developer experience**
+
+   Present this as a structured comparison table followed by narrative analysis.
+
+2. **Transferable Patterns for Harmonia** → Output: `patterns_for_harmonia.md`
+
+   Based on the codebase analysis of SRAgent, identify specific patterns, techniques, or architectural decisions that would improve Harmonia Metadata Agent. For each recommendation:
+   - **Pattern name and description**
+   - **How SRAgent implements it** (with code references)
+   - **Why it would benefit Harmonia** (specific current limitation it addresses)
+   - **Implementation sketch** (how it could be adapted for Harmonia's architecture)
+   - **Effort estimate** (small/medium/large change)
+   - **Risk assessment** (what could go wrong in adoption)
+
+3. **Harmonia's Distinctive Strengths** → Output: `harmonia_strengths.md`
+
+   Identify what Harmonia does well that SRAgent does not, or where Harmonia's approach is superior:
+   - Domain-specific design decisions that are well-suited to the metadata extraction task
+   - Architectural choices that provide advantages (flexibility, reliability, maintainability)
+   - Code quality aspects where Harmonia excels
+   - Any unique patterns in Harmonia worth preserving or even back-porting to other projects
+   - Be honest: if Harmonia has few distinctive strengths relative to SRAgent, say so clearly and explain why.
+
+---
+
+### Agent 5: **Frontier Practices Research Prompt Generator**
+
+**Role:** Synthesize all findings from Agents 1–4 and external best-practices documents to generate a deep research prompt for investigating frontier agentic AI practices.
+
+**Context paths:**
+- Claude prompting best practices: `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/docs/miscellaneous/Claude_prompting_best_practices.md`
+- Yunque Deep Research document: `/hpc/compgen/projects/llm_GEO_project/harmonia_metadata_agent/analysis/dstoker/harmonia/docs/miscellaneous/Yunque_Deep_Research.pdf`
+
+**Instructions:**
+
+1. **Read and Analyze Best Practices** → Output: `best_practices_analysis.md`
+   - Read the Claude prompting best practices document thoroughly.
+   - Extract the key principles, structural patterns, and anti-patterns it describes.
+   - Identify which best practices are already followed in SRAgent and Harmonia, and which are not.
+   - Note any best practices that are specifically relevant to deep research prompts.
+
+2. **Read and Analyze Yunque Deep Research** → Output: `yunque_deep_research_analysis.md`
+   - Read the Yunque Deep Research PDF.
+   - Extract its methodology for conducting deep research with AI agents.
+   - Identify the structural elements of effective deep research prompts according to this source.
+   - Note techniques for managing scope, ensuring thoroughness, and maintaining quality.
+
+3. **Cross-Agent Synthesis** → Output: `synthesis_of_findings.md`
+   - Read all outputs from Agents 1–4 in the `research_output/` directory.
+   - Synthesize the key findings across all analyses:
+     - What are the most important architectural lessons from SRAgent?
+     - What are the most critical gaps identified by the paper critic?
+     - What are the highest-value transferable patterns for Harmonia?
+     - Where do current agentic approaches (as represented by SRAgent and Harmonia) fall short of frontier capabilities?
+   - Identify **open questions** that remain after all analysis is complete.
+   - Identify **areas where frontier practices could most improve** both SRAgent-style and Harmonia-style systems.
+
+4. **Generate the Frontier Research Prompt** → Output: `frontier_research_prompt.md`
+
+   Produce a complete, detailed deep research prompt that:
+
+   a. **Follows the Claude prompting best practices** identified in step 1. Specifically:
+      - Uses clear role definitions and explicit instructions
+      - Provides structured output requirements
+      - Includes thinking scaffolds and chain-of-thought guidance
+      - Specifies what good vs. bad output looks like
+      - Uses the formatting and structural patterns recommended in the best practices doc
+
+   b. **Follows the Yunque Deep Research methodology** identified in step 2.
+
+   c. **Targets these frontier agentic AI topics** (refined based on gaps found in the analysis):
+      - Advanced agent orchestration patterns (hierarchical, graph-based, adaptive topologies)
+      - State-of-the-art prompt engineering for multi-step agent workflows
+      - Context window optimization and long-horizon memory management
+      - Tool use optimization (tool selection, parallel tool calls, tool result compression)
+      - Agent self-evaluation, calibration, and uncertainty quantification
+      - Cost-performance optimization (when to use large vs. small models, caching, batching)
+      - Evaluation methodologies for agentic systems
+      - Safety and reliability patterns (guardrails, sandboxing, human-in-the-loop)
+      - Emerging patterns from recent research (2024–2026) in agentic AI systems
+      - Specific improvements applicable to scientific metadata extraction agents (Harmonia's domain)
+
+   d. **Is self-contained**: the generated prompt should be usable as-is by a research agent without requiring additional context beyond what is provided in the prompt itself.
+
+   e. **Specifies its own output structure**: the generated prompt should define what files/documents the research agent should produce.
+
+   f. **Includes quality criteria**: the generated prompt should specify how to evaluate whether the research is thorough and complete.
+
+---
+
+## Execution Protocol
+
+### Phase 1: Foundation (Agent 1)
+Run the SRAgent Codebase Analyst first. Its outputs are dependencies for all other agents.
+
+### Phase 2: Parallel Analysis (Agents 2, 3, 4)
+Once Agent 1 completes, run the Paper Analyst, Paper Critic, and Comparative Architecture Analyst. The Paper Critic depends on Agent 2's summary but can run concurrently in practice by reading the paper directly. Agent 4 depends on Agent 1's codebase analysis for the SRAgent side.
+
+### Phase 3: Synthesis (Agent 5)
+Run the Frontier Practices Research Prompt Generator last, as it reads all prior outputs.
+
+### Phase 4: Quality Assurance
+After all agents complete, produce:
+- `agent_execution_log.md`: Record what each agent investigated, key decisions made, any obstacles encountered, and time/effort spent per section.
+- `quality_checklist.md`: For each output file, assess: Is it complete? Is it specific (not generic)? Does it cite concrete code references or paper sections? Does it contain actionable insights rather than platitudes?
+
+---
+
+## Quality Standards
+
+All outputs must meet these standards:
+
+1. **Specificity over generality**: Every claim must reference specific files, functions, line numbers, paper sections, or code snippets. "The agent uses good prompt engineering" is not acceptable. "The agent constructs prompts in `src/prompts/builder.py:L45-L89` using a template registry pattern where system messages are loaded from YAML files in `config/prompts/` and dynamically populated with task-specific context via f-string interpolation" is acceptable.
+
+2. **Evidence-based assessment**: Opinions must be grounded in observable evidence from the codebase or paper. If making a judgment ("this pattern is better than that one"), justify it with specific technical reasoning.
+
+3. **Actionability**: Findings should be phrased as actionable insights wherever possible. Not just "X is a weakness" but "X is a weakness; it could be addressed by Y, as demonstrated by Z."
+
+4. **Completeness signals**: Each output document must end with a "Completeness Assessment" section stating: (a) what was fully covered, (b) what was partially covered and why, (c) what was not covered and why.
+
+5. **Cross-referencing**: Outputs should reference other outputs in the research directory where relevant (e.g., "As identified in `01_sragent_codebase_analysis/reusable_patterns.md`, the retry pattern used in SRAgent addresses the reliability concern raised in `02_paper_analysis/paper_critique.md`").
+
+---
+
+## Constraints and Reminders
+
+- **Do not hallucinate code or paper content.** If you cannot access a file, say so explicitly and note it as a gap.
+- **Read before writing.** Always read the actual source files before making claims about them. Do not guess at file contents based on names.
+- **Preserve nuance.** If something is genuinely ambiguous or could be interpreted multiple ways, present the alternatives rather than forcing a single interpretation.
+- **Be honest about limitations.** If the analysis is incomplete due to access constraints, time, or complexity, state this clearly rather than papering over gaps.
+- **Think step by step.** For complex analyses (especially control flow tracing and prompt management), work through the logic methodically rather than jumping to conclusions.
+- **Write for a technical audience.** Assume the reader is an experienced software engineer familiar with LLM-based agentic systems. Do not over-explain basic concepts, but do explain domain-specific or project-specific details.
+
+---
+
+continue or tell me status

@@ -3,7 +3,7 @@
   "checkpoint_id": "af218d6f4e14",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 31,
+  "checkpoints_count": 32,
   "files_touched": [
     ".claude/proposed_commit_message.md",
     ".gitignore",
@@ -149,6 +149,19 @@
     "docs/processes/02_03_2026_priority_run_ledger.csv",
     "docs/processes/11_02_2026_interpreting_logs_and_traces.md",
     "docs/processes/creating_new_beaker_contexts.md",
+    "docs/research_output/02_paper_analysis/methodology_deep_dive.md",
+    "docs/research_output/02_paper_analysis/paper_critique.md",
+    "docs/research_output/02_paper_analysis/paper_summary_and_findings.md",
+    "docs/research_output/03_comparative_architecture/harmonia_strengths.md",
+    "docs/research_output/03_comparative_architecture/patterns_for_harmonia.md",
+    "docs/research_output/03_comparative_architecture/sragent_vs_harmonia_comparison.md",
+    "docs/research_output/04_frontier_practices_prompt/best_practices_analysis.md",
+    "docs/research_output/04_frontier_practices_prompt/frontier_research_prompt.md",
+    "docs/research_output/04_frontier_practices_prompt/synthesis_of_findings.md",
+    "docs/research_output/04_frontier_practices_prompt/yunque_deep_research_analysis.md",
+    "docs/research_output/05_meta/agent_execution_log.md",
+    "docs/research_output/05_meta/quality_checklist.md",
+    "docs/research_output/README.md",
     "documentation/codebase_descriptions/how_this_codebase_works_09_03_2026.md",
     "documentation/codebase_descriptions/how_this_codebase_works_12_03_2026.md",
     "documentation/full_conversations/03_02_2026_1112_755dabc6.jsonl",
@@ -455,13 +468,20 @@
       "context": "/af/218d6f4e14/18/context.md",
       "content_hash": "/af/218d6f4e14/18/content_hash.txt",
       "prompt": "/af/218d6f4e14/18/prompt.txt"
+    },
+    {
+      "metadata": "/af/218d6f4e14/19/metadata.json",
+      "transcript": "/af/218d6f4e14/19/full.jsonl",
+      "context": "/af/218d6f4e14/19/context.md",
+      "content_hash": "/af/218d6f4e14/19/content_hash.txt",
+      "prompt": "/af/218d6f4e14/19/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 19939,
-    "cache_creation_tokens": 2743646,
-    "cache_read_tokens": 86363096,
-    "output_tokens": 352909,
-    "api_call_count": 971
+    "input_tokens": 20668,
+    "cache_creation_tokens": 2827168,
+    "cache_read_tokens": 86651280,
+    "output_tokens": 361595,
+    "api_call_count": 981
   }
 }
